@@ -2,6 +2,7 @@ import { Project } from '@/hooks/useProjects';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { MessageSquare, Calendar, Edit, Archive } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 
@@ -68,12 +69,39 @@ export function ProjectCard({ project, onEdit, onDelete, onSelect, isSelected }:
 
       <CardFooter className="pt-0">
         <div className="flex w-full justify-end gap-2" onClick={(e) => e.stopPropagation()}>
-          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => onEdit(project)}>
-            <Edit className="h-4 w-4 text-muted-foreground" />
-          </Button>
-          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => onDelete(project)}>
-            <Archive className="h-4 w-4 text-muted-foreground" />
-          </Button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8"
+                onClick={() => onEdit(project)}
+                aria-label={`Edit ${project.name}`}
+              >
+                <Edit className="h-4 w-4 text-muted-foreground" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Edit project</p>
+            </TooltipContent>
+          </Tooltip>
+
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8"
+                onClick={() => onDelete(project)}
+                aria-label={`Archive ${project.name}`}
+              >
+                <Archive className="h-4 w-4 text-muted-foreground" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Archive project</p>
+            </TooltipContent>
+          </Tooltip>
         </div>
       </CardFooter>
     </Card>
