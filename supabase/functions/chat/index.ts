@@ -6,13 +6,24 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// Model routing based on mode
-const MODEL_MAP: Record<string, string> = {
-  fast: 'gpt-5-mini-2025-08-07',
-  standard: 'gpt-5-mini-2025-08-07',
-  deep: 'gpt-5-2025-08-07',
-  research: 'gpt-5-2025-08-07',
-  image: 'gpt-5-mini-2025-08-07', // Image generation uses a different endpoint
+// All text modes use GPT-5.2 with different reasoning efforts
+const TEXT_MODEL = 'gpt-5.2';
+
+const REASONING_EFFORT: Record<string, string> = {
+  fast: 'minimal',
+  standard: 'low',
+  deep: 'medium',
+  pro: 'high',
+  research: 'medium', // + web search
+};
+
+const COST_PER_1M = {
+  'gpt-5.2': {
+    input: 2.50,
+    output: 10.00,
+    // Reasoning tokens may have different pricing
+  },
+  'gpt-image-1': { per_image: 0.04 }, // Image pricing
 };
 
 interface Message {
@@ -47,8 +58,17 @@ serve(async (req) => {
       throw new Error('Messages array is required');
     }
 
-    const model = MODEL_MAP[mode] || MODEL_MAP.fast;
-    console.log(`Chat request - Mode: ${mode}, Model: ${model}, Messages: ${messages.length}`);
+    // Determine reasoning effort and max tokens
+    const reasoningEffort = REASONING_EFFORT[mode] || 'minimal';
+    let maxCompletionTokens = 2048;
+
+    if (reasoningEffort === 'medium') {
+      maxCompletionTokens = 4096;
+    } else if (reasoningEffort === 'high') {
+      maxCompletionTokens = 16384;
+    }
+
+    console.log(`Chat request - Mode: ${mode}, Model: ${TEXT_MODEL}, Reasoning: ${reasoningEffort}, Messages: ${messages.length}`);
 
     // Build base system prompt
     let systemContent = `You are a helpful, intelligent AI assistant. You provide clear, accurate, and thoughtful responses.
@@ -77,6 +97,22 @@ Key behaviors:
 
     const allMessages = [systemMessage, ...messages];
 
+    // Construct request body
+    const requestBody: any = {
+      model: TEXT_MODEL,
+      messages: allMessages,
+      reasoning_effort: reasoningEffort,
+      max_completion_tokens: maxCompletionTokens,
+      stream: true,
+    };
+
+    if (mode === 'research') {
+      requestBody.tools = [{
+        type: 'web_search_preview',
+        search_context_size: 'medium',
+      }];
+    }
+
     // Make request to OpenAI
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
@@ -84,12 +120,7 @@ Key behaviors:
         'Authorization': `Bearer ${openAIApiKey}`,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        model,
-        messages: allMessages,
-        max_completion_tokens: mode === 'deep' ? 4096 : 2048,
-        stream: true,
-      }),
+      body: JSON.stringify(requestBody),
     });
 
     if (!response.ok) {

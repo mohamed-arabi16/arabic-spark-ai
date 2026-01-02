@@ -61,6 +61,7 @@
     --mode-fast: 142 76% 36%;
     --mode-standard: 250 84% 54%;
     --mode-deep: 280 85% 54%;
+    --mode-pro: 260 90% 65%;
     --mode-research: 199 89% 48%;
     --mode-image: 330 81% 60%;
 
@@ -121,6 +122,7 @@
     --mode-fast: 142 70% 45%;
     --mode-standard: 250 84% 60%;
     --mode-deep: 280 85% 60%;
+    --mode-pro: 260 90% 70%;
     --mode-research: 199 89% 55%;
     --mode-image: 330 81% 65%;
 
@@ -215,12 +217,21 @@
   .mode-fast { @apply bg-[hsl(var(--mode-fast))]; }
   .mode-standard { @apply bg-[hsl(var(--mode-standard))]; }
   .mode-deep { @apply bg-[hsl(var(--mode-deep))]; }
+  .mode-pro { @apply bg-[hsl(var(--mode-pro))]; }
   .mode-research { @apply bg-[hsl(var(--mode-research))]; }
   .mode-image { @apply bg-[hsl(var(--mode-image))]; }
 
   .mode-fast-text { color: hsl(var(--mode-fast)); }
   .mode-standard-text { color: hsl(var(--mode-standard)); }
   .mode-deep-text { color: hsl(var(--mode-deep)); }
+  .mode-pro-text { color: hsl(var(--mode-pro)); }
   .mode-research-text { color: hsl(var(--mode-research)); }
   .mode-image-text { color: hsl(var(--mode-image)); }
+
+  .mode-fast-bg { background-color: hsl(var(--mode-fast)); }
+  .mode-standard-bg { background-color: hsl(var(--mode-standard)); }
+  .mode-deep-bg { background-color: hsl(var(--mode-deep)); }
+  .mode-pro-bg { background-color: hsl(var(--mode-pro)); }
+  .mode-research-bg { background-color: hsl(var(--mode-research)); }
+  .mode-image-bg { background-color: hsl(var(--mode-image)); }
 }
