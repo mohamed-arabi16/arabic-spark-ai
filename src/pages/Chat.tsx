@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { useSearchParams, useLocation } from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { ChatInput } from '@/components/chat/ChatInput';
 import { ChatMessage, Message } from '@/components/chat/ChatMessage';
@@ -9,49 +9,74 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { toast } from 'sonner';
 import { useProjects } from '@/hooks/useProjects';
 import { useMemory } from '@/hooks/useMemory';
+import { useConversations } from '@/hooks/useConversations';
 import { MemoryBadge } from '@/components/memory/MemoryBadge';
 import { MemoryManager } from '@/components/memory/MemoryManager';
 import { showMemorySuggestion } from '@/components/memory/MemorySuggestion';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { supabase } from '@/integrations/supabase/client';
 import { CostMeter } from '@/components/chat/CostMeter';
+import { Loader2 } from 'lucide-react';
 
 const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat`;
 
 export default function Chat() {
+  const [searchParams] = useSearchParams();
+  const conversationIdParam = searchParams.get('conversationId');
+  const projectIdParam = searchParams.get('project');
+  
+  const { projects, currentProject } = useProjects();
+  const projectId = projectIdParam || currentProject?.id;
+  const project = projects.find(p => p.id === projectId);
+  
+  const {
+    currentConversation,
+    messages: dbMessages,
+    isLoadingMessages,
+    loadConversation,
+    createConversation,
+    addMessage,
+    setMessages: setDbMessages,
+    clearCurrentConversation,
+  } = useConversations();
+
+  const { memories, fetchMemories, addMemory, updateMemory, deleteMemory } = useMemory(projectId || undefined);
+  
+  // Local messages state for UI (includes streaming content)
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
-  const [searchParams] = useSearchParams();
-  const location = useLocation();
-  const projectId = searchParams.get('project');
-  const { projects } = useProjects();
-  const project = projects.find(p => p.id === projectId);
-  const { memories, fetchMemories, addMemory, updateMemory, deleteMemory } = useMemory(projectId || undefined);
   const [isMemoryOpen, setIsMemoryOpen] = useState(false);
   const [sessionCost, setSessionCost] = useState(0);
   const [message, setMessage] = useState('');
   const [mode, setMode] = useState<ChatMode>('fast');
 
+  // Load conversation from DB if conversationId is provided
+  useEffect(() => {
+    if (conversationIdParam) {
+      loadConversation(conversationIdParam).then(({ messages: loadedMsgs }) => {
+        const uiMessages: Message[] = loadedMsgs.map(m => ({
+          id: m.id,
+          role: m.role as 'user' | 'assistant',
+          content: m.content,
+          timestamp: new Date(m.created_at),
+          model: m.model_used || undefined,
+        }));
+        setMessages(uiMessages);
+      }).catch(() => {
+        // Error already handled in hook
+      });
+    } else {
+      // New conversation - clear state
+      clearCurrentConversation();
+      setMessages([]);
+    }
+  }, [conversationIdParam]);
+
   useEffect(() => {
     fetchMemories();
   }, [fetchMemories]);
-
-  // Load history from state if available
-  useEffect(() => {
-    if (location.state?.conversation) {
-      const conv = location.state.conversation;
-      if (conv.messages) {
-        // Convert string timestamps back to Date objects if necessary
-        const loadedMessages = conv.messages.map((m: Message) => ({
-          ...m,
-          timestamp: new Date(m.timestamp)
-        }));
-        setMessages(loadedMessages);
-      }
-    }
-  }, [location.state]);
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
@@ -60,47 +85,27 @@ export default function Chat() {
     }
   }, [messages]);
 
-  const saveToHistory = (msgs: Message[]) => {
-    try {
-      const history = JSON.parse(localStorage.getItem('chat_history') || '[]');
-
-      const conversationId = location.state?.conversation?.id;
-
-      if (!conversationId) {
-        // Create new
-        const newId = crypto.randomUUID();
-        const title = msgs[0]?.content.slice(0, 30) || 'New Chat';
-        const newItem = {
-            id: newId,
-            title,
-            date: new Date().toISOString(),
-            preview: msgs[msgs.length - 1]?.content.slice(0, 50) + '...',
-            messages: msgs
-        };
-        // Add to history
-        localStorage.setItem('chat_history', JSON.stringify([newItem, ...history]));
-      } else {
-        // Update existing
-         const newHistory = history.map((item: { id: string }) => {
-             if (item.id === conversationId) {
-                 return {
-                     ...item,
-                     messages: msgs,
-                     preview: msgs[msgs.length - 1]?.content.slice(0, 50) + '...',
-                     date: new Date().toISOString()
-                 };
-             }
-             return item;
-         });
-         localStorage.setItem('chat_history', JSON.stringify(newHistory));
-      }
-    } catch (e) {
-      console.error('Failed to save history', e);
+  const handleSend = async (content: string, chatMode: ChatMode) => {
+    if (!projectId) {
+      toast.error('Please select a project first');
+      return;
     }
-  };
 
-  const handleSend = async (content: string, mode: ChatMode) => {
-    // Add user message
+    // Create conversation if this is the first message
+    let convId = currentConversation?.id;
+    if (!convId) {
+      try {
+        const newConv = await createConversation(projectId, content.slice(0, 50), chatMode);
+        convId = newConv.id;
+        // Update URL without reloading
+        window.history.replaceState({}, '', `/chat?conversationId=${convId}`);
+      } catch (error) {
+        toast.error('Failed to create conversation');
+        return;
+      }
+    }
+
+    // Add user message to UI immediately
     const userMessage: Message = {
       id: crypto.randomUUID(),
       role: 'user',
@@ -110,18 +115,30 @@ export default function Chat() {
     setMessages((prev) => [...prev, userMessage]);
     setIsLoading(true);
 
+    // Save user message to DB
+    try {
+      const savedUserMsg = await addMessage(convId, 'user', content);
+      // Update the ID to match the DB
+      setMessages(prev => prev.map(m => 
+        m.id === userMessage.id ? { ...m, id: savedUserMsg.id } : m
+      ));
+    } catch (error) {
+      console.error('Failed to save user message:', error);
+    }
+
     // Create abort controller for cancellation
     abortControllerRef.current = new AbortController();
 
     try {
-      // Build messages for API
+      // Build messages for API (use DB messages + new user message)
       const apiMessages = [...messages, userMessage].map((m) => ({
         role: m.role,
         content: m.content,
       }));
 
       // Include memories in context
-      const memoryContext = memories
+      const approvedMemories = memories.filter(m => (m as any).status === 'approved' || !(m as any).status);
+      const memoryContext = approvedMemories
         .map(m => `${m.category}: ${m.content}`)
         .join('\n');
 
@@ -138,8 +155,9 @@ export default function Chat() {
         },
         body: JSON.stringify({
           messages: apiMessages,
-          mode,
+          mode: chatMode,
           project_id: projectId,
+          conversation_id: convId,
           system_instructions: project?.system_instructions,
           memory_context: memoryContext
         }),
@@ -164,20 +182,21 @@ export default function Chat() {
 
       // Create assistant message placeholder
       const assistantMessageId = crypto.randomUUID();
-      setMessages((prev) => {
-        const newMessages = [
-          ...prev,
-          {
-            id: assistantMessageId,
-            role: 'assistant',
-            content: '',
-            timestamp: new Date(),
-            model: mode === 'fast' ? 'gpt-5-mini' : mode === 'deep' ? 'gpt-5' : 'gpt-5-mini',
-          } as Message,
-        ];
-        saveToHistory(newMessages);
-        return newMessages;
-      });
+      const modelName = chatMode === 'pro' ? 'gpt-5.2 (high)' : 
+                        chatMode === 'deep' ? 'gpt-5.2 (medium)' : 
+                        chatMode === 'standard' ? 'gpt-5.2 (low)' : 
+                        chatMode === 'research' ? 'gpt-5.2 (research)' : 'gpt-5.2 (minimal)';
+      
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: assistantMessageId,
+          role: 'assistant',
+          content: '',
+          timestamp: new Date(),
+          model: modelName,
+        } as Message,
+      ]);
 
       while (!streamDone) {
         const { done, value } = await reader.read();
@@ -207,39 +226,14 @@ export default function Chat() {
             const deltaContent = parsed.choices?.[0]?.delta?.content;
             if (deltaContent) {
               assistantContent += deltaContent;
-              setMessages((prev) => {
-                const newMessages = prev.map((m) =>
+              setMessages((prev) =>
+                prev.map((m) =>
                   m.id === assistantMessageId ? { ...m, content: assistantContent } : m
-                );
-                return newMessages;
-              });
+                )
+              );
             }
           } catch {
-            // Incomplete JSON, put back and wait
-            console.log('Incomplete JSON, buffering line:', line);
-            // Wait, if it failed parsing, it might be split JSON. But we split by \n.
-            // If OpenAI sends JSON split across lines (unlikely for data: prefix), we might have issues.
-            // But usually 'data: {...}' is one line.
-            // If the buffer split a line, we wouldn't be here (indexOf \n check).
-            // So if JSON.parse fails here, the line content is malformed or we assumed wrong format.
-            // However, the reviewer said "logic assumes that every network chunk ends perfectly on a newline".
-            // My code:
-            // textBuffer += chunk;
-            // while ((newlineIndex = textBuffer.indexOf('\n')) !== -1) { ... }
-            // This IS buffering.
-            // The reviewer might have been looking at `Research.tsx` which I implemented later and copied simplified logic.
-            // But let's verify `Chat.tsx`.
-            // The code I had:
-            // textBuffer += decoder.decode(value, { stream: true });
-            // while ((newlineIndex = textBuffer.indexOf('\n')) !== -1) ...
-            // This logic seems correct for handling split lines.
-            // Wait, if `decoder.decode(value, { stream: true })` returns a partial multi-byte char?
-            // `TextDecoder` handles that.
-            // If `chunk` ends in middle of `\n`? No, `indexOf` handles that.
-            // If `chunk` ends in middle of a line, it stays in `textBuffer` until next chunk appends more.
-            // So `Chat.tsx` logic seems correct actually.
-            // Let's check `Research.tsx`.
-
+            // Incomplete JSON, continue buffering
           }
         }
       }
@@ -270,20 +264,30 @@ export default function Chat() {
         }
       }
 
-      // Save final state
-      setMessages(prev => {
-        saveToHistory(prev);
-        return prev;
-      });
+      // Save assistant message to DB
+      if (assistantContent && convId) {
+        try {
+          const savedAssistantMsg = await addMessage(convId, 'assistant', assistantContent, {
+            model_used: modelName,
+          });
+          // Update ID
+          setMessages(prev => prev.map(m => 
+            m.id === assistantMessageId ? { ...m, id: savedAssistantMsg.id } : m
+          ));
+        } catch (error) {
+          console.error('Failed to save assistant message:', error);
+        }
+      }
 
       // Check for memory extraction
       try {
         const { data: { user } } = await supabase.auth.getUser();
-        if (user) {
+        if (user && messages.length >= 4) {
           const extractionResp = await supabase.functions.invoke('extract-memory', {
             body: {
               messages: apiMessages,
               project_id: projectId,
+              conversation_id: convId,
               user_id: user.id
             }
           });
@@ -302,7 +306,6 @@ export default function Chat() {
 
     } catch (error) {
       if (error instanceof Error && error.name === 'AbortError') {
-        // User cancelled
         return;
       }
       console.error('Chat error:', error);
@@ -325,6 +328,16 @@ export default function Chat() {
     }
     setIsLoading(false);
   };
+
+  if (isLoadingMessages) {
+    return (
+      <MainLayout>
+        <div className="flex-1 flex items-center justify-center">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      </MainLayout>
+    );
+  }
 
   return (
     <MainLayout>

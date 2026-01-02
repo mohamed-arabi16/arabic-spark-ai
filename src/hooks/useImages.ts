@@ -62,6 +62,7 @@ export function useImages() {
           user_id: userId,
           conversation_id: null,
           prompt: prompt,
+          revised_prompt: null,
           size: size,
           image_url: `https://via.placeholder.com/${size.split('x')[0]}?text=${encodeURIComponent(prompt.substring(0, 20))}`,
           created_at: new Date().toISOString(),

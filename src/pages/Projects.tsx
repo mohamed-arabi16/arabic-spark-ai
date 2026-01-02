@@ -50,6 +50,10 @@ export default function Projects() {
     }
   };
 
+  const handleSelect = (project: Project) => {
+    selectProject(project.id);
+  };
+
   // Currently deleteProject only does soft delete (archive).
   // For hard delete, we would need a new function in useProjects.
   // Assuming deleteProject is soft delete based on useProjects implementation.
@@ -127,7 +131,7 @@ export default function Projects() {
                     project={project}
                     onEdit={handleEdit}
                     onDelete={handleArchive}
-                    onSelect={selectProject}
+                    onSelect={handleSelect}
                     isSelected={currentProject?.id === project.id}
                   />
                 ))}
@@ -155,7 +159,7 @@ export default function Projects() {
                     project={project}
                     onEdit={handleEdit}
                     onDelete={handleArchive}
-                    onSelect={selectProject}
+                    onSelect={handleSelect}
                     isSelected={currentProject?.id === project.id}
                   />
                 ))}

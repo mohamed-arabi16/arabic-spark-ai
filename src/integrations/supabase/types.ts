@@ -14,6 +14,51 @@ export type Database = {
   }
   public: {
     Tables: {
+      conversation_summaries: {
+        Row: {
+          conversation_id: string
+          created_at: string
+          id: string
+          last_summarized_message_id: string | null
+          summary: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          conversation_id: string
+          created_at?: string
+          id?: string
+          last_summarized_message_id?: string | null
+          summary: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          conversation_id?: string
+          created_at?: string
+          id?: string
+          last_summarized_message_id?: string | null
+          summary?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "conversation_summaries_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "conversation_summaries_last_summarized_message_id_fkey"
+            columns: ["last_summarized_message_id"]
+            isOneToOne: false
+            referencedRelation: "messages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       conversations: {
         Row: {
           created_at: string
@@ -111,34 +156,52 @@ export type Database = {
       memory_objects: {
         Row: {
           category: string | null
+          confidence: number | null
           content: string
           created_at: string
           id: string
           is_active: boolean | null
           is_global: boolean | null
+          key: string | null
           project_id: string | null
+          source_conversation_id: string | null
+          source_message_ids: string[] | null
+          status: string | null
+          type: string | null
           updated_at: string
           user_id: string
         }
         Insert: {
           category?: string | null
+          confidence?: number | null
           content: string
           created_at?: string
           id?: string
           is_active?: boolean | null
           is_global?: boolean | null
+          key?: string | null
           project_id?: string | null
+          source_conversation_id?: string | null
+          source_message_ids?: string[] | null
+          status?: string | null
+          type?: string | null
           updated_at?: string
           user_id: string
         }
         Update: {
           category?: string | null
+          confidence?: number | null
           content?: string
           created_at?: string
           id?: string
           is_active?: boolean | null
           is_global?: boolean | null
+          key?: string | null
           project_id?: string | null
+          source_conversation_id?: string | null
+          source_message_ids?: string[] | null
+          status?: string | null
+          type?: string | null
           updated_at?: string
           user_id?: string
         }
@@ -148,6 +211,13 @@ export type Database = {
             columns: ["project_id"]
             isOneToOne: false
             referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "memory_objects_source_conversation_id_fkey"
+            columns: ["source_conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
             referencedColumns: ["id"]
           },
         ]
