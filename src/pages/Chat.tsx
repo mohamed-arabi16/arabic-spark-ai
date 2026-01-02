@@ -95,16 +95,11 @@ export default function Chat() {
   }, [messages]);
 
   const handleSend = async (content: string, chatMode: ChatMode) => {
-    if (!projectId) {
-      toast.error('Please select a project first');
-      return;
-    }
-
     // Create conversation if this is the first message
     let convId = currentConversation?.id;
     if (!convId) {
       try {
-        const newConv = await createConversation(projectId, content.slice(0, 50), chatMode);
+        const newConv = await createConversation(projectId || undefined, content.slice(0, 50), chatMode);
         convId = newConv.id;
         // Update URL without reloading
         window.history.replaceState({}, '', `/chat?conversationId=${convId}`);
