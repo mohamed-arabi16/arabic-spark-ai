@@ -90,6 +90,7 @@ export default function Projects() {
                 className="pl-8"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
+                aria-label="Search projects"
               />
             </div>
           </div>
