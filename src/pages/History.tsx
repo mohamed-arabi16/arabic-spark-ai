@@ -72,7 +72,8 @@ export default function History() {
     navigate(`/chat?conversationId=${conv.id}`);
   };
 
-  const getProjectName = (projectId: string) => {
+  const getProjectName = (projectId: string | null) => {
+    if (!projectId) return 'No Project';
     const project = projects.find(p => p.id === projectId);
     return project?.name || 'Unknown Project';
   };

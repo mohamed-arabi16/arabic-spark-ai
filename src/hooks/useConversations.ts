@@ -87,7 +87,7 @@ export function useConversations() {
     }
   }, []);
 
-  const createConversation = async (projectId: string, title?: string, mode?: string) => {
+  const createConversation = async (projectId?: string, title?: string, mode?: string) => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
@@ -96,10 +96,10 @@ export function useConversations() {
         .from('conversations')
         .insert({
           user_id: user.id,
-          project_id: projectId,
+          project_id: projectId || null,
           title: title || 'New Conversation',
           mode: (mode as any) || 'fast',
-        })
+        } as any)
         .select()
         .single();
 

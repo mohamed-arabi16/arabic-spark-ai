@@ -11,3 +11,6 @@ verify_jwt = false
 
 [functions.usage-stats]
 verify_jwt = false
+
+[functions.summarize-conversation]
+verify_jwt = false
