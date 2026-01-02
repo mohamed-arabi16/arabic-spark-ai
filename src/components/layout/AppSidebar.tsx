@@ -23,6 +23,7 @@ import {
 } from '@/components/ui/select';
 import {
   Sparkles,
+  LayoutDashboard,
   MessageSquare,
   FolderOpen,
   Image,
@@ -60,7 +61,8 @@ export function AppSidebar({ collapsed, onToggle }: AppSidebarProps) {
   };
 
   const navItems = [
-    { icon: MessageSquare, label: 'Chat', href: '/' },
+    { icon: LayoutDashboard, label: 'Home', href: '/' },
+    { icon: MessageSquare, label: 'Chat', href: '/chat' },
     { icon: FolderOpen, label: 'Projects', href: '/projects' },
     { icon: Image, label: 'Images', href: '/images' },
     { icon: Search, label: 'Research', href: '/research' },
@@ -80,7 +82,7 @@ export function AppSidebar({ collapsed, onToggle }: AppSidebarProps) {
 
   const handleProjectSelect = (projectId: string) => {
     selectProject(projectId);
-    navigate(`/?project=${projectId}`);
+    navigate(`/chat?project=${projectId}`);
   };
 
   return (
@@ -177,6 +179,7 @@ export function AppSidebar({ collapsed, onToggle }: AppSidebarProps) {
             'w-full gap-2 bg-primary hover:bg-primary/90',
             collapsed ? 'px-0' : ''
           )}
+          onClick={() => navigate('/chat')}
         >
           <Plus className="h-4 w-4" />
           {!collapsed && <span>New Chat</span>}

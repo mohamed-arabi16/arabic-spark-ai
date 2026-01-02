@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/hooks/useAuth";
 import Chat from "./pages/Chat";
+import Index from "./pages/Index";
 import Projects from "./pages/Projects";
 import Images from "./pages/Images";
 import Usage from "./pages/Usage";
@@ -57,6 +58,14 @@ function AppRoutes() {
     <Routes>
       <Route
         path="/"
+        element={
+          <ProtectedRoute>
+            <Index />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/chat"
         element={
           <ProtectedRoute>
             <Chat />
