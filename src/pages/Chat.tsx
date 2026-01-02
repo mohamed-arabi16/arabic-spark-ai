@@ -12,7 +12,6 @@ import { useMemory } from '@/hooks/useMemory';
 import { useConversations } from '@/hooks/useConversations';
 import { MemoryBadge } from '@/components/memory/MemoryBadge';
 import { MemoryManager } from '@/components/memory/MemoryManager';
-import { showMemorySuggestion } from '@/components/memory/MemorySuggestion';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { supabase } from '@/integrations/supabase/client';
 import { CostMeter } from '@/components/chat/CostMeter';
@@ -40,7 +39,17 @@ export default function Chat() {
     clearCurrentConversation,
   } = useConversations();
 
-  const { memories, fetchMemories, addMemory, updateMemory, deleteMemory } = useMemory(projectId || undefined);
+  const { 
+    memories, 
+    proposedMemories,
+    fetchMemories, 
+    addMemory, 
+    updateMemory, 
+    deleteMemory,
+    approveMemory,
+    rejectMemory,
+    getMemoryContext,
+  } = useMemory(projectId || undefined);
   
   // Local messages state for UI (includes streaming content)
   const [messages, setMessages] = useState<Message[]>([]);
@@ -292,12 +301,11 @@ export default function Chat() {
             }
           });
 
-          if (extractionResp.data && extractionResp.data.facts && extractionResp.data.facts.length > 0) {
-            extractionResp.data.facts.forEach((fact: { content: string; category: string }) => {
-              showMemorySuggestion(fact, () => {
-                addMemory(fact.content, fact.category, false);
-              });
-            });
+          if (extractionResp.data?.saved_count > 0) {
+            // Memories are saved to DB as "proposed" - user will see them in Memory Manager
+            toast.info(`${extractionResp.data.saved_count} memory suggestion(s) extracted. Review in Memory Bank.`);
+            // Refresh memories to show new proposed ones
+            fetchMemories();
           }
         }
       } catch (err) {
@@ -347,16 +355,24 @@ export default function Chat() {
            <CostMeter sessionCost={sessionCost} />
            <Sheet open={isMemoryOpen} onOpenChange={setIsMemoryOpen}>
               <SheetTrigger asChild>
-                <div onClick={() => setIsMemoryOpen(true)}>
+                <div onClick={() => setIsMemoryOpen(true)} className="relative">
                   <MemoryBadge count={memories.length} />
+                  {proposedMemories.length > 0 && (
+                    <span className="absolute -top-1 -right-1 h-3 w-3 bg-amber-500 rounded-full animate-pulse flex items-center justify-center text-[8px] text-white font-bold">
+                      {proposedMemories.length}
+                    </span>
+                  )}
                 </div>
               </SheetTrigger>
               <SheetContent side="right" className="w-[400px] sm:w-[540px]">
                 <MemoryManager
                   memories={memories}
+                  proposedMemories={proposedMemories}
                   onAdd={addMemory}
                   onUpdate={updateMemory}
                   onDelete={deleteMemory}
+                  onApprove={approveMemory}
+                  onReject={rejectMemory}
                   projectId={projectId || undefined}
                 />
               </SheetContent>
