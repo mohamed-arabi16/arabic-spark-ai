@@ -4,24 +4,56 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Trash2, Edit2, Save, X, Plus } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Trash2, Edit2, Save, X, Plus, Check, XCircle, Brain, Sparkles, Globe, FolderOpen } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface MemoryManagerProps {
   memories: Memory[];
+  proposedMemories?: Memory[];
   onAdd: (content: string, category: string, isGlobal: boolean) => Promise<any>;
   onUpdate: (id: string, updates: MemoryUpdate) => Promise<any>;
   onDelete: (id: string) => Promise<void>;
+  onApprove?: (id: string) => Promise<void>;
+  onReject?: (id: string) => Promise<void>;
   projectId?: string;
 }
 
-export function MemoryManager({ memories, onAdd, onUpdate, onDelete, projectId }: MemoryManagerProps) {
+const categoryIcons: Record<string, React.ReactNode> = {
+  fact: <Brain className="h-3 w-3" />,
+  preference: <Sparkles className="h-3 w-3" />,
+  instruction: <FolderOpen className="h-3 w-3" />,
+  constraint: <XCircle className="h-3 w-3" />,
+  identity: <Globe className="h-3 w-3" />,
+};
+
+const categoryColors: Record<string, string> = {
+  fact: 'bg-blue-500/10 text-blue-600 border-blue-500/20',
+  preference: 'bg-purple-500/10 text-purple-600 border-purple-500/20',
+  instruction: 'bg-green-500/10 text-green-600 border-green-500/20',
+  constraint: 'bg-orange-500/10 text-orange-600 border-orange-500/20',
+  identity: 'bg-pink-500/10 text-pink-600 border-pink-500/20',
+};
+
+export function MemoryManager({ 
+  memories, 
+  proposedMemories = [],
+  onAdd, 
+  onUpdate, 
+  onDelete,
+  onApprove,
+  onReject,
+  projectId 
+}: MemoryManagerProps) {
   const [isAdding, setIsAdding] = useState(false);
   const [newContent, setNewContent] = useState('');
   const [newCategory, setNewCategory] = useState('fact');
   const [isGlobal, setIsGlobal] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editContent, setEditContent] = useState('');
+  const [activeTab, setActiveTab] = useState('approved');
 
   const handleAdd = async () => {
     if (!newContent.trim()) return;
@@ -41,88 +73,207 @@ export function MemoryManager({ memories, onAdd, onUpdate, onDelete, projectId }
     setEditingId(null);
   };
 
+  const renderMemoryCard = (memory: Memory, isProposed = false) => (
+    <div 
+      key={memory.id} 
+      className={`p-3 border rounded-lg group transition-all ${
+        isProposed 
+          ? 'bg-amber-500/5 border-amber-500/20 hover:border-amber-500/40' 
+          : 'hover:bg-muted/30'
+      }`}
+    >
+      {editingId === memory.id ? (
+        <div className="space-y-2">
+          <Textarea
+            value={editContent}
+            onChange={(e) => setEditContent(e.target.value)}
+            className="min-h-[80px]"
+          />
+          <div className="flex justify-end gap-2">
+            <Button size="sm" onClick={() => saveEdit(memory.id)}>
+              <Save className="h-4 w-4 mr-1" /> Save
+            </Button>
+            <Button size="sm" variant="ghost" onClick={() => setEditingId(null)}>
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+      ) : (
+        <div className="space-y-2">
+          <div className="flex justify-between items-start gap-2">
+            <div className="flex-1 space-y-2">
+              {(memory as any).key && (
+                <p className="text-xs font-medium text-muted-foreground">
+                  {(memory as any).key}
+                </p>
+              )}
+              <p className="text-sm">{memory.content}</p>
+              <div className="flex flex-wrap gap-2 items-center">
+                <Badge 
+                  variant="outline" 
+                  className={`text-[10px] h-5 ${categoryColors[memory.category || 'fact'] || ''}`}
+                >
+                  {categoryIcons[memory.category || 'fact']}
+                  <span className="ml-1">{memory.category || 'fact'}</span>
+                </Badge>
+                {memory.is_global && (
+                  <Badge variant="outline" className="text-[10px] h-5">
+                    <Globe className="h-2.5 w-2.5 mr-1" /> Global
+                  </Badge>
+                )}
+                {(memory as any).confidence && (
+                  <span className="text-[10px] text-muted-foreground">
+                    {Math.round((memory as any).confidence * 100)}% confidence
+                  </span>
+                )}
+              </div>
+            </div>
+            
+            <div className="flex flex-col gap-1">
+              {isProposed && onApprove && onReject ? (
+                <>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        className="h-7 w-7 text-green-600 hover:text-green-700 hover:bg-green-500/10" 
+                        onClick={() => onApprove(memory.id)}
+                      >
+                        <Check className="h-4 w-4" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>Approve memory</TooltipContent>
+                  </Tooltip>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        className="h-7 w-7 text-red-600 hover:text-red-700 hover:bg-red-500/10" 
+                        onClick={() => onReject(memory.id)}
+                      >
+                        <XCircle className="h-4 w-4" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>Reject memory</TooltipContent>
+                  </Tooltip>
+                </>
+              ) : (
+                <div className="opacity-0 group-hover:opacity-100 transition-opacity flex flex-col gap-1">
+                  <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => startEdit(memory)}>
+                    <Edit2 className="h-3 w-3" />
+                  </Button>
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className="h-6 w-6 text-destructive" 
+                    onClick={() => onDelete(memory.id)}
+                  >
+                    <Trash2 className="h-3 w-3" />
+                  </Button>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+
   return (
     <Card className="h-full flex flex-col">
       <CardHeader className="flex flex-row items-center justify-between pb-2">
-        <CardTitle className="text-base font-semibold">Memory Bank</CardTitle>
+        <CardTitle className="text-base font-semibold flex items-center gap-2">
+          <Brain className="h-5 w-5 text-primary" />
+          Memory Bank
+        </CardTitle>
         <Button variant="ghost" size="sm" onClick={() => setIsAdding(true)} disabled={isAdding}>
           <Plus className="h-4 w-4" />
         </Button>
       </CardHeader>
-      <CardContent className="flex-1 overflow-y-auto space-y-3">
+      
+      <CardContent className="flex-1 overflow-hidden flex flex-col">
         {isAdding && (
-          <div className="p-3 border rounded-md bg-muted/50 space-y-3">
-             <Input
-               placeholder="What should I remember?"
-               value={newContent}
-               onChange={(e) => setNewContent(e.target.value)}
-               autoFocus
-             />
-             <div className="flex gap-2">
-               <Select value={newCategory} onValueChange={setNewCategory}>
-                 <SelectTrigger className="h-8 w-[120px]">
-                   <SelectValue />
-                 </SelectTrigger>
-                 <SelectContent>
-                   <SelectItem value="fact">Fact</SelectItem>
-                   <SelectItem value="preference">Preference</SelectItem>
-                   <SelectItem value="instruction">Instruction</SelectItem>
-                 </SelectContent>
-               </Select>
-               <Button size="sm" onClick={handleAdd}>Save</Button>
-               <Button size="sm" variant="ghost" onClick={() => setIsAdding(false)}>Cancel</Button>
-             </div>
+          <div className="p-3 border rounded-lg bg-muted/50 space-y-3 mb-4">
+            <Textarea
+              placeholder="What should I remember about you?"
+              value={newContent}
+              onChange={(e) => setNewContent(e.target.value)}
+              className="min-h-[80px]"
+              autoFocus
+            />
+            <div className="flex flex-wrap gap-2 items-center">
+              <Select value={newCategory} onValueChange={setNewCategory}>
+                <SelectTrigger className="h-8 w-[130px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="fact">Fact</SelectItem>
+                  <SelectItem value="preference">Preference</SelectItem>
+                  <SelectItem value="instruction">Instruction</SelectItem>
+                  <SelectItem value="constraint">Constraint</SelectItem>
+                  <SelectItem value="identity">Identity</SelectItem>
+                </SelectContent>
+              </Select>
+              <Button 
+                size="sm" 
+                variant={isGlobal ? "default" : "outline"} 
+                onClick={() => setIsGlobal(!isGlobal)}
+                className="h-8"
+              >
+                <Globe className="h-3 w-3 mr-1" />
+                {isGlobal ? 'Global' : 'Project Only'}
+              </Button>
+              <div className="flex-1" />
+              <Button size="sm" onClick={handleAdd}>
+                <Save className="h-3 w-3 mr-1" /> Save
+              </Button>
+              <Button size="sm" variant="ghost" onClick={() => setIsAdding(false)}>
+                Cancel
+              </Button>
+            </div>
           </div>
         )}
 
-        {memories.length === 0 && !isAdding && (
-          <p className="text-sm text-muted-foreground text-center py-4">
-            No memories stored yet.
-          </p>
-        )}
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col overflow-hidden">
+          <TabsList className="grid w-full grid-cols-2 mb-3">
+            <TabsTrigger value="approved" className="text-xs">
+              Approved ({memories.length})
+            </TabsTrigger>
+            <TabsTrigger value="proposed" className="text-xs relative">
+              Pending ({proposedMemories.length})
+              {proposedMemories.length > 0 && (
+                <span className="absolute -top-1 -right-1 h-2 w-2 bg-amber-500 rounded-full animate-pulse" />
+              )}
+            </TabsTrigger>
+          </TabsList>
 
-        {memories.map((memory) => (
-          <div key={memory.id} className="p-3 border rounded-md group hover:bg-muted/30 transition-colors">
-            {editingId === memory.id ? (
-              <div className="space-y-2">
-                <Input
-                  value={editContent}
-                  onChange={(e) => setEditContent(e.target.value)}
-                />
-                <div className="flex justify-end gap-2">
-                  <Button size="sm" onClick={() => saveEdit(memory.id)}>
-                    <Save className="h-4 w-4" />
-                  </Button>
-                  <Button size="sm" variant="ghost" onClick={() => setEditingId(null)}>
-                    <X className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
+          <TabsContent value="approved" className="flex-1 overflow-y-auto space-y-2 mt-0">
+            {memories.length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-8">
+                No approved memories yet. Add one above or approve pending suggestions.
+              </p>
             ) : (
-              <div className="flex justify-between items-start gap-2">
-                <div className="space-y-1">
-                  <p className="text-sm">{memory.content}</p>
-                  <div className="flex gap-2">
-                    <Badge variant="secondary" className="text-[10px] h-5">
-                      {memory.category}
-                    </Badge>
-                    {memory.is_global && (
-                       <Badge variant="outline" className="text-[10px] h-5">Global</Badge>
-                    )}
-                  </div>
-                </div>
-                <div className="flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => startEdit(memory)}>
-                    <Edit2 className="h-3 w-3" />
-                  </Button>
-                  <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive" onClick={() => onDelete(memory.id)}>
-                    <Trash2 className="h-3 w-3" />
-                  </Button>
-                </div>
-              </div>
+              memories.map((memory) => renderMemoryCard(memory, false))
             )}
-          </div>
-        ))}
+          </TabsContent>
+
+          <TabsContent value="proposed" className="flex-1 overflow-y-auto space-y-2 mt-0">
+            {proposedMemories.length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-8">
+                No pending memories. The AI will suggest memories based on your conversations.
+              </p>
+            ) : (
+              <>
+                <p className="text-xs text-muted-foreground mb-2">
+                  These memories were extracted from your conversations. Approve to use them in future chats.
+                </p>
+                {proposedMemories.map((memory) => renderMemoryCard(memory, true))}
+              </>
+            )}
+          </TabsContent>
+        </Tabs>
       </CardContent>
     </Card>
   );

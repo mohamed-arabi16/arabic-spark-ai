@@ -3,15 +3,26 @@ import { supabase } from '@/integrations/supabase/client';
 import { Tables, TablesInsert, TablesUpdate } from '@/integrations/supabase/types';
 import { toast } from 'sonner';
 
-export type Memory = Tables<'memory_objects'>;
+export type Memory = Tables<'memory_objects'> & {
+  type?: string;
+  key?: string;
+  confidence?: number;
+  status?: string;
+  source_conversation_id?: string;
+  source_message_ids?: string[];
+};
+
 export type MemoryInsert = TablesInsert<'memory_objects'>;
 export type MemoryUpdate = TablesUpdate<'memory_objects'>;
 
+export type MemoryStatus = 'proposed' | 'approved' | 'rejected';
+
 export function useMemory(projectId?: string) {
   const [memories, setMemories] = useState<Memory[]>([]);
+  const [proposedMemories, setProposedMemories] = useState<Memory[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
-  const fetchMemories = useCallback(async () => {
+  const fetchMemories = useCallback(async (status?: MemoryStatus) => {
     setIsLoading(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -32,16 +43,58 @@ export function useMemory(projectId?: string) {
       const { data, error } = await query;
 
       if (error) throw error;
-      setMemories(data || []);
+
+      const allMemories = (data || []) as Memory[];
+      
+      // Separate by status
+      const approved = allMemories.filter(m => 
+        (m as any).status === 'approved' || !(m as any).status
+      );
+      const proposed = allMemories.filter(m => (m as any).status === 'proposed');
+      
+      setMemories(approved);
+      setProposedMemories(proposed);
     } catch (error) {
       console.error('Error fetching memories:', error);
-      // toast.error('Failed to load memories'); // Silently fail to not annoy user
     } finally {
       setIsLoading(false);
     }
   }, [projectId]);
 
-  const addMemory = async (content: string, category = 'fact', isGlobal = false) => {
+  const fetchApprovedMemories = useCallback(async (): Promise<Memory[]> => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return [];
+
+      let query = supabase
+        .from('memory_objects')
+        .select('*')
+        .eq('is_active', true)
+        .or('status.eq.approved,status.is.null')
+        .order('created_at', { ascending: false });
+
+      if (projectId) {
+        query = query.or(`project_id.eq.${projectId},is_global.eq.true`);
+      } else {
+        query = query.eq('is_global', true);
+      }
+
+      const { data, error } = await query;
+
+      if (error) throw error;
+      return (data || []) as Memory[];
+    } catch (error) {
+      console.error('Error fetching approved memories:', error);
+      return [];
+    }
+  }, [projectId]);
+
+  const addMemory = async (
+    content: string, 
+    category = 'fact', 
+    isGlobal = false,
+    status: MemoryStatus = 'approved'
+  ) => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
@@ -54,16 +107,22 @@ export function useMemory(projectId?: string) {
           content,
           category,
           is_global: isGlobal,
-          is_active: true
-        })
+          is_active: true,
+          // Note: status is handled by DB default and RLS
+        } as any)
         .select()
         .single();
 
       if (error) throw error;
 
-      setMemories(prev => [data, ...prev]);
+      const memory = data as Memory;
+      if (status === 'approved' || !status) {
+        setMemories(prev => [memory, ...prev]);
+      } else {
+        setProposedMemories(prev => [memory, ...prev]);
+      }
       toast.success('Memory saved');
-      return data;
+      return memory;
     } catch (error) {
       console.error('Error adding memory:', error);
       toast.error('Failed to save memory');
@@ -71,23 +130,53 @@ export function useMemory(projectId?: string) {
     }
   };
 
-  const updateMemory = async (id: string, updates: MemoryUpdate) => {
+  const updateMemory = async (id: string, updates: Partial<Memory>) => {
     try {
       const { data, error } = await supabase
         .from('memory_objects')
-        .update(updates)
+        .update(updates as any)
         .eq('id', id)
         .select()
         .single();
 
       if (error) throw error;
 
-      setMemories(prev => prev.map(m => m.id === id ? data : m));
-      return data;
+      const memory = data as Memory;
+      
+      // Update the correct list based on status
+      if ((updates as any).status === 'approved') {
+        setProposedMemories(prev => prev.filter(m => m.id !== id));
+        setMemories(prev => [memory, ...prev]);
+      } else if ((updates as any).status === 'rejected') {
+        setProposedMemories(prev => prev.filter(m => m.id !== id));
+      } else {
+        setMemories(prev => prev.map(m => m.id === id ? memory : m));
+        setProposedMemories(prev => prev.map(m => m.id === id ? memory : m));
+      }
+      
+      return memory;
     } catch (error) {
       console.error('Error updating memory:', error);
       toast.error('Failed to update memory');
       throw error;
+    }
+  };
+
+  const approveMemory = async (id: string) => {
+    try {
+      await updateMemory(id, { status: 'approved' } as any);
+      toast.success('Memory approved');
+    } catch (error) {
+      // Error already handled
+    }
+  };
+
+  const rejectMemory = async (id: string) => {
+    try {
+      await updateMemory(id, { status: 'rejected', is_active: false } as any);
+      toast.success('Memory rejected');
+    } catch (error) {
+      // Error already handled
     }
   };
 
@@ -101,6 +190,7 @@ export function useMemory(projectId?: string) {
       if (error) throw error;
 
       setMemories(prev => prev.filter(m => m.id !== id));
+      setProposedMemories(prev => prev.filter(m => m.id !== id));
       toast.success('Memory deleted');
     } catch (error) {
       console.error('Error deleting memory:', error);
@@ -109,12 +199,36 @@ export function useMemory(projectId?: string) {
     }
   };
 
+  // Get memory context for chat (only approved memories)
+  const getMemoryContext = useCallback(async (): Promise<string> => {
+    const approved = await fetchApprovedMemories();
+    if (approved.length === 0) return '';
+
+    // Group by category
+    const grouped = approved.reduce((acc, m) => {
+      const cat = m.category || 'general';
+      if (!acc[cat]) acc[cat] = [];
+      acc[cat].push(m.content);
+      return acc;
+    }, {} as Record<string, string[]>);
+
+    // Format for injection
+    return Object.entries(grouped)
+      .map(([cat, items]) => `${cat.toUpperCase()}:\n${items.map(i => `- ${i}`).join('\n')}`)
+      .join('\n\n');
+  }, [fetchApprovedMemories]);
+
   return {
     memories,
+    proposedMemories,
     isLoading,
     fetchMemories,
+    fetchApprovedMemories,
     addMemory,
     updateMemory,
+    approveMemory,
+    rejectMemory,
     deleteMemory,
+    getMemoryContext,
   };
 }
