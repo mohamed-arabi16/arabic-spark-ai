@@ -1,73 +1,140 @@
-# Welcome to your Lovable project
+# AI Workspace
 
-## Project info
+AI Workspace is a comprehensive application designed to streamline project management, facilitate image generation, and provide intelligent conversational assistance with persistent memory.
 
-**URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
+## Project Purpose
 
-## How can I edit this code?
+The goal of AI Workspace is to provide a unified interface for:
+- **Project Management**: Organize and track tasks and projects.
+- **AI Chat**: Interact with a GPT-5.2 powered assistant that retains context and memory across sessions.
+- **Image Generation**: Generate images using AI models directly within the workspace.
+- **Usage Tracking**: Monitor API usage and credits.
 
-There are several ways of editing your application.
+## Architecture
 
-**Use Lovable**
+The project follows a modern client-server architecture:
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and start prompting.
+### Frontend
+- **Framework**: React with Vite
+- **Language**: TypeScript
+- **Styling**: Tailwind CSS + Shadcn UI
+- **State Management**: React Query (`@tanstack/react-query`) & URL-based state
+- **Routing**: React Router
 
-Changes made via Lovable will be committed automatically to this repo.
+### Backend (Supabase)
+- **Database**: PostgreSQL
+- **Authentication**: Supabase Auth
+- **Serverless Logic**: Supabase Edge Functions
+    - `chat`: Handles AI conversation logic (GPT-5.2).
+    - `extract-memory`: Processes chat history to extract and store long-term memories.
+    - `generate-image`: Interfaces with image generation APIs.
+    - `usage-stats`: Tracks user consumption of AI resources.
+- **Storage**: Supabase Storage for assets.
 
-**Use your preferred IDE**
+## Environment Variables
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+The application requires the following environment variables.
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+### Frontend
+These should be set in your deployment environment or a `.env` file for local development.
 
-Follow these steps:
+| Variable | Description |
+| :--- | :--- |
+| `VITE_SUPABASE_URL` | The URL of your Supabase project. |
+| `VITE_SUPABASE_PUBLISHABLE_KEY` | The anonymous public key for your Supabase project. |
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+### Backend (Edge Functions)
+Edge functions require their own set of secrets, managed via the Supabase Dashboard or CLI.
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+## Setup & Installation
 
-# Step 3: Install the necessary dependencies.
-npm i
+### Prerequisites
+- Node.js (v18+)
+- npm
+- Supabase CLI (optional, for backend development)
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
+### Local Development
+
+1. **Clone the repository**
+   ```bash
+   git clone <repository-url>
+   cd <project-directory>
+   ```
+
+2. **Install Dependencies**
+   ```bash
+   npm install
+   ```
+
+3. **Configure Environment**
+   Create a `.env` file in the root directory (if not already present) and add your Supabase credentials:
+   ```env
+   VITE_SUPABASE_URL=your_supabase_url
+   VITE_SUPABASE_PUBLISHABLE_KEY=your_supabase_anon_key
+   ```
+
+4. **Start the Development Server**
+   ```bash
+   npm run dev
+   ```
+   The application will be available at `http://localhost:8080`.
+
+## Build & Deployment
+
+### Frontend
+
+To build the application for production:
+
+```bash
+npm run build
 ```
 
-**Edit a file directly in GitHub**
+The output will be in the `dist/` directory. You can deploy this directory to any static hosting provider like **Netlify**, **Vercel**, or **Lovable**.
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+### Backend (Supabase)
 
-**Use GitHub Codespaces**
+To deploy Edge Functions:
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+```bash
+supabase functions deploy
+```
 
-## What technologies are used for this project?
+Ensure you are logged in via `supabase login` and linked to the correct project.
 
-This project is built with:
+## Security Requirements
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+- **Row Level Security (RLS)**: All database tables must have RLS enabled. Policies should ensure users can only access their own data.
+- **Authentication**: All Edge Functions (except potentially public webhooks) must verify the `Authorization` header using `supabase.auth.getUser()`.
+- **Secrets Management**: Never commit API keys (OpenAI, etc.) to the repository. Store them in Supabase Secrets.
 
-## How can I deploy this project?
+## Operational Playbooks
 
-Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
+### Monitoring
+- **Frontend**: Use your hosting provider's analytics (e.g., Netlify Analytics) to monitor client-side errors and traffic.
+- **Backend**: Use the [Supabase Dashboard](https://supabase.com/dashboard) to:
+    - Monitor Database health (CPU, RAM).
+    - View Edge Function logs for errors in chat or image generation.
+    - Check Storage usage.
 
-## Can I connect a custom domain to my Lovable project?
+### Alerts
+- Set up alerts in Supabase for database downtimes or high error rates in Edge Functions.
 
-Yes, you can!
+### Backups
+- The project relies on Supabase's automatic daily backups for the database.
+- For critical data, consider enabling Point-in-Time Recovery (PITR) in Supabase project settings.
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+## Support & FAQ
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+### Common Issues
+
+**Q: Chat is not responding.**
+A: Check the `chat` Edge Function logs in Supabase. Ensure you have sufficient credits/quota with the AI provider.
+
+**Q: Images are failing to generate.**
+A: Verify the `generate-image` function logs. This often happens if the external image generation API key is invalid or expired.
+
+**Q: "Database error" in the UI.**
+A: Check RLS policies. Ensure the user is authenticated and has permission to access the requested resource.
+
+### Getting Help
+For support, please contact the project maintainers or open an issue in the repository.
