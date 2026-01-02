@@ -32,14 +32,17 @@ import { Constants } from '@/integrations/supabase/types';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 
+const dialectOptions = [...Constants.public.Enums.dialect_preset] as [string, ...string[]];
+const modeOptions = [...Constants.public.Enums.chat_mode] as [string, ...string[]];
+
 const formSchema = z.object({
   name: z.string().min(1, 'Name is required'),
   description: z.string().optional(),
   icon: z.string().optional(),
   color: z.string().optional(),
   system_instructions: z.string().optional(),
-  dialect_preset: z.enum(Constants.public.Enums.dialect_preset as [string, ...string[]]).optional(),
-  default_mode: z.enum(Constants.public.Enums.chat_mode as [string, ...string[]]).optional(),
+  dialect_preset: z.enum(dialectOptions).optional(),
+  default_mode: z.enum(modeOptions).optional(),
 });
 
 interface ProjectDialogProps {
