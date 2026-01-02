@@ -36,6 +36,7 @@ import {
   Sun,
   BarChart,
   Briefcase,
+  Clock,
 } from 'lucide-react';
 
 interface AppSidebarProps {
@@ -67,6 +68,7 @@ export function AppSidebar({ collapsed, onToggle }: AppSidebarProps) {
     { icon: Image, label: 'Images', href: '/images' },
     { icon: Search, label: 'Research', href: '/research' },
     { icon: BarChart, label: 'Usage', href: '/usage' },
+    { icon: Clock, label: 'History', href: '/history' },
   ];
 
   const userInitials = user?.user_metadata?.full_name

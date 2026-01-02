@@ -9,6 +9,9 @@ import Index from "./pages/Index";
 import Projects from "./pages/Projects";
 import Images from "./pages/Images";
 import Usage from "./pages/Usage";
+import Settings from "./pages/Settings";
+import Research from "./pages/Research";
+import History from "./pages/History";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 import { Loader2 } from "lucide-react";
@@ -93,6 +96,30 @@ function AppRoutes() {
         element={
           <ProtectedRoute>
             <Usage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/settings"
+        element={
+          <ProtectedRoute>
+            <Settings />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/research"
+        element={
+          <ProtectedRoute>
+            <Research />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/history"
+        element={
+          <ProtectedRoute>
+            <History />
           </ProtectedRoute>
         }
       />
