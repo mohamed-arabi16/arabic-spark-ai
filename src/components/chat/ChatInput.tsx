@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useRef, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -9,11 +9,13 @@ interface ChatInputProps {
   onSend: (message: string, mode: ChatMode) => void;
   isLoading?: boolean;
   onStop?: () => void;
+  message: string;
+  setMessage: (message: string) => void;
+  mode: ChatMode;
+  setMode: (mode: ChatMode) => void;
 }
 
-export function ChatInput({ onSend, isLoading, onStop }: ChatInputProps) {
-  const [message, setMessage] = useState('');
-  const [mode, setMode] = useState<ChatMode>('fast');
+export function ChatInput({ onSend, isLoading, onStop, message, setMessage, mode, setMode }: ChatInputProps) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   // Auto-resize textarea
