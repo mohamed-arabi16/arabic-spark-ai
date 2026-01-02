@@ -7,9 +7,11 @@ import { Separator } from '@/components/ui/separator';
 
 interface ProjectSettingsProps {
   project: Project;
+  onArchive: () => void;
+  onDelete: () => void;
 }
 
-export function ProjectSettings({ project }: ProjectSettingsProps) {
+export function ProjectSettings({ project, onArchive, onDelete }: ProjectSettingsProps) {
   return (
     <div className="space-y-6">
       <Card>
@@ -48,7 +50,7 @@ export function ProjectSettings({ project }: ProjectSettingsProps) {
                   Archiving this project will hide it from your workspace list.
                 </p>
               </div>
-              <Button variant="destructive">Archive</Button>
+              <Button variant="outline" className="border-destructive/50 text-destructive hover:bg-destructive/10" onClick={onArchive}>Archive</Button>
             </div>
             <Separator className="my-4" />
              <div className="flex items-center justify-between">
@@ -58,7 +60,7 @@ export function ProjectSettings({ project }: ProjectSettingsProps) {
                   Permanently delete this project and all its conversations. This cannot be undone.
                 </p>
               </div>
-              <Button variant="destructive">Delete Permanently</Button>
+              <Button variant="destructive" onClick={onDelete}>Delete Permanently</Button>
             </div>
           </div>
         </CardContent>

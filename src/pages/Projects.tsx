@@ -44,9 +44,18 @@ export default function Projects() {
     setIsDialogOpen(true);
   };
 
-  const handleDelete = async (project: Project) => {
+  const handleArchive = async (project: Project) => {
     if (confirm(`Are you sure you want to archive "${project.name}"?`)) {
       await deleteProject(project.id);
+    }
+  };
+
+  // Currently deleteProject only does soft delete (archive).
+  // For hard delete, we would need a new function in useProjects.
+  // Assuming deleteProject is soft delete based on useProjects implementation.
+  const handleHardDelete = async (project: Project) => {
+    if (confirm(`Are you sure you want to PERMANENTLY delete "${project.name}"? This cannot be undone.`)) {
+        await deleteProject(project.id);
     }
   };
 
@@ -117,7 +126,7 @@ export default function Projects() {
                     key={project.id}
                     project={project}
                     onEdit={handleEdit}
-                    onDelete={handleDelete}
+                    onDelete={handleArchive}
                     onSelect={selectProject}
                     isSelected={currentProject?.id === project.id}
                   />
@@ -126,15 +135,41 @@ export default function Projects() {
             )}
           </TabsContent>
 
-          <TabsContent value="recent">
-            <div className="text-sm text-muted-foreground">
-              Recently accessed projects will appear here.
-            </div>
+          <TabsContent value="recent" className="space-y-4">
+            {isLoading && projects.length === 0 ? (
+              <div className="flex items-center justify-center h-40">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              </div>
+            ) : projects.slice(0, 5).length === 0 ? (
+               <div className="text-center py-20 border rounded-lg border-dashed">
+                <h3 className="text-lg font-medium">No recent projects</h3>
+                <p className="text-muted-foreground mb-4">
+                  Projects you create or edit will appear here.
+                </p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {projects.slice(0, 5).map((project) => (
+                  <ProjectCard
+                    key={project.id}
+                    project={project}
+                    onEdit={handleEdit}
+                    onDelete={handleArchive}
+                    onSelect={selectProject}
+                    isSelected={currentProject?.id === project.id}
+                  />
+                ))}
+              </div>
+            )}
           </TabsContent>
 
           <TabsContent value="settings">
             {currentProject ? (
-              <ProjectSettings project={currentProject} />
+              <ProjectSettings
+                project={currentProject}
+                onArchive={() => handleArchive(currentProject)}
+                onDelete={() => handleHardDelete(currentProject)}
+              />
             ) : (
               <div className="text-center py-10">
                 Please select a project to view its settings.

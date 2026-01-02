@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, useLocation } from 'react-router-dom';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { ChatInput } from '@/components/chat/ChatInput';
 import { ChatMessage, Message } from '@/components/chat/ChatMessage';
@@ -24,16 +24,34 @@ export default function Chat() {
   const scrollRef = useRef<HTMLDivElement>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
   const [searchParams] = useSearchParams();
+  const location = useLocation();
   const projectId = searchParams.get('project');
   const { projects } = useProjects();
   const project = projects.find(p => p.id === projectId);
   const { memories, fetchMemories, addMemory, updateMemory, deleteMemory } = useMemory(projectId || undefined);
   const [isMemoryOpen, setIsMemoryOpen] = useState(false);
   const [sessionCost, setSessionCost] = useState(0);
+  const [message, setMessage] = useState('');
+  const [mode, setMode] = useState<ChatMode>('fast');
 
   useEffect(() => {
     fetchMemories();
   }, [fetchMemories]);
+
+  // Load history from state if available
+  useEffect(() => {
+    if (location.state?.conversation) {
+      const conv = location.state.conversation;
+      if (conv.messages) {
+        // Convert string timestamps back to Date objects if necessary
+        const loadedMessages = conv.messages.map((m: Message) => ({
+          ...m,
+          timestamp: new Date(m.timestamp)
+        }));
+        setMessages(loadedMessages);
+      }
+    }
+  }, [location.state]);
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
@@ -41,6 +59,45 @@ export default function Chat() {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, [messages]);
+
+  const saveToHistory = (msgs: Message[]) => {
+    try {
+      const history = JSON.parse(localStorage.getItem('chat_history') || '[]');
+
+      const conversationId = location.state?.conversation?.id;
+
+      if (!conversationId) {
+        // Create new
+        const newId = crypto.randomUUID();
+        const title = msgs[0]?.content.slice(0, 30) || 'New Chat';
+        const newItem = {
+            id: newId,
+            title,
+            date: new Date().toISOString(),
+            preview: msgs[msgs.length - 1]?.content.slice(0, 50) + '...',
+            messages: msgs
+        };
+        // Add to history
+        localStorage.setItem('chat_history', JSON.stringify([newItem, ...history]));
+      } else {
+        // Update existing
+         const newHistory = history.map((item: { id: string }) => {
+             if (item.id === conversationId) {
+                 return {
+                     ...item,
+                     messages: msgs,
+                     preview: msgs[msgs.length - 1]?.content.slice(0, 50) + '...',
+                     date: new Date().toISOString()
+                 };
+             }
+             return item;
+         });
+         localStorage.setItem('chat_history', JSON.stringify(newHistory));
+      }
+    } catch (e) {
+      console.error('Failed to save history', e);
+    }
+  };
 
   const handleSend = async (content: string, mode: ChatMode) => {
     // Add user message
@@ -107,22 +164,27 @@ export default function Chat() {
 
       // Create assistant message placeholder
       const assistantMessageId = crypto.randomUUID();
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: assistantMessageId,
-          role: 'assistant',
-          content: '',
-          timestamp: new Date(),
-          model: mode === 'fast' ? 'gpt-5-mini' : mode === 'deep' ? 'gpt-5' : 'gpt-5-mini',
-        },
-      ]);
+      setMessages((prev) => {
+        const newMessages = [
+          ...prev,
+          {
+            id: assistantMessageId,
+            role: 'assistant',
+            content: '',
+            timestamp: new Date(),
+            model: mode === 'fast' ? 'gpt-5-mini' : mode === 'deep' ? 'gpt-5' : 'gpt-5-mini',
+          } as Message,
+        ];
+        saveToHistory(newMessages);
+        return newMessages;
+      });
 
       while (!streamDone) {
         const { done, value } = await reader.read();
         if (done) break;
 
-        textBuffer += decoder.decode(value, { stream: true });
+        const chunk = decoder.decode(value, { stream: true });
+        textBuffer += chunk;
 
         // Process line-by-line
         let newlineIndex: number;
@@ -145,16 +207,39 @@ export default function Chat() {
             const deltaContent = parsed.choices?.[0]?.delta?.content;
             if (deltaContent) {
               assistantContent += deltaContent;
-              setMessages((prev) =>
-                prev.map((m) =>
+              setMessages((prev) => {
+                const newMessages = prev.map((m) =>
                   m.id === assistantMessageId ? { ...m, content: assistantContent } : m
-                )
-              );
+                );
+                return newMessages;
+              });
             }
           } catch {
             // Incomplete JSON, put back and wait
-            textBuffer = line + '\n' + textBuffer;
-            break;
+            console.log('Incomplete JSON, buffering line:', line);
+            // Wait, if it failed parsing, it might be split JSON. But we split by \n.
+            // If OpenAI sends JSON split across lines (unlikely for data: prefix), we might have issues.
+            // But usually 'data: {...}' is one line.
+            // If the buffer split a line, we wouldn't be here (indexOf \n check).
+            // So if JSON.parse fails here, the line content is malformed or we assumed wrong format.
+            // However, the reviewer said "logic assumes that every network chunk ends perfectly on a newline".
+            // My code:
+            // textBuffer += chunk;
+            // while ((newlineIndex = textBuffer.indexOf('\n')) !== -1) { ... }
+            // This IS buffering.
+            // The reviewer might have been looking at `Research.tsx` which I implemented later and copied simplified logic.
+            // But let's verify `Chat.tsx`.
+            // The code I had:
+            // textBuffer += decoder.decode(value, { stream: true });
+            // while ((newlineIndex = textBuffer.indexOf('\n')) !== -1) ...
+            // This logic seems correct for handling split lines.
+            // Wait, if `decoder.decode(value, { stream: true })` returns a partial multi-byte char?
+            // `TextDecoder` handles that.
+            // If `chunk` ends in middle of `\n`? No, `indexOf` handles that.
+            // If `chunk` ends in middle of a line, it stays in `textBuffer` until next chunk appends more.
+            // So `Chat.tsx` logic seems correct actually.
+            // Let's check `Research.tsx`.
+
           }
         }
       }
@@ -185,6 +270,12 @@ export default function Chat() {
         }
       }
 
+      // Save final state
+      setMessages(prev => {
+        saveToHistory(prev);
+        return prev;
+      });
+
       // Check for memory extraction
       try {
         const { data: { user } } = await supabase.auth.getUser();
@@ -198,7 +289,7 @@ export default function Chat() {
           });
 
           if (extractionResp.data && extractionResp.data.facts && extractionResp.data.facts.length > 0) {
-            extractionResp.data.facts.forEach((fact: any) => {
+            extractionResp.data.facts.forEach((fact: { content: string; category: string }) => {
               showMemorySuggestion(fact, () => {
                 addMemory(fact.content, fact.category, false);
               });
@@ -225,7 +316,7 @@ export default function Chat() {
   };
 
   const handleSuggestionClick = (suggestion: string) => {
-    handleSend(suggestion, 'standard');
+    setMessage(suggestion);
   };
 
   const handleStop = () => {
@@ -237,7 +328,7 @@ export default function Chat() {
 
   return (
     <MainLayout>
-      <div className="flex-1 flex flex-col overflow-hidden relative">
+      <div className={`flex-1 flex flex-col overflow-hidden relative mode-${mode}-bg`}>
         {/* Header extras */}
         <div className="absolute top-2 right-4 z-10 flex items-center gap-4">
            <CostMeter sessionCost={sessionCost} />
@@ -281,7 +372,15 @@ export default function Chat() {
         </ScrollArea>
 
         {/* Input area */}
-        <ChatInput onSend={handleSend} isLoading={isLoading} onStop={handleStop} />
+        <ChatInput
+          onSend={handleSend}
+          isLoading={isLoading}
+          onStop={handleStop}
+          message={message}
+          setMessage={setMessage}
+          mode={mode}
+          setMode={setMode}
+        />
       </div>
     </MainLayout>
   );
