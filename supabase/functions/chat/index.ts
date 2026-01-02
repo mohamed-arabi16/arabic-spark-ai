@@ -15,12 +15,6 @@ const MODEL_MAP: Record<string, string> = {
   image: 'gpt-5-mini-2025-08-07', // Image generation uses a different endpoint
 };
 
-// Cost per 1M tokens (approximate)
-const COST_PER_1M: Record<string, { input: number; output: number }> = {
-  'gpt-5-mini-2025-08-07': { input: 0.25, output: 2.00 },
-  'gpt-5-2025-08-07': { input: 1.75, output: 14.00 },
-};
-
 interface Message {
   role: 'user' | 'assistant' | 'system';
   content: string;
@@ -29,7 +23,9 @@ interface Message {
 interface ChatRequest {
   messages: Message[];
   mode: string;
-  systemPrompt?: string;
+  project_id?: string;
+  system_instructions?: string;
+  memory_context?: string;
 }
 
 serve(async (req) => {
@@ -45,7 +41,7 @@ serve(async (req) => {
       throw new Error('OpenAI API key not configured');
     }
 
-    const { messages, mode = 'fast', systemPrompt }: ChatRequest = await req.json();
+    const { messages, mode = 'fast', system_instructions, memory_context }: ChatRequest = await req.json();
     
     if (!messages || !Array.isArray(messages)) {
       throw new Error('Messages array is required');
@@ -54,17 +50,29 @@ serve(async (req) => {
     const model = MODEL_MAP[mode] || MODEL_MAP.fast;
     console.log(`Chat request - Mode: ${mode}, Model: ${model}, Messages: ${messages.length}`);
 
-    // Build messages with system prompt
-    const systemMessage: Message = {
-      role: 'system',
-      content: systemPrompt || `You are a helpful, intelligent AI assistant. You provide clear, accurate, and thoughtful responses.
+    // Build base system prompt
+    let systemContent = `You are a helpful, intelligent AI assistant. You provide clear, accurate, and thoughtful responses.
 
 Key behaviors:
 - Be concise but thorough
 - Use markdown formatting when helpful
 - If asked about Arabic topics, respond naturally in Arabic when appropriate
 - Cite sources when making factual claims
-- Admit uncertainty when you don't know something`,
+- Admit uncertainty when you don't know something`;
+
+    // Append project specific instructions if present
+    if (system_instructions) {
+      systemContent += `\n\nPROJECT INSTRUCTIONS:\n${system_instructions}`;
+    }
+
+    // Append memory context if present
+    if (memory_context) {
+      systemContent += `\n\nRELEVANT MEMORIES (User Facts & Preferences):\n${memory_context}\n\nUse these memories to personalize your response, but do not explicitly mention that you are reading from a memory bank unless relevant.`;
+    }
+
+    const systemMessage: Message = {
+      role: 'system',
+      content: systemContent,
     };
 
     const allMessages = [systemMessage, ...messages];

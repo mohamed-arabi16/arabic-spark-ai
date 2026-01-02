@@ -1,6 +1,8 @@
-import { useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
+import { useProjects, Project, ProjectInsert, ProjectUpdate } from '@/hooks/useProjects';
+import { ProjectDialog } from '@/components/projects/ProjectDialog';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -13,6 +15,13 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
   Sparkles,
   MessageSquare,
   FolderOpen,
@@ -24,6 +33,8 @@ import {
   Plus,
   Moon,
   Sun,
+  BarChart,
+  Briefcase,
 } from 'lucide-react';
 
 interface AppSidebarProps {
@@ -34,7 +45,14 @@ interface AppSidebarProps {
 export function AppSidebar({ collapsed, onToggle }: AppSidebarProps) {
   const { user, signOut } = useAuth();
   const location = useLocation();
+  const navigate = useNavigate();
   const [isDark, setIsDark] = useState(true);
+  const { projects, currentProject, selectProject, fetchProjects, createProject } = useProjects();
+  const [isProjectDialogOpen, setIsProjectDialogOpen] = useState(false);
+
+  useEffect(() => {
+    fetchProjects();
+  }, [fetchProjects]);
 
   const toggleTheme = () => {
     setIsDark(!isDark);
@@ -46,6 +64,7 @@ export function AppSidebar({ collapsed, onToggle }: AppSidebarProps) {
     { icon: FolderOpen, label: 'Projects', href: '/projects' },
     { icon: Image, label: 'Images', href: '/images' },
     { icon: Search, label: 'Research', href: '/research' },
+    { icon: BarChart, label: 'Usage', href: '/usage' },
   ];
 
   const userInitials = user?.user_metadata?.full_name
@@ -53,6 +72,16 @@ export function AppSidebar({ collapsed, onToggle }: AppSidebarProps) {
     .map((n: string) => n[0])
     .join('')
     .toUpperCase() || user?.email?.[0].toUpperCase() || '?';
+
+  const handleProjectCreate = async (data: ProjectInsert | ProjectUpdate) => {
+      await createProject(data as ProjectInsert);
+      setIsProjectDialogOpen(false);
+  };
+
+  const handleProjectSelect = (projectId: string) => {
+    selectProject(projectId);
+    navigate(`/?project=${projectId}`);
+  };
 
   return (
     <aside
@@ -62,20 +91,20 @@ export function AppSidebar({ collapsed, onToggle }: AppSidebarProps) {
       )}
     >
       {/* Header */}
-      <div className="flex items-center h-16 px-4 border-b border-sidebar-border">
-        <Link to="/" className="flex items-center gap-3">
+      <div className="flex items-center h-16 px-4 border-b border-sidebar-border gap-2">
+        <Link to="/" className="flex items-center gap-3 overflow-hidden">
           <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center shrink-0">
             <Sparkles className="h-4 w-4 text-primary-foreground" />
           </div>
           {!collapsed && (
-            <span className="font-semibold text-sidebar-foreground">AI Workspace</span>
+            <span className="font-semibold text-sidebar-foreground whitespace-nowrap">AI Workspace</span>
           )}
         </Link>
         <Button
           variant="ghost"
           size="icon"
           className={cn(
-            'ml-auto h-8 w-8 text-sidebar-foreground hover:bg-sidebar-accent',
+            'ml-auto h-8 w-8 text-sidebar-foreground hover:bg-sidebar-accent shrink-0',
             collapsed && 'hidden'
           )}
           onClick={onToggle}
@@ -83,6 +112,63 @@ export function AppSidebar({ collapsed, onToggle }: AppSidebarProps) {
           <ChevronLeft className="h-4 w-4" />
         </Button>
       </div>
+
+      {/* Project Selector & New Project */}
+      {!collapsed && (
+        <div className="px-3 pt-3 space-y-2">
+          <div className="flex items-center justify-between">
+              <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Workspace</span>
+               <Button
+                variant="ghost"
+                size="icon"
+                className="h-5 w-5"
+                onClick={() => setIsProjectDialogOpen(true)}
+                title="New Project"
+              >
+                <Plus className="h-3 w-3" />
+              </Button>
+          </div>
+          {projects.length > 0 ? (
+            <Select
+              value={currentProject?.id}
+              onValueChange={handleProjectSelect}
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Select Project" />
+              </SelectTrigger>
+              <SelectContent>
+                {projects.map((p) => (
+                  <SelectItem key={p.id} value={p.id}>
+                    <div className="flex items-center gap-2">
+                      <span>{p.icon || '💬'}</span>
+                      <span className="truncate">{p.name}</span>
+                    </div>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          ) : (
+             <Button variant="outline" className="w-full justify-start gap-2" onClick={() => setIsProjectDialogOpen(true)}>
+                <Plus className="h-4 w-4" />
+                Create Project
+             </Button>
+          )}
+        </div>
+      )}
+
+      {collapsed && (
+          <div className="p-3 flex justify-center">
+             <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setIsProjectDialogOpen(true)}
+                title="New Project"
+             >
+                 <Briefcase className="h-5 w-5" />
+             </Button>
+          </div>
+      )}
+
 
       {/* New chat button */}
       <div className="p-3">
@@ -221,6 +307,12 @@ export function AppSidebar({ collapsed, onToggle }: AppSidebarProps) {
           <ChevronLeft className="h-4 w-4 rotate-180" />
         </Button>
       )}
+
+      <ProjectDialog
+          open={isProjectDialogOpen}
+          onOpenChange={setIsProjectDialogOpen}
+          onSubmit={handleProjectCreate}
+      />
     </aside>
   );
 }
