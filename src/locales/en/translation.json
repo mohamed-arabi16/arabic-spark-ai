@@ -58,5 +58,23 @@
   "validation": {
     "invalidEmail": "Please enter a valid email address",
     "passwordLength": "Password must be at least 6 characters"
+  },
+  "research": {
+    "title": "Research",
+    "subtitle": "Explore topics with AI-powered web search. Results are saved to your history.",
+    "startSession": "Start a Research Session",
+    "sessionDescription": "Enter a topic to search the web with AI assistance. Powered by Perplexity.",
+    "placeholder": "What would you like to research?",
+    "searchButton": "Search",
+    "searching": "Searching...",
+    "researchingTopic": "Researching: {{topic}}",
+    "recentResearch": "Recent Research",
+    "noHistory": "No research history yet. Start by searching for a topic above.",
+    "viewInHistory": "View in History",
+    "successMessage": "Research completed and saved to history",
+    "errorStart": "Failed to start research",
+    "errorConduct": "Failed to conduct research",
+    "noResults": "Research completed (no summary returned).",
+    "untitled": "Untitled"
   }
 }

@@ -60,11 +60,46 @@ serve(async (req) => {
     // Create or get conversation for this research
     let convId = conversation_id;
     if (!convId) {
+      // If no project_id provided, find or create "General" project
+      let targetProjectId = project_id;
+
+      if (!targetProjectId) {
+        const { data: generalProject } = await supabase
+          .from('projects')
+          .select('id')
+          .eq('user_id', user.id)
+          .eq('name', 'General')
+          .maybeSingle();
+
+        if (generalProject) {
+          targetProjectId = generalProject.id;
+        } else {
+          // Create General project if it doesn't exist
+          const { data: newProject, error: createProjectError } = await supabase
+            .from('projects')
+            .insert({
+              user_id: user.id,
+              name: 'General',
+              description: 'Default project for general research and conversations',
+              icon: '📂',
+              color: '#64748b'
+            })
+            .select('id')
+            .single();
+
+          if (createProjectError) {
+            console.error('Failed to create General project:', createProjectError);
+            throw new Error('Failed to create default project');
+          }
+          targetProjectId = newProject.id;
+        }
+      }
+
       const { data: newConv, error: convError } = await supabase
         .from('conversations')
         .insert({
           user_id: user.id,
-          project_id: project_id || null,
+          project_id: targetProjectId,
           title: `Research: ${query.substring(0, 50)}${query.length > 50 ? '...' : ''}`,
           mode: 'research',
         })
