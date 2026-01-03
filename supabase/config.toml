@@ -14,3 +14,6 @@ verify_jwt = false
 
 [functions.summarize-conversation]
 verify_jwt = false
+
+[functions.research]
+verify_jwt = false
