@@ -11,7 +11,8 @@ import { useAuth } from '@/hooks/useAuth';
 import { formatDistanceToNow } from 'date-fns';
 import { useTranslation } from 'react-i18next';
 import { ar, enUS } from 'date-fns/locale';
-
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 interface ResearchItem {
   id: string;
   topic: string;
@@ -239,8 +240,10 @@ export default function Research() {
                 </CardHeader>
                 <CardContent>
                   <ScrollArea className="h-[300px]">
-                    <div className="prose prose-sm dark:prose-invert max-w-none whitespace-pre-wrap text-start" dir="auto">
-                      {currentResult}
+                    <div className="prose prose-sm dark:prose-invert max-w-none text-start prose-p:leading-relaxed prose-headings:text-foreground prose-a:text-primary" dir="auto">
+                      <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                        {currentResult}
+                      </ReactMarkdown>
                     </div>
                   </ScrollArea>
                 </CardContent>
@@ -281,10 +284,11 @@ export default function Research() {
                   </CardHeader>
                   <CardContent>
                     <ScrollArea className="h-[150px]">
-                      <p className="text-sm text-muted-foreground whitespace-pre-wrap text-start" dir="auto">
-                        {item.summary.substring(0, 500)}
-                        {item.summary.length > 500 && '...'}
-                      </p>
+                      <div className="text-sm text-muted-foreground text-start prose prose-sm dark:prose-invert max-w-none prose-p:m-0 prose-p:leading-relaxed" dir="auto">
+                        <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                          {item.summary.substring(0, 500) + (item.summary.length > 500 ? '...' : '')}
+                        </ReactMarkdown>
+                      </div>
                     </ScrollArea>
                     {item.conversationId && (
                       <Button

@@ -1,13 +1,14 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/hooks/useAuth';
-import { useProjects, Project, ProjectInsert, ProjectUpdate } from '@/hooks/useProjects';
+import { useProjects, ProjectInsert, ProjectUpdate } from '@/hooks/useProjects';
 import { ProjectDialog } from '@/components/projects/ProjectDialog';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { supabase } from '@/integrations/supabase/client';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -47,6 +48,12 @@ interface AppSidebarProps {
   onToggle: () => void;
 }
 
+interface RecentConversation {
+  id: string;
+  title: string | null;
+  updated_at: string;
+}
+
 export function AppSidebar({ collapsed, onToggle }: AppSidebarProps) {
   const { t } = useTranslation();
   const { user, signOut } = useAuth();
@@ -55,10 +62,32 @@ export function AppSidebar({ collapsed, onToggle }: AppSidebarProps) {
   const [isDark, setIsDark] = useState(true);
   const { projects, currentProject, selectProject, fetchProjects, createProject } = useProjects();
   const [isProjectDialogOpen, setIsProjectDialogOpen] = useState(false);
+  const [recentConversations, setRecentConversations] = useState<RecentConversation[]>([]);
 
   useEffect(() => {
     fetchProjects();
   }, [fetchProjects]);
+
+  // Fetch real recent conversations
+  const fetchRecentConversations = useCallback(async () => {
+    if (!user) return;
+    
+    const { data, error } = await supabase
+      .from('conversations')
+      .select('id, title, updated_at')
+      .eq('user_id', user.id)
+      .eq('is_archived', false)
+      .order('updated_at', { ascending: false })
+      .limit(5);
+
+    if (!error && data) {
+      setRecentConversations(data);
+    }
+  }, [user]);
+
+  useEffect(() => {
+    fetchRecentConversations();
+  }, [fetchRecentConversations]);
 
   const toggleTheme = () => {
     setIsDark(!isDark);
@@ -216,20 +245,21 @@ export function AppSidebar({ collapsed, onToggle }: AppSidebarProps) {
           })}
         </nav>
 
-        {/* Recent conversations placeholder */}
-        {!collapsed && (
+        {/* Recent conversations - Real data */}
+        {!collapsed && recentConversations.length > 0 && (
           <div className="mt-6">
             <p className="px-3 text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2">
               {t('sidebar.recent')}
             </p>
             <div className="space-y-1">
-              {['Marketing campaign ideas', 'Code review help', 'Arabic translation'].map((chat, i) => (
+              {recentConversations.map((conv) => (
                 <button
-                  key={i}
-                  className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-sidebar-foreground hover:bg-sidebar-accent/50 transition-colors text-start truncate"
+                  key={conv.id}
+                  onClick={() => navigate(`/chat?conversationId=${conv.id}`)}
+                  className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-sidebar-foreground hover:bg-sidebar-accent transition-colors text-start truncate"
                 >
                   <MessageSquare className="h-4 w-4 shrink-0 opacity-50" />
-                  <span className="truncate">{chat}</span>
+                  <span className="truncate">{conv.title || t('chat.untitled')}</span>
                 </button>
               ))}
             </div>
