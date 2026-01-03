@@ -81,7 +81,7 @@ export default function History() {
   const renderConversationCard = (conv: ConversationWithSnippet) => (
     <Card 
       key={conv.id} 
-      className="hover:bg-accent/50 transition-colors cursor-pointer group" 
+      className="hover:bg-accent hover:border-primary/30 transition-all cursor-pointer group" 
       onClick={() => handleSelect(conv)}
     >
       <CardHeader className="flex flex-row items-center justify-between pb-2">
