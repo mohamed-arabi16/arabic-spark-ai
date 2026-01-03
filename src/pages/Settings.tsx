@@ -1,58 +1,34 @@
-import { useTranslation } from 'react-i18next';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
-import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 
 export default function Settings() {
-  const { t } = useTranslation();
-
   return (
     <MainLayout>
       <div className="flex-1 p-8 space-y-8 overflow-y-auto">
         <div className="space-y-2">
-          <h1 className="text-3xl font-bold tracking-tight">{t('settings.title')}</h1>
+          <h1 className="text-3xl font-bold tracking-tight">Settings</h1>
           <p className="text-muted-foreground text-lg">
-            {t('settings.description')}
+            Manage your account and preferences.
           </p>
         </div>
 
         <div className="grid gap-6">
           <Card>
             <CardHeader>
-              <CardTitle>{t('common.language')}</CardTitle>
+              <CardTitle>Appearance</CardTitle>
               <CardDescription>
-                {t('common.selectLanguage')}
+                Customize how the workspace looks on your device.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex items-center justify-between">
                 <div className="space-y-0.5">
-                  <Label>{t('common.language')}</Label>
+                  <Label>Dark Mode</Label>
                   <div className="text-sm text-muted-foreground">
-                    {t('common.selectLanguage')}
-                  </div>
-                </div>
-                <LanguageSwitcher />
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>{t('settings.appearance')}</CardTitle>
-              <CardDescription>
-                {t('settings.appearanceDesc')}
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <Label>{t('common.darkMode')}</Label>
-                  <div className="text-sm text-muted-foreground">
-                    {t('settings.themeDesc')}
+                    Switch between light and dark themes.
                   </div>
                 </div>
                 <Switch
@@ -65,17 +41,17 @@ export default function Settings() {
 
           <Card>
             <CardHeader>
-              <CardTitle>{t('settings.notifications')}</CardTitle>
+              <CardTitle>Notifications</CardTitle>
               <CardDescription>
-                {t('settings.notificationsDesc')}
+                Configure how you receive alerts.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex items-center justify-between">
                  <div className="space-y-0.5">
-                  <Label>{t('settings.emailNotifications')}</Label>
+                  <Label>Email Notifications</Label>
                   <div className="text-sm text-muted-foreground">
-                    {t('settings.emailNotificationsDesc')}
+                    Receive emails about project updates.
                   </div>
                 </div>
                 <Switch />
@@ -84,7 +60,7 @@ export default function Settings() {
           </Card>
 
            <div className="flex justify-end">
-              <Button>{t('common.saveChanges')}</Button>
+              <Button>Save Changes</Button>
            </div>
         </div>
       </div>
