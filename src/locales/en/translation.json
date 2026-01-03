@@ -1,0 +1,55 @@
+{
+  "common": {
+    "welcome": "Welcome",
+    "signIn": "Sign In",
+    "signUp": "Sign Up",
+    "email": "Email",
+    "password": "Password",
+    "fullName": "Full Name",
+    "createAccount": "Create Account",
+    "continueWithGoogle": "Continue with Google",
+    "orContinueWith": "Or continue with",
+    "settings": "Settings",
+    "saveChanges": "Save Changes",
+    "darkMode": "Dark Mode",
+    "lightMode": "Light Mode",
+    "language": "Language",
+    "selectLanguage": "Select Language",
+    "english": "English",
+    "arabic": "Arabic"
+  },
+  "auth": {
+    "welcomeTitle": "Welcome",
+    "welcomeDescription": "Sign in to continue to your workspace",
+    "terms": "By continuing, you agree to our Terms of Service and Privacy Policy",
+    "alreadyRegistered": "This email is already registered. Please sign in instead.",
+    "invalidCredentials": "Invalid email or password",
+    "welcomeBack": "Welcome back!",
+    "accountCreated": "Account created! Welcome aboard."
+  },
+  "sidebar": {
+    "home": "Home",
+    "chat": "Chat",
+    "projects": "Projects",
+    "memory": "Memory",
+    "images": "Images",
+    "research": "Research",
+    "usage": "Usage",
+    "history": "History",
+    "newChat": "New Chat",
+    "workspace": "Workspace",
+    "recent": "Recent",
+    "signOut": "Sign Out"
+  },
+  "settings": {
+    "title": "Settings",
+    "description": "Manage your account and preferences.",
+    "appearance": "Appearance",
+    "appearanceDesc": "Customize how the workspace looks on your device.",
+    "notifications": "Notifications",
+    "notificationsDesc": "Configure how you receive alerts.",
+    "emailNotifications": "Email Notifications",
+    "emailNotificationsDesc": "Receive emails about project updates.",
+    "themeDesc": "Switch between light and dark themes."
+  }
+}

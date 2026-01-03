@@ -1,0 +1,55 @@
+{
+  "common": {
+    "welcome": "أهلاً بك",
+    "signIn": "تسجيل الدخول",
+    "signUp": "إنشاء حساب",
+    "email": "البريد الإلكتروني",
+    "password": "كلمة المرور",
+    "fullName": "الاسم الكامل",
+    "createAccount": "إنشاء حساب",
+    "continueWithGoogle": "المتابعة باستخدام Google",
+    "orContinueWith": "أو المتابعة باستخدام",
+    "settings": "الإعدادات",
+    "saveChanges": "حفظ التغييرات",
+    "darkMode": "الوضع الداكن",
+    "lightMode": "الوضع الفاتح",
+    "language": "اللغة",
+    "selectLanguage": "اختر اللغة",
+    "english": "الإنجليزية",
+    "arabic": "العربية"
+  },
+  "auth": {
+    "welcomeTitle": "مرحباً",
+    "welcomeDescription": "سجل الدخول للمتابعة إلى مساحة العمل الخاصة بك",
+    "terms": "من خلال المتابعة، فإنك توافق على شروط الخدمة وسياسة الخصوصية الخاصة بنا",
+    "alreadyRegistered": "هذا البريد الإلكتروني مسجل بالفعل. الرجاء تسجيل الدخول بدلاً من ذلك.",
+    "invalidCredentials": "البريد الإلكتروني أو كلمة المرور غير صالحة",
+    "welcomeBack": "مرحباً بعودتك!",
+    "accountCreated": "تم إنشاء الحساب! أهلاً بك."
+  },
+  "sidebar": {
+    "home": "الرئيسية",
+    "chat": "محادثة",
+    "projects": "المشاريع",
+    "memory": "الذاكرة",
+    "images": "الصور",
+    "research": "بحث",
+    "usage": "الاستخدام",
+    "history": "السجل",
+    "newChat": "محادثة جديدة",
+    "workspace": "مساحة العمل",
+    "recent": "الأخيرة",
+    "signOut": "تسجيل الخروج"
+  },
+  "settings": {
+    "title": "الإعدادات",
+    "description": "إدارة حسابك وتفضيلاتك.",
+    "appearance": "المظهر",
+    "appearanceDesc": "تخصيص مظهر مساحة العمل على جهازك.",
+    "notifications": "الإشعارات",
+    "notificationsDesc": "تكوين كيفية تلقي التنبيهات.",
+    "emailNotifications": "إشعارات البريد الإلكتروني",
+    "emailNotificationsDesc": "تلقي رسائل بريد إلكتروني حول تحديثات المشروع.",
+    "themeDesc": "التبديل بين السمات الفاتحة والداكنة."
+  }
+}

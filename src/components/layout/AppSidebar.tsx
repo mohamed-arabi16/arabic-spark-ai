@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/hooks/useAuth';
 import { useProjects, Project, ProjectInsert, ProjectUpdate } from '@/hooks/useProjects';
 import { ProjectDialog } from '@/components/projects/ProjectDialog';
@@ -46,6 +47,7 @@ interface AppSidebarProps {
 }
 
 export function AppSidebar({ collapsed, onToggle }: AppSidebarProps) {
+  const { t } = useTranslation();
   const { user, signOut } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
@@ -63,14 +65,14 @@ export function AppSidebar({ collapsed, onToggle }: AppSidebarProps) {
   };
 
   const navItems = [
-    { icon: LayoutDashboard, label: 'Home', href: '/' },
-    { icon: MessageSquare, label: 'Chat', href: '/chat' },
-    { icon: FolderOpen, label: 'Projects', href: '/projects' },
-    { icon: Brain, label: 'Memory', href: '/memory' },
-    { icon: Image, label: 'Images', href: '/images' },
-    { icon: Search, label: 'Research', href: '/research' },
-    { icon: BarChart, label: 'Usage', href: '/usage' },
-    { icon: Clock, label: 'History', href: '/history' },
+    { icon: LayoutDashboard, label: t('sidebar.home'), href: '/' },
+    { icon: MessageSquare, label: t('sidebar.chat'), href: '/chat' },
+    { icon: FolderOpen, label: t('sidebar.projects'), href: '/projects' },
+    { icon: Brain, label: t('sidebar.memory'), href: '/memory' },
+    { icon: Image, label: t('sidebar.images'), href: '/images' },
+    { icon: Search, label: t('sidebar.research'), href: '/research' },
+    { icon: BarChart, label: t('sidebar.usage'), href: '/usage' },
+    { icon: Clock, label: t('sidebar.history'), href: '/history' },
   ];
 
   const userInitials = user?.user_metadata?.full_name
@@ -103,19 +105,19 @@ export function AppSidebar({ collapsed, onToggle }: AppSidebarProps) {
             <Sparkles className="h-4 w-4 text-primary-foreground" />
           </div>
           {!collapsed && (
-            <span className="font-semibold text-sidebar-foreground whitespace-nowrap">AI Workspace</span>
+            <span className="font-semibold text-sidebar-foreground whitespace-nowrap">{t('sidebar.workspace')}</span>
           )}
         </Link>
         <Button
           variant="ghost"
           size="icon"
           className={cn(
-            'ml-auto h-8 w-8 text-sidebar-foreground hover:bg-sidebar-accent shrink-0',
+            'ms-auto h-8 w-8 text-sidebar-foreground hover:bg-sidebar-accent shrink-0',
             collapsed && 'hidden'
           )}
           onClick={onToggle}
         >
-          <ChevronLeft className="h-4 w-4" />
+          <ChevronLeft className="h-4 w-4 rtl:rotate-180" />
         </Button>
       </div>
 
@@ -123,7 +125,7 @@ export function AppSidebar({ collapsed, onToggle }: AppSidebarProps) {
       {!collapsed && (
         <div className="px-3 pt-3 space-y-2">
           <div className="flex items-center justify-between">
-              <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Workspace</span>
+              <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">{t('sidebar.workspace')}</span>
                <Button
                 variant="ghost"
                 size="icon"
@@ -186,7 +188,7 @@ export function AppSidebar({ collapsed, onToggle }: AppSidebarProps) {
           onClick={() => navigate('/chat')}
         >
           <Plus className="h-4 w-4" />
-          {!collapsed && <span>New Chat</span>}
+          {!collapsed && <span>{t('sidebar.newChat')}</span>}
         </Button>
       </div>
 
@@ -217,7 +219,7 @@ export function AppSidebar({ collapsed, onToggle }: AppSidebarProps) {
         {!collapsed && (
           <div className="mt-6">
             <p className="px-3 text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2">
-              Recent
+              {t('sidebar.recent')}
             </p>
             <div className="space-y-1">
               {['Marketing campaign ideas', 'Code review help', 'Arabic translation'].map((chat, i) => (
@@ -247,7 +249,7 @@ export function AppSidebar({ collapsed, onToggle }: AppSidebarProps) {
           onClick={toggleTheme}
         >
           {isDark ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
-          {!collapsed && <span>{isDark ? 'Dark Mode' : 'Light Mode'}</span>}
+          {!collapsed && <span>{isDark ? t('common.darkMode') : t('common.lightMode')}</span>}
         </Button>
 
         {/* Settings */}
@@ -261,7 +263,7 @@ export function AppSidebar({ collapsed, onToggle }: AppSidebarProps) {
             )}
           >
             <Settings className="h-4 w-4" />
-            {!collapsed && <span>Settings</span>}
+            {!collapsed && <span>{t('common.settings')}</span>}
           </Button>
         </Link>
 
@@ -296,8 +298,8 @@ export function AppSidebar({ collapsed, onToggle }: AppSidebarProps) {
             </div>
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={() => signOut()}>
-              <LogOut className="h-4 w-4 mr-2" />
-              Sign Out
+              <LogOut className="h-4 w-4 me-2" />
+              {t('sidebar.signOut')}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
@@ -311,7 +313,7 @@ export function AppSidebar({ collapsed, onToggle }: AppSidebarProps) {
           className="mx-auto mb-3 h-8 w-8 text-sidebar-foreground hover:bg-sidebar-accent"
           onClick={onToggle}
         >
-          <ChevronLeft className="h-4 w-4 rotate-180" />
+          <ChevronLeft className="h-4 w-4 rotate-180 rtl:rotate-0" />
         </Button>
       )}
 
