@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { MessageSquare, Clock, Trash2, Edit2, Archive, Search, Loader2 } from 'lucide-react';
@@ -9,10 +9,14 @@ import { useConversations, ConversationWithSnippet } from '@/hooks/useConversati
 import { useProjects } from '@/hooks/useProjects';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { formatDistanceToNow } from 'date-fns';
+import { formatDistanceToNow, isToday, isYesterday, isThisWeek, parseISO } from 'date-fns';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
+
+type DateGroup = 'today' | 'yesterday' | 'thisWeek' | 'older';
 
 export default function History() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState('recent');
@@ -46,6 +50,38 @@ export default function History() {
     acc[projectId].push(conv);
     return acc;
   }, {} as Record<string, ConversationWithSnippet[]>);
+
+  // Group by date for timeline view
+  const groupedByDate = useMemo(() => {
+    const groups: Record<DateGroup, ConversationWithSnippet[]> = {
+      today: [],
+      yesterday: [],
+      thisWeek: [],
+      older: [],
+    };
+
+    filteredConversations.forEach(conv => {
+      const date = parseISO(conv.updated_at);
+      if (isToday(date)) {
+        groups.today.push(conv);
+      } else if (isYesterday(date)) {
+        groups.yesterday.push(conv);
+      } else if (isThisWeek(date)) {
+        groups.thisWeek.push(conv);
+      } else {
+        groups.older.push(conv);
+      }
+    });
+
+    return groups;
+  }, [filteredConversations]);
+
+  const dateGroupLabels: Record<DateGroup, string> = {
+    today: t('history.today', 'Today'),
+    yesterday: t('history.yesterday', 'Yesterday'),
+    thisWeek: t('history.thisWeek', 'This Week'),
+    older: t('history.older', 'Older'),
+  };
 
   const handleDelete = async (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
@@ -145,16 +181,16 @@ export default function History() {
   );
 
   return (
-    <MainLayout>
-      <div className="flex-1 p-8 space-y-8 overflow-y-auto">
-        <div className="flex items-center justify-between">
-          <div className="space-y-2">
-            <h1 className="text-3xl font-bold tracking-tight">Chat History</h1>
-            <p className="text-muted-foreground text-lg">
-              View and manage your past conversations.
+    <MainLayout title={t('sidebar.history')}>
+      <div className="flex-1 p-4 md:p-8 space-y-6 md:space-y-8 overflow-y-auto">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="space-y-1 md:space-y-2">
+            <h1 className="text-2xl md:text-3xl font-bold tracking-tight">{t('sidebar.history')}</h1>
+            <p className="text-muted-foreground text-sm md:text-lg">
+              {t('history.description', 'View and manage your past conversations.')}
             </p>
           </div>
-          <div className="relative w-64">
+          <div className="relative w-full md:w-64">
             <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
             <Input
               placeholder="Search conversations..."
@@ -172,18 +208,31 @@ export default function History() {
             <TabsTrigger value="archived">Archived</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="recent" className="mt-6">
+          <TabsContent value="recent" className="mt-4 md:mt-6">
             {isLoading ? (
               <div className="flex items-center justify-center h-40">
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
               </div>
             ) : filteredConversations.length === 0 ? (
               <div className="text-center py-10 text-muted-foreground border border-dashed rounded-lg">
-                No conversations found. Start a new chat!
+                {t('history.noConversations', 'No conversations found. Start a new chat!')}
               </div>
             ) : (
-              <div className="grid gap-4">
-                {filteredConversations.map(renderConversationCard)}
+              <div className="space-y-6">
+                {(Object.keys(groupedByDate) as DateGroup[]).map(group => {
+                  const convs = groupedByDate[group];
+                  if (convs.length === 0) return null;
+                  return (
+                    <div key={group}>
+                      <h3 className="text-sm font-medium text-muted-foreground mb-3 uppercase tracking-wider">
+                        {dateGroupLabels[group]}
+                      </h3>
+                      <div className="grid gap-3 md:gap-4">
+                        {convs.map(renderConversationCard)}
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             )}
           </TabsContent>

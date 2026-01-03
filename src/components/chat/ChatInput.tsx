@@ -1,10 +1,11 @@
-import { useRef, useEffect } from 'react';
+import { useRef, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { ModeSelector, ChatMode } from './ModeSelector';
-import { Send, Paperclip, Mic, Square } from 'lucide-react';
+import { Send, Paperclip, Mic, Square, Loader2 } from 'lucide-react';
+import { useVoiceInput } from '@/hooks/useVoiceInput';
 
 interface ChatInputProps {
   onSend: (message: string, mode: ChatMode) => void;
@@ -19,6 +20,15 @@ interface ChatInputProps {
 export function ChatInput({ onSend, isLoading, onStop, message, setMessage, mode, setMode }: ChatInputProps) {
   const { t } = useTranslation();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const [partialTranscript, setPartialTranscript] = useState('');
+
+  const { isRecording, isConnecting, toggleRecording } = useVoiceInput({
+    onTranscript: (text) => {
+      setMessage(message ? message + ' ' + text : text);
+      setPartialTranscript('');
+    },
+    onPartialTranscript: setPartialTranscript,
+  });
 
   // Auto-resize textarea
   useEffect(() => {
@@ -42,21 +52,26 @@ export function ChatInput({ onSend, isLoading, onStop, message, setMessage, mode
     }
   };
 
+  const displayText = partialTranscript || message;
+
   return (
-    <div className="border-t border-border bg-background p-4">
+    <div className="border-t border-border bg-background p-3 md:p-4 safe-area-bottom">
       <div className="max-w-4xl mx-auto space-y-3">
-        {/* Mode selector */}
-        <div className="flex items-center justify-center">
+        {/* Mode selector - hide on very small screens when recording */}
+        <div className={cn(
+          "flex items-center justify-center transition-opacity",
+          isRecording && "opacity-50"
+        )}>
           <ModeSelector mode={mode} onModeChange={setMode} />
         </div>
 
         {/* Input area */}
-        <div className="relative flex items-end gap-2 p-3 bg-secondary/30 rounded-xl border border-border focus-within:border-primary/50 focus-within:ring-1 focus-within:ring-primary/20 transition-all">
-          {/* Attachment button */}
+        <div className="relative flex items-end gap-2 p-2 md:p-3 bg-secondary/30 rounded-xl border border-border focus-within:border-primary/50 focus-within:ring-1 focus-within:ring-primary/20 transition-all">
+          {/* Attachment button - hide on mobile */}
           <Button
             variant="ghost"
             size="icon"
-            className="h-9 w-9 shrink-0 text-muted-foreground hover:text-foreground"
+            className="h-9 w-9 shrink-0 text-muted-foreground hover:text-foreground hidden md:flex"
           >
             <Paperclip className="h-5 w-5" />
           </Button>
@@ -64,21 +79,38 @@ export function ChatInput({ onSend, isLoading, onStop, message, setMessage, mode
           {/* Textarea */}
           <Textarea
             ref={textareaRef}
-            placeholder={t('chat.askAnything')}
-            value={message}
+            placeholder={isRecording ? '🎙️ Listening...' : t('chat.askAnything')}
+            value={displayText}
             onChange={(e) => setMessage(e.target.value)}
             onKeyDown={handleKeyDown}
-            className="flex-1 min-h-[40px] max-h-[200px] resize-none border-0 bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 p-0 text-base"
+            className={cn(
+              "flex-1 min-h-[40px] max-h-[200px] resize-none border-0 bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 p-0 text-base",
+              isRecording && "text-muted-foreground italic"
+            )}
             rows={1}
+            disabled={isRecording}
+            dir="auto"
           />
 
           {/* Voice button */}
           <Button
-            variant="ghost"
+            variant={isRecording ? "destructive" : "ghost"}
             size="icon"
-            className="h-9 w-9 shrink-0 text-muted-foreground hover:text-foreground"
+            className={cn(
+              "h-9 w-9 shrink-0 transition-all",
+              isRecording && "animate-pulse",
+              !isRecording && "text-muted-foreground hover:text-foreground"
+            )}
+            onClick={toggleRecording}
+            disabled={isConnecting}
           >
-            <Mic className="h-5 w-5" />
+            {isConnecting ? (
+              <Loader2 className="h-5 w-5 animate-spin" />
+            ) : isRecording ? (
+              <Square className="h-4 w-4" />
+            ) : (
+              <Mic className="h-5 w-5" />
+            )}
           </Button>
 
           {/* Send/Stop button */}
@@ -100,7 +132,7 @@ export function ChatInput({ onSend, isLoading, onStop, message, setMessage, mode
                   ? 'bg-primary hover:bg-primary/90'
                   : 'bg-muted text-muted-foreground'
               )}
-              disabled={!message.trim()}
+              disabled={!message.trim() || isRecording}
               onClick={handleSubmit}
             >
               <Send className="h-4 w-4" />
@@ -108,8 +140,8 @@ export function ChatInput({ onSend, isLoading, onStop, message, setMessage, mode
           )}
         </div>
 
-        {/* Cost indicator */}
-        <p className="text-xs text-muted-foreground text-center">
+        {/* Cost indicator - hide on mobile */}
+        <p className="text-xs text-muted-foreground text-center hidden md:block">
           {t('chat.inputFooter')}
         </p>
       </div>

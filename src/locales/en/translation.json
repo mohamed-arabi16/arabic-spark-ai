@@ -65,7 +65,15 @@
     "notificationsDesc": "Configure how you receive alerts.",
     "emailNotifications": "Email Notifications",
     "emailNotificationsDesc": "Receive emails about project updates.",
-    "themeDesc": "Switch between light and dark themes."
+    "themeDesc": "Switch between light and dark themes.",
+    "dialect": "Arabic Dialect",
+    "dialectDesc": "Choose your preferred Arabic dialect for AI responses.",
+    "preferredDialect": "Preferred Dialect",
+    "dialectHelp": "AI will respond in this dialect when Arabic is detected.",
+    "memory": "Memory",
+    "memoryDesc": "Control how AI remembers information across conversations.",
+    "globalMemory": "Global Memory",
+    "globalMemoryDesc": "Allow AI to use approved memories across all conversations."
   },
   "validation": {
     "invalidEmail": "Please enter a valid email address",
@@ -88,6 +96,14 @@
     "errorConduct": "Failed to conduct research",
     "noResults": "Research completed (no summary returned).",
     "untitled": "Untitled"
+  },
+  "history": {
+    "description": "View and manage your past conversations.",
+    "noConversations": "No conversations found. Start a new chat!",
+    "today": "Today",
+    "yesterday": "Yesterday",
+    "thisWeek": "This Week",
+    "older": "Older"
   },
   "dashboard": {
     "newProject": "New Project",
