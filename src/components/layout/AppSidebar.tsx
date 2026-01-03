@@ -15,6 +15,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import {
   Select,
   SelectContent,
@@ -266,6 +267,14 @@ export function AppSidebar({ collapsed, onToggle }: AppSidebarProps) {
             {!collapsed && <span>{t('common.settings')}</span>}
           </Button>
         </Link>
+
+        {/* Language Switcher */}
+        {!collapsed && (
+          <div className="px-3 flex items-center justify-between">
+             <span className="text-sm text-muted-foreground">{t('common.language')}</span>
+             <LanguageSwitcher />
+          </div>
+        )}
 
         {/* User menu */}
         <DropdownMenu>
