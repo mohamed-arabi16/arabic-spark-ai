@@ -25,7 +25,10 @@
     "alreadyRegistered": "هذا البريد الإلكتروني مسجل بالفعل. الرجاء تسجيل الدخول بدلاً من ذلك.",
     "invalidCredentials": "البريد الإلكتروني أو كلمة المرور غير صالحة",
     "welcomeBack": "مرحباً بعودتك!",
-    "accountCreated": "تم إنشاء الحساب! أهلاً بك."
+    "accountCreated": "تم إنشاء الحساب! أهلاً بك.",
+    "emailPlaceholder": "name@example.com",
+    "passwordPlaceholder": "••••••••",
+    "namePlaceholder": "الاسم الكامل"
   },
   "sidebar": {
     "home": "الرئيسية",
@@ -51,5 +54,9 @@
     "emailNotifications": "إشعارات البريد الإلكتروني",
     "emailNotificationsDesc": "تلقي رسائل بريد إلكتروني حول تحديثات المشروع.",
     "themeDesc": "التبديل بين السمات الفاتحة والداكنة."
+  },
+  "validation": {
+    "invalidEmail": "الرجاء إدخال عنوان بريد إلكتروني صالح",
+    "passwordLength": "يجب أن تكون كلمة المرور 6 أحرف على الأقل"
   }
 }

@@ -12,9 +12,6 @@ import { Loader2, Sparkles } from 'lucide-react';
 import { z } from 'zod';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 
-const emailSchema = z.string().email('Please enter a valid email address');
-const passwordSchema = z.string().min(6, 'Password must be at least 6 characters');
-
 export default function Auth() {
   const { t } = useTranslation();
   const { user, loading, signInWithGoogle, signInWithEmail, signUpWithEmail } = useAuth();
@@ -35,6 +32,9 @@ export default function Auth() {
   }, [user, loading, navigate]);
 
   const validateForm = () => {
+    const emailSchema = z.string().email(t('validation.invalidEmail'));
+    const passwordSchema = z.string().min(6, t('validation.passwordLength'));
+
     const newErrors: { email?: string; password?: string } = {};
     
     const emailResult = emailSchema.safeParse(email);
@@ -181,13 +181,13 @@ export default function Auth() {
             </TabsList>
 
             <TabsContent value="signin" className="space-y-4 pt-4">
-              <form onSubmit={handleEmailSignIn} className="space-y-4">
+              <form onSubmit={handleEmailSignIn} className="space-y-4" noValidate>
                 <div className="space-y-2">
                   <Label htmlFor="signin-email">{t('common.email')}</Label>
                   <Input
                     id="signin-email"
                     type="email"
-                    placeholder="you@example.com"
+                    placeholder={t('auth.emailPlaceholder')}
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     disabled={isSubmitting}
@@ -199,7 +199,7 @@ export default function Auth() {
                   <Input
                     id="signin-password"
                     type="password"
-                    placeholder="••••••••"
+                    placeholder={t('auth.passwordPlaceholder')}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     disabled={isSubmitting}
@@ -213,13 +213,13 @@ export default function Auth() {
             </TabsContent>
 
             <TabsContent value="signup" className="space-y-4 pt-4">
-              <form onSubmit={handleEmailSignUp} className="space-y-4">
+              <form onSubmit={handleEmailSignUp} className="space-y-4" noValidate>
                 <div className="space-y-2">
                   <Label htmlFor="signup-name">{t('common.fullName')}</Label>
                   <Input
                     id="signup-name"
                     type="text"
-                    placeholder="John Doe"
+                    placeholder={t('auth.namePlaceholder')}
                     value={fullName}
                     onChange={(e) => setFullName(e.target.value)}
                     disabled={isSubmitting}
@@ -230,7 +230,7 @@ export default function Auth() {
                   <Input
                     id="signup-email"
                     type="email"
-                    placeholder="you@example.com"
+                    placeholder={t('auth.emailPlaceholder')}
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     disabled={isSubmitting}
@@ -242,7 +242,7 @@ export default function Auth() {
                   <Input
                     id="signup-password"
                     type="password"
-                    placeholder="••••••••"
+                    placeholder={t('auth.passwordPlaceholder')}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     disabled={isSubmitting}
