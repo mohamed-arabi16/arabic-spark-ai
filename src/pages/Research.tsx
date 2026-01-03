@@ -9,6 +9,8 @@ import { toast } from 'sonner';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useAuth } from '@/hooks/useAuth';
 import { formatDistanceToNow } from 'date-fns';
+import { useTranslation } from 'react-i18next';
+import { ar, enUS } from 'date-fns/locale';
 
 interface ResearchItem {
   id: string;
@@ -20,6 +22,7 @@ interface ResearchItem {
 
 export default function Research() {
   const { user } = useAuth();
+  const { t, i18n } = useTranslation();
   const [topic, setTopic] = useState('');
   const [isResearching, setIsResearching] = useState(false);
   const [researchHistory, setResearchHistory] = useState<ResearchItem[]>([]);
@@ -58,9 +61,9 @@ export default function Research() {
           
           return {
             id: conv.id,
-            topic: userMessage?.content || conv.title?.replace('Research: ', '') || 'Untitled',
+            topic: userMessage?.content || conv.title?.replace('Research: ', '') || t('research.untitled'),
             date: new Date(conv.created_at),
-            summary: assistantMessage?.content || 'No results yet',
+            summary: assistantMessage?.content || t('research.noResults'),
             conversationId: conv.id,
           };
         });
@@ -74,7 +77,7 @@ export default function Research() {
     };
 
     loadHistory();
-  }, [user]);
+  }, [user, t]);
 
   const handleResearch = async () => {
     if (!topic.trim()) return;
@@ -101,7 +104,7 @@ export default function Research() {
 
       if (!resp.ok) {
         const errorData = await resp.json().catch(() => ({}));
-        throw new Error(errorData.error || 'Failed to start research');
+        throw new Error(errorData.error || t('research.errorStart'));
       }
 
       const conversationId = resp.headers.get('X-Conversation-Id');
@@ -162,18 +165,18 @@ export default function Research() {
         id: conversationId || crypto.randomUUID(),
         topic,
         date: new Date(),
-        summary: accumulatedText || 'Research completed (no summary returned).',
+        summary: accumulatedText || t('research.noResults'),
         conversationId: conversationId || '',
       };
 
       setResearchHistory(prev => [newResearch, ...prev]);
       setTopic('');
       setCurrentResult('');
-      toast.success('Research completed and saved to history');
+      toast.success(t('research.successMessage'));
 
     } catch (error) {
       console.error('Research error:', error);
-      toast.error(error instanceof Error ? error.message : 'Failed to conduct research');
+      toast.error(error instanceof Error ? error.message : t('research.errorConduct'));
     } finally {
       setIsResearching(false);
     }
@@ -183,9 +186,9 @@ export default function Research() {
     <MainLayout>
       <div className="flex-1 p-8 space-y-8 overflow-y-auto">
         <div className="space-y-2">
-          <h1 className="text-3xl font-bold tracking-tight">Research</h1>
+          <h1 className="text-3xl font-bold tracking-tight">{t('research.title')}</h1>
           <p className="text-muted-foreground text-lg">
-            Explore topics with AI-powered web search. Results are saved to your history.
+            {t('research.subtitle')}
           </p>
         </div>
 
@@ -193,20 +196,20 @@ export default function Research() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Search className="h-5 w-5" />
-              Start a Research Session
+              {t('research.startSession')}
             </CardTitle>
             <CardDescription>
-              Enter a topic to search the web with AI assistance. Powered by Perplexity.
+              {t('research.sessionDescription')}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex gap-4">
               <div className="relative flex-1">
-                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Search className="absolute start-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                 <Input
                   type="search"
-                  placeholder="What would you like to research?"
-                  className="pl-8"
+                  placeholder={t('research.placeholder')}
+                  className="ps-8"
                   value={topic}
                   onChange={(e) => setTopic(e.target.value)}
                   disabled={isResearching}
@@ -216,11 +219,11 @@ export default function Research() {
               <Button onClick={handleResearch} disabled={isResearching || !topic.trim()}>
                 {isResearching ? (
                   <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Searching...
+                    <Loader2 className="me-2 h-4 w-4 animate-spin" />
+                    {t('research.searching')}
                   </>
                 ) : (
-                  'Search'
+                  t('research.searchButton')
                 )}
               </Button>
             </div>
@@ -231,12 +234,12 @@ export default function Research() {
                 <CardHeader className="pb-2">
                   <CardTitle className="text-sm flex items-center gap-2">
                     <Loader2 className="h-4 w-4 animate-spin" />
-                    Researching: {topic}
+                    {t('research.researchingTopic', { topic })}
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <ScrollArea className="h-[300px]">
-                    <div className="prose prose-sm dark:prose-invert max-w-none whitespace-pre-wrap">
+                    <div className="prose prose-sm dark:prose-invert max-w-none whitespace-pre-wrap text-start" dir="auto">
                       {currentResult}
                     </div>
                   </ScrollArea>
@@ -250,7 +253,7 @@ export default function Research() {
         <div className="space-y-4">
           <h2 className="text-xl font-semibold flex items-center gap-2">
             <Clock className="h-5 w-5" />
-            Recent Research
+            {t('research.recentResearch')}
           </h2>
           
           {isLoadingHistory ? (
@@ -262,7 +265,7 @@ export default function Research() {
           ) : researchHistory.length === 0 ? (
             <Card className="bg-muted/50 border-dashed">
               <CardContent className="flex items-center justify-center h-40">
-                <p className="text-muted-foreground">No research history yet. Start by searching for a topic above.</p>
+                <p className="text-muted-foreground">{t('research.noHistory')}</p>
               </CardContent>
             </Card>
           ) : (
@@ -273,12 +276,12 @@ export default function Research() {
                     <CardTitle className="text-base line-clamp-2">{item.topic}</CardTitle>
                     <CardDescription className="flex items-center gap-1">
                       <Clock className="h-3 w-3" />
-                      {formatDistanceToNow(item.date, { addSuffix: true })}
+                      {formatDistanceToNow(item.date, { addSuffix: true, locale: i18n.language === 'ar' ? ar : enUS })}
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
                     <ScrollArea className="h-[150px]">
-                      <p className="text-sm text-muted-foreground whitespace-pre-wrap">
+                      <p className="text-sm text-muted-foreground whitespace-pre-wrap text-start" dir="auto">
                         {item.summary.substring(0, 500)}
                         {item.summary.length > 500 && '...'}
                       </p>
@@ -290,8 +293,8 @@ export default function Research() {
                         className="mt-2 w-full"
                         onClick={() => window.location.href = `/history`}
                       >
-                        <ExternalLink className="h-3 w-3 mr-1" />
-                        View in History
+                        <ExternalLink className="h-3 w-3 me-1" />
+                        {t('research.viewInHistory')}
                       </Button>
                     )}
                   </CardContent>

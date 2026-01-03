@@ -58,5 +58,23 @@
   "validation": {
     "invalidEmail": "الرجاء إدخال عنوان بريد إلكتروني صالح",
     "passwordLength": "يجب أن تكون كلمة المرور 6 أحرف على الأقل"
+  },
+  "research": {
+    "title": "بحث",
+    "subtitle": "استكشف الموضوعات باستخدام البحث على الويب المدعوم بالذكاء الاصطناعي. يتم حفظ النتائج في سجلك.",
+    "startSession": "ابدأ جلسة بحث",
+    "sessionDescription": "أدخل موضوعًا للبحث في الويب بمساعدة الذكاء الاصطناعي. بدعم من Perplexity.",
+    "placeholder": "ما الذي تود البحث عنه؟",
+    "searchButton": "بحث",
+    "searching": "جارٍ البحث...",
+    "researchingTopic": "جارٍ البحث عن: {{topic}}",
+    "recentResearch": "أحدث الأبحاث",
+    "noHistory": "لا يوجد سجل بحث بعد. ابدأ بالبحث عن موضوع أعلاه.",
+    "viewInHistory": "عرض في السجل",
+    "successMessage": "تم إكمال البحث وحفظه في السجل",
+    "errorStart": "فشل بدء البحث",
+    "errorConduct": "فشل إجراء البحث",
+    "noResults": "اكتمل البحث (لم يتم إرجاع ملخص).",
+    "untitled": "بدون عنوان"
   }
 }
