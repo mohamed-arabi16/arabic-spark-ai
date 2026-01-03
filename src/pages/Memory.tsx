@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { useMemory, Memory as MemoryType } from '@/hooks/useMemory';
 import { useProjects } from '@/hooks/useProjects';
@@ -53,6 +54,7 @@ const categoryColors: Record<string, string> = {
 };
 
 export default function Memory() {
+  const { t } = useTranslation();
   const { projects, fetchProjects } = useProjects();
   const {
     memories,
@@ -206,24 +208,24 @@ export default function Memory() {
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 mb-2 flex-wrap">
                 <Badge variant="outline" className={colorClass}>
-                  <CategoryIcon className="h-3 w-3 mr-1" />
+                  <CategoryIcon className="h-3 w-3 me-1" />
                   {memory.category || 'general'}
                 </Badge>
                 {memory.is_global && (
                   <Badge variant="outline" className="text-green-400 border-green-500/30">
-                    <Globe className="h-3 w-3 mr-1" />
-                    Global
+                    <Globe className="h-3 w-3 me-1" />
+                    {t('memory.global')}
                   </Badge>
                 )}
                 {memory.project_id && (
                   <Badge variant="outline" className="text-blue-400 border-blue-500/30">
-                    <Folder className="h-3 w-3 mr-1" />
+                    <Folder className="h-3 w-3 me-1" />
                     {getProjectName(memory.project_id)}
                   </Badge>
                 )}
                 {isPending && (
                   <Badge variant="outline" className="text-amber-400 border-amber-500/30">
-                    Pending
+                    {t('memory.pending')}
                   </Badge>
                 )}
                 {memory.confidence && (
@@ -260,19 +262,19 @@ export default function Memory() {
             <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
               {isPending ? (
                 <>
-                  <Button size="icon" variant="ghost" onClick={() => approveMemory(memory.id)} title="Approve">
+                  <Button size="icon" variant="ghost" onClick={() => approveMemory(memory.id)} title={t('common.approve')}>
                     <Check className="h-4 w-4 text-green-400" />
                   </Button>
-                  <Button size="icon" variant="ghost" onClick={() => rejectMemory(memory.id)} title="Reject">
+                  <Button size="icon" variant="ghost" onClick={() => rejectMemory(memory.id)} title={t('common.reject')}>
                     <XCircle className="h-4 w-4 text-red-400" />
                   </Button>
                 </>
               ) : (
                 <>
-                  <Button size="icon" variant="ghost" onClick={() => startEdit(memory)} title="Edit">
+                  <Button size="icon" variant="ghost" onClick={() => startEdit(memory)} title={t('common.edit')}>
                     <Edit2 className="h-4 w-4" />
                   </Button>
-                  <Button size="icon" variant="ghost" onClick={() => deleteMemory(memory.id)} title="Delete">
+                  <Button size="icon" variant="ghost" onClick={() => deleteMemory(memory.id)} title={t('common.delete')}>
                     <Trash2 className="h-4 w-4 text-destructive" />
                   </Button>
                 </>
@@ -300,10 +302,10 @@ export default function Memory() {
             <div>
               <h1 className="text-2xl font-bold flex items-center gap-2">
                 <Brain className="h-6 w-6 text-primary" />
-                Memory Bank
+                {t('memory.title')}
               </h1>
               <p className="text-muted-foreground">
-                Manage all your AI memories across projects
+                {t('memory.subtitle')}
               </p>
             </div>
           </div>
@@ -313,25 +315,25 @@ export default function Memory() {
             <Card>
               <CardContent className="p-4 text-center">
                 <p className="text-2xl font-bold">{stats.total}</p>
-                <p className="text-sm text-muted-foreground">Total Memories</p>
+                <p className="text-sm text-muted-foreground">{t('memory.total')}</p>
               </CardContent>
             </Card>
             <Card className={stats.pending > 0 ? 'border-amber-500/50' : ''}>
               <CardContent className="p-4 text-center">
                 <p className="text-2xl font-bold text-amber-400">{stats.pending}</p>
-                <p className="text-sm text-muted-foreground">Pending Review</p>
+                <p className="text-sm text-muted-foreground">{t('memory.pending')}</p>
               </CardContent>
             </Card>
             <Card>
               <CardContent className="p-4 text-center">
                 <p className="text-2xl font-bold text-green-400">{stats.global}</p>
-                <p className="text-sm text-muted-foreground">Global Memories</p>
+                <p className="text-sm text-muted-foreground">{t('memory.global')}</p>
               </CardContent>
             </Card>
             <Card>
               <CardContent className="p-4 text-center">
                 <p className="text-2xl font-bold text-blue-400">{stats.byProject}</p>
-                <p className="text-sm text-muted-foreground">Project-Specific</p>
+                <p className="text-sm text-muted-foreground">{t('memory.projectSpecific')}</p>
               </CardContent>
             </Card>
           </div>
@@ -341,35 +343,35 @@ export default function Memory() {
             <CardContent className="p-4">
               <div className="flex flex-col md:flex-row gap-4">
                 <div className="relative flex-1">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Search className="absolute start-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input
-                    placeholder="Search memories..."
+                    placeholder={t('memory.searchPlaceholder')}
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pl-9"
+                    className="ps-9"
                   />
                 </div>
                 <Select value={selectedCategory} onValueChange={setSelectedCategory}>
                   <SelectTrigger className="w-[150px]">
-                    <Filter className="h-4 w-4 mr-2" />
+                    <Filter className="h-4 w-4 me-2" />
                     <SelectValue placeholder="Category" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">All Categories</SelectItem>
-                    <SelectItem value="preference">Preferences</SelectItem>
-                    <SelectItem value="fact">Facts</SelectItem>
-                    <SelectItem value="instruction">Instructions</SelectItem>
-                    <SelectItem value="style">Style</SelectItem>
+                    <SelectItem value="all">{t('memory.categories.all')}</SelectItem>
+                    <SelectItem value="preference">{t('memory.categories.preference')}</SelectItem>
+                    <SelectItem value="fact">{t('memory.categories.fact')}</SelectItem>
+                    <SelectItem value="instruction">{t('memory.categories.instruction')}</SelectItem>
+                    <SelectItem value="style">{t('memory.categories.style')}</SelectItem>
                   </SelectContent>
                 </Select>
                 {activeTab === 'project' && (
                   <Select value={selectedProject} onValueChange={setSelectedProject}>
                     <SelectTrigger className="w-[180px]">
-                      <Folder className="h-4 w-4 mr-2" />
+                      <Folder className="h-4 w-4 me-2" />
                       <SelectValue placeholder="Project" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="all">All Projects</SelectItem>
+                      <SelectItem value="all">{t('projects.allProjects')}</SelectItem>
                       {projects.map(p => (
                         <SelectItem key={p.id} value={p.id}>
                           {p.icon} {p.name}
@@ -386,26 +388,26 @@ export default function Memory() {
           {selectedItems.size > 0 && (
             <Card className="border-primary">
               <CardContent className="p-4 flex items-center justify-between">
-                <p className="text-sm font-medium">{selectedItems.size} item(s) selected</p>
+                <p className="text-sm font-medium">{selectedItems.size} {t('memory.itemSelected')}</p>
                 <div className="flex items-center gap-2">
                   {activeTab === 'pending' && (
                     <>
                       <Button size="sm" variant="outline" onClick={handleBulkApprove}>
-                        <CheckCheck className="h-4 w-4 mr-1" />
-                        Approve All
+                        <CheckCheck className="h-4 w-4 me-1" />
+                        {t('memory.approveAll')}
                       </Button>
                       <Button size="sm" variant="outline" onClick={handleBulkReject}>
-                        <XCircle className="h-4 w-4 mr-1" />
-                        Reject All
+                        <XCircle className="h-4 w-4 me-1" />
+                        {t('memory.rejectAll')}
                       </Button>
                     </>
                   )}
                   <Button size="sm" variant="destructive" onClick={handleBulkDelete}>
-                    <Trash2 className="h-4 w-4 mr-1" />
-                    Delete
+                    <Trash2 className="h-4 w-4 me-1" />
+                    {t('common.delete')}
                   </Button>
                   <Button size="sm" variant="ghost" onClick={() => setSelectedItems(new Set())}>
-                    Clear Selection
+                    {t('common.clearSelection')}
                   </Button>
                 </div>
               </CardContent>
@@ -417,10 +419,10 @@ export default function Memory() {
             <TabsList className="grid w-full grid-cols-4">
               <TabsTrigger value="all">All ({memories.length})</TabsTrigger>
               <TabsTrigger value="pending" className={stats.pending > 0 ? 'text-amber-400' : ''}>
-                Pending ({stats.pending})
+                {t('memory.pending')} ({stats.pending})
               </TabsTrigger>
-              <TabsTrigger value="global">Global ({stats.global})</TabsTrigger>
-              <TabsTrigger value="project">By Project</TabsTrigger>
+              <TabsTrigger value="global">{t('memory.global')} ({stats.global})</TabsTrigger>
+              <TabsTrigger value="project">{t('memory.projectSpecific')}</TabsTrigger>
             </TabsList>
 
             <TabsContent value="all" className="mt-4">
@@ -430,7 +432,7 @@ export default function Memory() {
                     checked={selectedItems.size === filteredMemories.length && filteredMemories.length > 0}
                     onCheckedChange={handleSelectAll}
                   />
-                  <span className="text-sm text-muted-foreground">Select All</span>
+                  <span className="text-sm text-muted-foreground">{t('memory.selectAll')}</span>
                 </div>
                 <span className="text-sm text-muted-foreground">{filteredMemories.length} memories</span>
               </div>
@@ -438,7 +440,7 @@ export default function Memory() {
                 <div className="space-y-3">
                   {filteredMemories.map(memory => renderMemoryCard(memory, false))}
                   {filteredMemories.length === 0 && (
-                    <p className="text-center text-muted-foreground py-8">No memories found</p>
+                    <p className="text-center text-muted-foreground py-8">{t('memory.noMemories')}</p>
                   )}
                 </div>
               </ScrollArea>
@@ -451,7 +453,7 @@ export default function Memory() {
                     checked={selectedItems.size === filteredMemories.length && filteredMemories.length > 0}
                     onCheckedChange={handleSelectAll}
                   />
-                  <span className="text-sm text-muted-foreground">Select All</span>
+                  <span className="text-sm text-muted-foreground">{t('memory.selectAll')}</span>
                 </div>
                 <span className="text-sm text-muted-foreground">{filteredMemories.length} pending</span>
               </div>
@@ -459,7 +461,7 @@ export default function Memory() {
                 <div className="space-y-3">
                   {filteredMemories.map(memory => renderMemoryCard(memory, true))}
                   {filteredMemories.length === 0 && (
-                    <p className="text-center text-muted-foreground py-8">No pending memories to review</p>
+                    <p className="text-center text-muted-foreground py-8">{t('memory.noPending')}</p>
                   )}
                 </div>
               </ScrollArea>
@@ -472,7 +474,7 @@ export default function Memory() {
                     checked={selectedItems.size === filteredMemories.length && filteredMemories.length > 0}
                     onCheckedChange={handleSelectAll}
                   />
-                  <span className="text-sm text-muted-foreground">Select All</span>
+                  <span className="text-sm text-muted-foreground">{t('memory.selectAll')}</span>
                 </div>
                 <span className="text-sm text-muted-foreground">{filteredMemories.length} global memories</span>
               </div>
@@ -480,7 +482,7 @@ export default function Memory() {
                 <div className="space-y-3">
                   {filteredMemories.map(memory => renderMemoryCard(memory, false))}
                   {filteredMemories.length === 0 && (
-                    <p className="text-center text-muted-foreground py-8">No global memories</p>
+                    <p className="text-center text-muted-foreground py-8">{t('memory.noGlobal')}</p>
                   )}
                 </div>
               </ScrollArea>
@@ -493,7 +495,7 @@ export default function Memory() {
                     checked={selectedItems.size === filteredMemories.length && filteredMemories.length > 0}
                     onCheckedChange={handleSelectAll}
                   />
-                  <span className="text-sm text-muted-foreground">Select All</span>
+                  <span className="text-sm text-muted-foreground">{t('memory.selectAll')}</span>
                 </div>
                 <span className="text-sm text-muted-foreground">{filteredMemories.length} memories</span>
               </div>
@@ -502,7 +504,7 @@ export default function Memory() {
                   {filteredMemories.map(memory => renderMemoryCard(memory, false))}
                   {filteredMemories.length === 0 && (
                     <p className="text-center text-muted-foreground py-8">
-                      {selectedProject === 'all' ? 'Select a project to view memories' : 'No memories for this project'}
+                      {selectedProject === 'all' ? t('memory.selectProject') : t('memory.noProjectMemories')}
                     </p>
                   )}
                 </div>

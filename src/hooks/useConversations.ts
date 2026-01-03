@@ -2,6 +2,7 @@ import { useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Tables, TablesInsert } from '@/integrations/supabase/types';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
 
 export type Conversation = Tables<'conversations'>;
 export type Message = Tables<'messages'>;
@@ -13,6 +14,7 @@ export interface ConversationWithSnippet extends Conversation {
 }
 
 export function useConversations() {
+  const { t } = useTranslation();
   const [conversations, setConversations] = useState<ConversationWithSnippet[]>([]);
   const [currentConversation, setCurrentConversation] = useState<Conversation | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -80,7 +82,7 @@ export function useConversations() {
       return conversationsWithSnippets;
     } catch (error) {
       console.error('Error fetching conversations:', error);
-      toast.error('Failed to load conversations');
+      toast.error(t('errors.loadConversations'));
       return [];
     } finally {
       setIsLoading(false);
@@ -111,7 +113,7 @@ export function useConversations() {
       return data;
     } catch (error) {
       console.error('Error creating conversation:', error);
-      toast.error('Failed to create conversation');
+      toast.error(t('errors.createConversation'));
       throw error;
     }
   };
@@ -143,7 +145,7 @@ export function useConversations() {
       return { conversation: conv, messages: msgs || [] };
     } catch (error) {
       console.error('Error loading conversation:', error);
-      toast.error('Failed to load conversation');
+      toast.error(t('errors.loadConversation'));
       throw error;
     } finally {
       setIsLoadingMessages(false);
@@ -168,7 +170,7 @@ export function useConversations() {
       return data;
     } catch (error) {
       console.error('Error updating conversation:', error);
-      toast.error('Failed to update conversation');
+      toast.error(t('errors.updateConversation'));
       throw error;
     }
   };
@@ -177,7 +179,7 @@ export function useConversations() {
     try {
       await updateConversation(id, { is_archived: true });
       setConversations(prev => prev.filter(c => c.id !== id));
-      toast.success('Conversation archived');
+      toast.success(t('messages.conversationArchived'));
     } catch (error) {
       // Error already handled in updateConversation
     }
@@ -197,10 +199,10 @@ export function useConversations() {
         setCurrentConversation(null);
         setMessages([]);
       }
-      toast.success('Conversation deleted');
+      toast.success(t('messages.conversationDeleted'));
     } catch (error) {
       console.error('Error deleting conversation:', error);
-      toast.error('Failed to delete conversation');
+      toast.error(t('errors.deleteConversation'));
       throw error;
     }
   };

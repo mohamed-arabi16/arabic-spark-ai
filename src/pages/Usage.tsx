@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { useUsage } from '@/hooks/useUsage';
 import { UsageSummaryCards } from '@/components/usage/UsageSummary';
@@ -8,6 +9,7 @@ import { QuotaDisplay } from '@/components/usage/QuotaDisplay';
 import { Loader2 } from 'lucide-react';
 
 export default function Usage() {
+  const { t } = useTranslation();
   const { dailyStats, summary, breakdown, isLoading, fetchUsage } = useUsage();
 
   useEffect(() => {
@@ -18,9 +20,9 @@ export default function Usage() {
     <MainLayout>
       <div className="flex-1 p-6 space-y-6 overflow-y-auto">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Usage Dashboard</h1>
+          <h1 className="text-2xl font-bold tracking-tight">{t('usage.title')}</h1>
           <p className="text-muted-foreground">
-            Monitor your consumption, costs, and limits.
+            {t('usage.subtitle')}
           </p>
         </div>
 

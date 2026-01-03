@@ -2,10 +2,12 @@ import { useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Tables } from '@/integrations/supabase/types';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
 
 export type GeneratedImage = Tables<'generated_images'>;
 
 export function useImages() {
+  const { t } = useTranslation();
   const [images, setImages] = useState<GeneratedImage[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -22,7 +24,7 @@ export function useImages() {
       setImages(data || []);
     } catch (error) {
       console.error('Error fetching images:', error);
-      toast.error('Failed to load images');
+      toast.error(t('errors.loadImages'));
     } finally {
       setIsLoading(false);
     }
@@ -50,7 +52,7 @@ export function useImages() {
       if (!data) throw new Error('No data returned');
 
       setImages(prev => [data, ...prev]);
-      toast.success('Image generated!');
+      toast.success(t('messages.imageGenerated'));
       return data;
     } catch (error) {
       console.error('Error generating image:', error);
@@ -71,7 +73,7 @@ export function useImages() {
       };
 
       setImages(prev => [mockImage, ...prev]);
-      toast.success('Generated (Mock)');
+      toast.success(t('messages.imageGenerated'));
 
       // toast.error(error instanceof Error ? error.message : 'Failed to generate image');
       // throw error; // Don't throw if we handled it with mock
@@ -90,10 +92,10 @@ export function useImages() {
       if (error) throw error;
 
       setImages(prev => prev.filter(img => img.id !== id));
-      toast.success('Image deleted');
+      toast.success(t('messages.imageDeleted'));
     } catch (error) {
       console.error('Error deleting image:', error);
-      toast.error('Failed to delete image');
+      toast.error(t('errors.deleteImage'));
       throw error;
     }
   };

@@ -2,6 +2,7 @@ import { useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Tables, TablesInsert, TablesUpdate } from '@/integrations/supabase/types';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
 
 export type Memory = Tables<'memory_objects'> & {
   type?: string;
@@ -18,6 +19,7 @@ export type MemoryUpdate = TablesUpdate<'memory_objects'>;
 export type MemoryStatus = 'proposed' | 'approved' | 'rejected';
 
 export function useMemory(projectId?: string) {
+  const { t } = useTranslation();
   const [memories, setMemories] = useState<Memory[]>([]);
   const [proposedMemories, setProposedMemories] = useState<Memory[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -121,11 +123,11 @@ export function useMemory(projectId?: string) {
       } else {
         setProposedMemories(prev => [memory, ...prev]);
       }
-      toast.success('Memory saved');
+      toast.success(t('messages.memorySaved'));
       return memory;
     } catch (error) {
       console.error('Error adding memory:', error);
-      toast.error('Failed to save memory');
+      toast.error(t('errors.saveMemory'));
       throw error;
     }
   };
@@ -157,7 +159,7 @@ export function useMemory(projectId?: string) {
       return memory;
     } catch (error) {
       console.error('Error updating memory:', error);
-      toast.error('Failed to update memory');
+      toast.error(t('errors.updateMemory'));
       throw error;
     }
   };
@@ -165,7 +167,7 @@ export function useMemory(projectId?: string) {
   const approveMemory = async (id: string) => {
     try {
       await updateMemory(id, { status: 'approved' } as any);
-      toast.success('Memory approved');
+      toast.success(t('messages.memoryApproved'));
     } catch (error) {
       // Error already handled
     }
@@ -174,7 +176,7 @@ export function useMemory(projectId?: string) {
   const rejectMemory = async (id: string) => {
     try {
       await updateMemory(id, { status: 'rejected', is_active: false } as any);
-      toast.success('Memory rejected');
+      toast.success(t('messages.memoryRejected'));
     } catch (error) {
       // Error already handled
     }
@@ -191,10 +193,10 @@ export function useMemory(projectId?: string) {
 
       setMemories(prev => prev.filter(m => m.id !== id));
       setProposedMemories(prev => prev.filter(m => m.id !== id));
-      toast.success('Memory deleted');
+      toast.success(t('messages.memoryDeleted'));
     } catch (error) {
       console.error('Error deleting memory:', error);
-      toast.error('Failed to delete memory');
+      toast.error(t('errors.deleteMemory'));
       throw error;
     }
   };

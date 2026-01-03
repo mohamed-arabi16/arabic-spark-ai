@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { ImageGenerationPanel } from '@/components/images/ImageGenerationPanel';
 import { ImageGallery } from '@/components/images/ImageGallery';
@@ -6,6 +7,7 @@ import { useImages } from '@/hooks/useImages';
 import { Loader2 } from 'lucide-react';
 
 export default function Images() {
+  const { t } = useTranslation();
   const { images, isLoading, isGenerating, fetchImages, generateImage, deleteImage } = useImages();
 
   useEffect(() => {
@@ -13,7 +15,7 @@ export default function Images() {
   }, [fetchImages]);
 
   const handleDelete = async (id: string) => {
-    if (confirm('Are you sure you want to delete this image?')) {
+    if (confirm(t('common.confirmDelete'))) {
       await deleteImage(id);
     }
   };
@@ -22,9 +24,9 @@ export default function Images() {
     <MainLayout>
       <div className="flex-1 p-6 space-y-6 overflow-y-auto">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Image Studio</h1>
+          <h1 className="text-2xl font-bold tracking-tight">{t('images.title')}</h1>
           <p className="text-muted-foreground">
-            Generate and manage your AI-created artwork.
+            {t('images.subtitle')}
           </p>
         </div>
 
