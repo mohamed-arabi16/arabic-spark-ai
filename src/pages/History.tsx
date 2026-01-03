@@ -73,9 +73,9 @@ export default function History() {
   };
 
   const getProjectName = (projectId: string | null) => {
-    if (!projectId) return 'No Project';
+    if (!projectId) return 'General';
     const project = projects.find(p => p.id === projectId);
-    return project?.name || 'Unknown Project';
+    return project?.name || 'General';
   };
 
   const renderConversationCard = (conv: ConversationWithSnippet) => (
@@ -202,7 +202,7 @@ export default function History() {
                 {Object.entries(groupedByProject).map(([projectId, convs]) => (
                   <div key={projectId}>
                     <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                      {projectId === 'no-project' ? 'No Project' : getProjectName(projectId)}
+                      {projectId === 'no-project' ? 'General' : getProjectName(projectId)}
                       <Badge variant="outline">{convs.length}</Badge>
                     </h3>
                     <div className="grid gap-4">
