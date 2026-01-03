@@ -1,4 +1,5 @@
 import { GeneratedImage } from '@/hooks/useImages';
+import { useTranslation } from 'react-i18next';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Download, Trash2, Maximize2 } from 'lucide-react';
@@ -10,6 +11,7 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import { formatDistanceToNow } from 'date-fns';
+import { enUS, ar } from 'date-fns/locale';
 
 interface ImageGalleryProps {
   images: GeneratedImage[];
@@ -17,12 +19,17 @@ interface ImageGalleryProps {
 }
 
 export function ImageGallery({ images, onDelete }: ImageGalleryProps) {
+  const { t, i18n } = useTranslation();
+
+  // Date formatting locale
+  const dateLocale = i18n.language === 'ar' ? ar : enUS;
+
   if (images.length === 0) {
     return (
       <div className="text-center py-20 border rounded-lg border-dashed">
-        <h3 className="text-lg font-medium">No images yet</h3>
+        <h3 className="text-lg font-medium">{t('images.noImages')}</h3>
         <p className="text-muted-foreground">
-          Generate your first image to see it here.
+          {t('images.noImagesDesc')}
         </p>
       </div>
     );
@@ -47,7 +54,7 @@ export function ImageGallery({ images, onDelete }: ImageGalleryProps) {
                 </DialogTrigger>
                 <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
                   <DialogHeader>
-                    <DialogTitle>Generated Image</DialogTitle>
+                    <DialogTitle>{t('images.generatedImage')}</DialogTitle>
                   </DialogHeader>
                   <div className="space-y-4">
                     <img
@@ -56,13 +63,13 @@ export function ImageGallery({ images, onDelete }: ImageGalleryProps) {
                       className="w-full rounded-md"
                     />
                     <div>
-                      <h4 className="font-medium text-sm text-muted-foreground mb-1">Prompt</h4>
+                      <h4 className="font-medium text-sm text-muted-foreground mb-1">{t('images.prompt')}</h4>
                       <p className="text-sm">{image.prompt}</p>
                     </div>
                     <div className="flex gap-4 text-xs text-muted-foreground">
-                       <span>Size: {image.size}</span>
-                       <span>Model: {image.model_used}</span>
-                       <span>Created: {new Date(image.created_at).toLocaleDateString()}</span>
+                       <span>{t('images.size')}: {image.size}</span>
+                       <span>{t('images.model')}: {image.model_used}</span>
+                       <span>{t('images.created')}: {new Date(image.created_at).toLocaleDateString()}</span>
                     </div>
                   </div>
                 </DialogContent>
@@ -80,7 +87,7 @@ export function ImageGallery({ images, onDelete }: ImageGalleryProps) {
           <CardContent className="p-3">
             <p className="text-sm truncate font-medium">{image.prompt}</p>
             <p className="text-xs text-muted-foreground mt-1">
-              {formatDistanceToNow(new Date(image.created_at), { addSuffix: true })}
+              {formatDistanceToNow(new Date(image.created_at), { addSuffix: true, locale: dateLocale })}
             </p>
           </CardContent>
         </Card>

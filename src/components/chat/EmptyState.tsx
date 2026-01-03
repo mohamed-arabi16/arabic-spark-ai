@@ -1,34 +1,37 @@
 import { Sparkles, MessageSquare, Image, Search, Brain } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { useTranslation, Trans } from 'react-i18next';
 
 interface EmptyStateProps {
   onSuggestionClick: (suggestion: string) => void;
 }
 
-const suggestions = [
-  {
-    icon: MessageSquare,
-    title: 'Write content',
-    prompt: 'Help me write engaging social media content about...',
-  },
-  {
-    icon: Brain,
-    title: 'Explain concepts',
-    prompt: 'Explain the concept of machine learning in simple terms',
-  },
-  {
-    icon: Image,
-    title: 'Generate images',
-    prompt: 'Create an image of a futuristic cityscape at sunset',
-  },
-  {
-    icon: Search,
-    title: 'Research topics',
-    prompt: 'Research the latest trends in renewable energy',
-  },
-];
-
 export function EmptyState({ onSuggestionClick }: EmptyStateProps) {
+  const { t } = useTranslation();
+
+  const suggestions = [
+    {
+      icon: MessageSquare,
+      title: t('chat.writeContent'),
+      prompt: t('chat.writeContentDesc'),
+    },
+    {
+      icon: Brain,
+      title: t('chat.explainConcepts'),
+      prompt: t('chat.explainConceptsDesc'),
+    },
+    {
+      icon: Image,
+      title: t('chat.generateImages'),
+      prompt: t('chat.generateImagesDesc'),
+    },
+    {
+      icon: Search,
+      title: t('chat.researchTopics'),
+      prompt: t('chat.researchTopicsDesc'),
+    },
+  ];
+
   return (
     <div className="flex-1 flex flex-col items-center justify-center p-8">
       {/* Logo and welcome */}
@@ -36,9 +39,9 @@ export function EmptyState({ onSuggestionClick }: EmptyStateProps) {
         <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-primary/10 mb-4">
           <Sparkles className="h-8 w-8 text-primary" />
         </div>
-        <h1 className="text-2xl font-semibold mb-2">How can I help you today?</h1>
+        <h1 className="text-2xl font-semibold mb-2">{t('chat.howCanIHelp')}</h1>
         <p className="text-muted-foreground max-w-md">
-          I can help you write, brainstorm, analyze, and create. Choose a mode above for different capabilities.
+          {t('chat.helperText')}
         </p>
       </div>
 
@@ -48,14 +51,14 @@ export function EmptyState({ onSuggestionClick }: EmptyStateProps) {
           <Button
             key={suggestion.title}
             variant="outline"
-            className="h-auto p-4 flex flex-col items-start gap-2 text-left hover:bg-secondary/50 hover:border-primary/30 transition-all group"
+            className="h-auto p-4 flex flex-col items-start gap-2 text-start hover:bg-secondary/50 hover:border-primary/30 transition-all group"
             onClick={() => onSuggestionClick(suggestion.prompt)}
           >
             <div className="flex items-center gap-2">
               <suggestion.icon className="h-4 w-4 text-primary group-hover:scale-110 transition-transform" />
               <span className="font-medium">{suggestion.title}</span>
             </div>
-            <span className="text-sm text-muted-foreground line-clamp-2">
+            <span className="text-sm text-muted-foreground line-clamp-2 text-start">
               {suggestion.prompt}
             </span>
           </Button>
@@ -65,7 +68,12 @@ export function EmptyState({ onSuggestionClick }: EmptyStateProps) {
       {/* Tips */}
       <div className="mt-8 text-center">
         <p className="text-xs text-muted-foreground">
-          💡 Tip: Use <kbd className="px-1.5 py-0.5 bg-secondary rounded text-xs">Shift + Enter</kbd> for new lines
+          💡 <Trans
+            i18nKey="chat.tip"
+            components={[
+              <kbd className="pointer-events-none inline-flex h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground opacity-100" />
+            ]}
+          />
         </p>
       </div>
     </div>

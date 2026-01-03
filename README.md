@@ -107,6 +107,23 @@ Ensure you are logged in via `supabase login` and linked to the correct project.
 - **Authentication**: All Edge Functions (except potentially public webhooks) must verify the `Authorization` header using `supabase.auth.getUser()`.
 - **Secrets Management**: Never commit API keys (OpenAI, etc.) to the repository. Store them in Supabase Secrets.
 
+## Localization (i18n) & RTL
+
+The application supports English (`en`) and Arabic (`ar`) with full RTL (Right-to-Left) layout support.
+
+### Adding Translations
+- Translation files are located in `src/locales/{lang}/translation.json`.
+- Organize keys by namespaces (e.g., `dashboard`, `chat`, `projects`).
+- Use `t('namespace.key')` in components.
+
+### RTL Guidelines
+- Use **Logical Properties** in Tailwind CSS:
+    - `ms-` (margin-start) instead of `ml-`
+    - `me-` (margin-end) instead of `mr-`
+    - `ps-` (padding-start) instead of `pl-`
+    - `text-start` / `text-end` instead of `text-left` / `text-right`
+- Icons should generally *not* be manually flipped unless they denote direction (like back arrows). Use `rtl:rotate-180` for directional icons.
+
 ## Operational Playbooks
 
 ### Monitoring

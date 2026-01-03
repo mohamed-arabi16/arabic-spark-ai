@@ -1,4 +1,5 @@
 import { UsageSummary } from '@/hooks/useUsage';
+import { useTranslation } from 'react-i18next';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Coins, MessageSquare, Image, Zap } from 'lucide-react';
 
@@ -7,32 +8,33 @@ interface UsageSummaryProps {
 }
 
 export function UsageSummaryCards({ summary }: UsageSummaryProps) {
+  const { t } = useTranslation();
   if (!summary) return null;
 
   const items = [
     {
-      title: 'Total Cost',
+      title: t('usage.totalCost'),
       value: `$${summary.total_cost.toFixed(2)}`,
       icon: Coins,
-      description: 'Estimated cost for this period',
+      description: t('usage.estimatedCost'),
     },
     {
-      title: 'Tokens Used',
+      title: t('usage.tokens'),
       value: summary.total_tokens.toLocaleString(),
       icon: Zap,
-      description: 'Input and output tokens',
+      description: t('usage.inputOutput'),
     },
     {
-      title: 'Messages',
+      title: t('usage.messages'),
       value: summary.total_messages.toLocaleString(),
       icon: MessageSquare,
-      description: 'Total chat messages sent',
+      description: t('usage.totalMessages'),
     },
     {
-      title: 'Images',
+      title: t('usage.images'),
       value: summary.total_images.toLocaleString(),
       icon: Image,
-      description: 'Generated images',
+      description: t('usage.generatedImages'),
     },
   ];
 

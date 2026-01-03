@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { useProjects, Project, ProjectInsert, ProjectUpdate } from '@/hooks/useProjects';
 import { ProjectCard } from '@/components/projects/ProjectCard';
@@ -10,6 +11,7 @@ import { Plus, Search, Loader2 } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 export default function Projects() {
+  const { t } = useTranslation();
   const {
     projects,
     currentProject,
@@ -54,9 +56,6 @@ export default function Projects() {
     selectProject(project.id);
   };
 
-  // Currently deleteProject only does soft delete (archive).
-  // For hard delete, we would need a new function in useProjects.
-  // Assuming deleteProject is soft delete based on useProjects implementation.
   const handleHardDelete = async (project: Project) => {
     if (confirm(`Are you sure you want to PERMANENTLY delete "${project.name}"? This cannot be undone.`)) {
         await deleteProject(project.id);
@@ -76,31 +75,31 @@ export default function Projects() {
       <div className="flex-1 p-6 space-y-6 overflow-y-auto">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold tracking-tight">Projects</h1>
+            <h1 className="text-2xl font-bold tracking-tight">{t('projects.title')}</h1>
             <p className="text-muted-foreground">
-              Manage your workspaces and conversations.
+              {t('projects.subtitle')}
             </p>
           </div>
           <Button onClick={handleCreate}>
-            <Plus className="mr-2 h-4 w-4" /> New Project
+            <Plus className="me-2 h-4 w-4" /> {t('projects.newProject')}
           </Button>
         </div>
 
         <Tabs defaultValue="all" className="w-full">
           <div className="flex items-center justify-between mb-4">
             <TabsList>
-              <TabsTrigger value="all">All Projects</TabsTrigger>
-              <TabsTrigger value="recent">Recent</TabsTrigger>
+              <TabsTrigger value="all">{t('projects.allProjects')}</TabsTrigger>
+              <TabsTrigger value="recent">{t('projects.recent')}</TabsTrigger>
               <TabsTrigger value="settings" disabled={!currentProject}>
-                Settings
+                {t('projects.settings')}
               </TabsTrigger>
             </TabsList>
 
             <div className="relative w-64">
-              <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Search className="absolute start-2 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Search projects..."
-                className="pl-8"
+                placeholder={t('projects.searchPlaceholder')}
+                className="ps-8"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 aria-label="Search projects"
@@ -115,12 +114,12 @@ export default function Projects() {
               </div>
             ) : filteredProjects.length === 0 ? (
               <div className="text-center py-20 border rounded-lg border-dashed">
-                <h3 className="text-lg font-medium">No projects found</h3>
+                <h3 className="text-lg font-medium">{t('projects.noProjects')}</h3>
                 <p className="text-muted-foreground mb-4">
-                  Get started by creating a new project.
+                  {t('projects.createFirstProject')}
                 </p>
                 <Button onClick={handleCreate} variant="outline">
-                  <Plus className="mr-2 h-4 w-4" /> Create Project
+                  <Plus className="me-2 h-4 w-4" /> {t('projects.newProject')}
                 </Button>
               </div>
             ) : (
@@ -146,9 +145,9 @@ export default function Projects() {
               </div>
             ) : projects.slice(0, 5).length === 0 ? (
                <div className="text-center py-20 border rounded-lg border-dashed">
-                <h3 className="text-lg font-medium">No recent projects</h3>
+                <h3 className="text-lg font-medium">{t('projects.noRecent')}</h3>
                 <p className="text-muted-foreground mb-4">
-                  Projects you create or edit will appear here.
+                  {t('projects.recentDescription')}
                 </p>
               </div>
             ) : (
@@ -176,7 +175,7 @@ export default function Projects() {
               />
             ) : (
               <div className="text-center py-10">
-                Please select a project to view its settings.
+                {t('projects.selectToViewSettings')}
               </div>
             )}
           </TabsContent>

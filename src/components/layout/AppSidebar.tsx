@@ -132,7 +132,7 @@ export function AppSidebar({ collapsed, onToggle }: AppSidebarProps) {
                 size="icon"
                 className="h-5 w-5"
                 onClick={() => setIsProjectDialogOpen(true)}
-                title="New Project"
+                title={t('projects.newProject')}
               >
                 <Plus className="h-3 w-3" />
               </Button>
@@ -143,7 +143,7 @@ export function AppSidebar({ collapsed, onToggle }: AppSidebarProps) {
               onValueChange={handleProjectSelect}
             >
               <SelectTrigger className="w-full">
-                <SelectValue placeholder="Select Project" />
+                <SelectValue placeholder={t('projects.title')} />
               </SelectTrigger>
               <SelectContent>
                 {projects.map((p) => (
@@ -159,7 +159,7 @@ export function AppSidebar({ collapsed, onToggle }: AppSidebarProps) {
           ) : (
              <Button variant="outline" className="w-full justify-start gap-2" onClick={() => setIsProjectDialogOpen(true)}>
                 <Plus className="h-4 w-4" />
-                Create Project
+                {t('projects.newProject')}
              </Button>
           )}
         </div>
@@ -171,7 +171,7 @@ export function AppSidebar({ collapsed, onToggle }: AppSidebarProps) {
                 variant="ghost"
                 size="icon"
                 onClick={() => setIsProjectDialogOpen(true)}
-                title="New Project"
+                title={t('projects.newProject')}
              >
                  <Briefcase className="h-5 w-5" />
              </Button>
@@ -189,7 +189,7 @@ export function AppSidebar({ collapsed, onToggle }: AppSidebarProps) {
           onClick={() => navigate('/chat')}
         >
           <Plus className="h-4 w-4" />
-          {!collapsed && <span>{t('sidebar.newChat')}</span>}
+          {!collapsed && <span>{t('chat.newChat')}</span>}
         </Button>
       </div>
 
@@ -226,7 +226,7 @@ export function AppSidebar({ collapsed, onToggle }: AppSidebarProps) {
               {['Marketing campaign ideas', 'Code review help', 'Arabic translation'].map((chat, i) => (
                 <button
                   key={i}
-                  className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-sidebar-foreground hover:bg-sidebar-accent/50 transition-colors text-left truncate"
+                  className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-sidebar-foreground hover:bg-sidebar-accent/50 transition-colors text-start truncate"
                 >
                   <MessageSquare className="h-4 w-4 shrink-0 opacity-50" />
                   <span className="truncate">{chat}</span>

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -12,6 +13,7 @@ interface ImageGenerationPanelProps {
 }
 
 export function ImageGenerationPanel({ onGenerate, isGenerating }: ImageGenerationPanelProps) {
+  const { t } = useTranslation();
   const [prompt, setPrompt] = useState('');
   const [size, setSize] = useState('1024x1024');
 
@@ -25,18 +27,18 @@ export function ImageGenerationPanel({ onGenerate, isGenerating }: ImageGenerati
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Generate New Image</CardTitle>
+        <CardTitle>{t('images.generateNew')}</CardTitle>
         <CardDescription>
-          Describe the image you want to create using AI.
+          {t('images.generateSubtitle')}
         </CardDescription>
       </CardHeader>
       <form onSubmit={handleSubmit}>
         <CardContent className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="prompt">Prompt</Label>
+            <Label htmlFor="prompt">{t('images.prompt')}</Label>
             <Textarea
               id="prompt"
-              placeholder="A futuristic city in the desert, golden hour, digital art style..."
+              placeholder={t('images.placeholder')}
               className="resize-none h-24"
               value={prompt}
               onChange={(e) => setPrompt(e.target.value)}
@@ -44,10 +46,10 @@ export function ImageGenerationPanel({ onGenerate, isGenerating }: ImageGenerati
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="size">Size</Label>
+            <Label htmlFor="size">{t('images.size')}</Label>
             <Select value={size} onValueChange={setSize} disabled={isGenerating}>
               <SelectTrigger>
-                <SelectValue placeholder="Select size" />
+                <SelectValue placeholder={t('common.select')} />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="1024x1024">Square (1024x1024)</SelectItem>
@@ -61,13 +63,13 @@ export function ImageGenerationPanel({ onGenerate, isGenerating }: ImageGenerati
           <Button type="submit" className="w-full" disabled={!prompt.trim() || isGenerating}>
             {isGenerating ? (
               <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Generating...
+                <Loader2 className="me-2 h-4 w-4 animate-spin" />
+                {t('images.generate')}...
               </>
             ) : (
               <>
-                <Sparkles className="mr-2 h-4 w-4" />
-                Generate
+                <Sparkles className="me-2 h-4 w-4" />
+                {t('images.generate')}
               </>
             )}
           </Button>

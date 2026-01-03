@@ -2,12 +2,14 @@ import { useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Tables, TablesInsert, TablesUpdate } from '@/integrations/supabase/types';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
 
 export type Project = Tables<'projects'>;
 export type ProjectInsert = TablesInsert<'projects'>;
 export type ProjectUpdate = TablesUpdate<'projects'>;
 
 export function useProjects() {
+  const { t } = useTranslation();
   const [projects, setProjects] = useState<Project[]>([]);
   const [currentProject, setCurrentProject] = useState<Project | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -32,7 +34,7 @@ export function useProjects() {
       }
     } catch (error) {
       console.error('Error fetching projects:', error);
-      toast.error('Failed to load projects');
+      toast.error(t('errors.loadProjects'));
     } finally {
       setIsLoading(false);
     }
@@ -53,11 +55,11 @@ export function useProjects() {
 
       setProjects(prev => [data, ...prev]);
       setCurrentProject(data);
-      toast.success('Project created');
+      toast.success(t('messages.projectCreated'));
       return data;
     } catch (error) {
       console.error('Error creating project:', error);
-      toast.error('Failed to create project');
+      toast.error(t('errors.createProject'));
       throw error;
     }
   };
@@ -77,11 +79,11 @@ export function useProjects() {
       if (currentProject?.id === id) {
         setCurrentProject(data);
       }
-      toast.success('Project updated');
+      toast.success(t('messages.projectUpdated'));
       return data;
     } catch (error) {
       console.error('Error updating project:', error);
-      toast.error('Failed to update project');
+      toast.error(t('errors.updateProject'));
       throw error;
     }
   };
@@ -100,10 +102,10 @@ export function useProjects() {
       if (currentProject?.id === id) {
         setCurrentProject(projects.find(p => p.id !== id) || null);
       }
-      toast.success('Project archived');
+      toast.success(t('messages.projectArchived'));
     } catch (error) {
       console.error('Error deleting project:', error);
-      toast.error('Failed to archive project');
+      toast.error(t('errors.archiveProject'));
       throw error;
     }
   };

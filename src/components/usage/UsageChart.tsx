@@ -1,4 +1,5 @@
 import { UsageStat } from '@/hooks/useUsage';
+import { useTranslation } from 'react-i18next';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts';
 
@@ -7,6 +8,8 @@ interface UsageChartProps {
 }
 
 export function UsageChart({ data }: UsageChartProps) {
+  const { t } = useTranslation();
+
   // Transform data for display
   const chartData = data.map(d => ({
     date: new Date(d.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }),
@@ -17,7 +20,7 @@ export function UsageChart({ data }: UsageChartProps) {
   return (
     <Card className="col-span-4">
       <CardHeader>
-        <CardTitle>Daily Usage Cost</CardTitle>
+        <CardTitle>{t('usage.dailyCost')}</CardTitle>
       </CardHeader>
       <CardContent className="pl-2">
         <div className="h-[300px] w-full">

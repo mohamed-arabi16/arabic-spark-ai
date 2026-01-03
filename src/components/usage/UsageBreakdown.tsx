@@ -1,4 +1,5 @@
 import { ModelBreakdown } from '@/hooks/useUsage';
+import { useTranslation } from 'react-i18next';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip, Legend } from 'recharts';
 
@@ -9,11 +10,13 @@ interface UsageBreakdownProps {
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042'];
 
 export function UsageBreakdown({ data }: UsageBreakdownProps) {
+  const { t } = useTranslation();
+
   return (
     <Card className="col-span-3">
       <CardHeader>
-        <CardTitle>Cost by Model</CardTitle>
-        <CardDescription>Breakdown of costs across different models.</CardDescription>
+        <CardTitle>{t('usage.costByModel')}</CardTitle>
+        <CardDescription>{t('usage.costByModelSubtitle')}</CardDescription>
       </CardHeader>
       <CardContent>
         <div className="h-[300px] w-full">

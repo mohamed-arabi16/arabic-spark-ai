@@ -1,4 +1,5 @@
 import { useRef, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -16,6 +17,7 @@ interface ChatInputProps {
 }
 
 export function ChatInput({ onSend, isLoading, onStop, message, setMessage, mode, setMode }: ChatInputProps) {
+  const { t } = useTranslation();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   // Auto-resize textarea
@@ -62,7 +64,7 @@ export function ChatInput({ onSend, isLoading, onStop, message, setMessage, mode
           {/* Textarea */}
           <Textarea
             ref={textareaRef}
-            placeholder="Ask anything..."
+            placeholder={t('chat.askAnything')}
             value={message}
             onChange={(e) => setMessage(e.target.value)}
             onKeyDown={handleKeyDown}
@@ -108,7 +110,7 @@ export function ChatInput({ onSend, isLoading, onStop, message, setMessage, mode
 
         {/* Cost indicator */}
         <p className="text-xs text-muted-foreground text-center">
-          Estimated cost: ~$0.00 · Press Enter to send
+          {t('chat.inputFooter')}
         </p>
       </div>
     </div>

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
+import { useTranslation } from 'react-i18next';
 import { Project, ProjectInsert, ProjectUpdate } from '@/hooks/useProjects';
 import {
   Dialog,
@@ -53,6 +54,7 @@ interface ProjectDialogProps {
 }
 
 export function ProjectDialog({ open, onOpenChange, project, onSubmit }: ProjectDialogProps) {
+  const { t } = useTranslation();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -95,7 +97,6 @@ export function ProjectDialog({ open, onOpenChange, project, onSubmit }: Project
   const handleSubmit = async (values: z.infer<typeof formSchema>) => {
     setIsSubmitting(true);
     try {
-      // Cast values to compatible types because zod enum inference can be tricky with specific string literals vs general strings
       await onSubmit(values as unknown as ProjectInsert);
       onOpenChange(false);
       form.reset();
@@ -110,9 +111,9 @@ export function ProjectDialog({ open, onOpenChange, project, onSubmit }: Project
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>{project ? 'Edit Project' : 'New Project'}</DialogTitle>
+          <DialogTitle>{project ? t('projects.dialog.editTitle') : t('projects.dialog.createTitle')}</DialogTitle>
           <DialogDescription>
-            Configure your workspace settings and defaults.
+            {t('projects.dialog.description')}
           </DialogDescription>
         </DialogHeader>
 
@@ -124,9 +125,9 @@ export function ProjectDialog({ open, onOpenChange, project, onSubmit }: Project
                 name="name"
                 render={({ field }) => (
                   <FormItem className="col-span-2">
-                    <FormLabel>Project Name</FormLabel>
+                    <FormLabel>{t('projects.dialog.nameLabel')}</FormLabel>
                     <FormControl>
-                      <Input placeholder="My Awesome Project" {...field} />
+                      <Input placeholder={t('projects.dialog.namePlaceholder')} {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -138,7 +139,7 @@ export function ProjectDialog({ open, onOpenChange, project, onSubmit }: Project
                 name="icon"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Icon (Emoji)</FormLabel>
+                    <FormLabel>{t('projects.dialog.iconLabel')}</FormLabel>
                     <FormControl>
                       <Input placeholder="💬" {...field} />
                     </FormControl>
@@ -152,7 +153,7 @@ export function ProjectDialog({ open, onOpenChange, project, onSubmit }: Project
                 name="color"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Color</FormLabel>
+                    <FormLabel>{t('projects.dialog.colorLabel')}</FormLabel>
                     <FormControl>
                       <div className="flex gap-2">
                         <Input type="color" className="w-12 p-1" {...field} />
@@ -170,10 +171,10 @@ export function ProjectDialog({ open, onOpenChange, project, onSubmit }: Project
               name="description"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Description</FormLabel>
+                  <FormLabel>{t('projects.dialog.descLabel')}</FormLabel>
                   <FormControl>
                     <Textarea
-                      placeholder="What is this project about?"
+                      placeholder={t('projects.dialog.descPlaceholder')}
                       className="resize-none h-20"
                       {...field}
                     />
@@ -189,11 +190,11 @@ export function ProjectDialog({ open, onOpenChange, project, onSubmit }: Project
                 name="dialect_preset"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Default Dialect</FormLabel>
+                    <FormLabel>{t('projects.dialog.dialectLabel')}</FormLabel>
                     <Select onValueChange={field.onChange} defaultValue={field.value}>
                       <FormControl>
                         <SelectTrigger>
-                          <SelectValue placeholder="Select dialect" />
+                          <SelectValue placeholder={t('common.select')} />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
@@ -214,11 +215,11 @@ export function ProjectDialog({ open, onOpenChange, project, onSubmit }: Project
                 name="default_mode"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Default Mode</FormLabel>
+                    <FormLabel>{t('projects.dialog.modeLabel')}</FormLabel>
                     <Select onValueChange={field.onChange} defaultValue={field.value}>
                       <FormControl>
                         <SelectTrigger>
-                          <SelectValue placeholder="Select mode" />
+                          <SelectValue placeholder={t('common.select')} />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
@@ -240,16 +241,16 @@ export function ProjectDialog({ open, onOpenChange, project, onSubmit }: Project
               name="system_instructions"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>System Instructions</FormLabel>
+                  <FormLabel>{t('projects.dialog.instructionsLabel')}</FormLabel>
                   <FormControl>
                     <Textarea
-                      placeholder="Custom instructions for the AI in this project..."
+                      placeholder={t('projects.dialog.instructionsDesc')}
                       className="resize-y h-32 font-mono text-xs"
                       {...field}
                     />
                   </FormControl>
                   <FormDescription>
-                    These instructions will be prepended to every conversation in this project.
+                    {t('projects.dialog.instructionsDesc')}
                   </FormDescription>
                   <FormMessage />
                 </FormItem>
@@ -258,10 +259,10 @@ export function ProjectDialog({ open, onOpenChange, project, onSubmit }: Project
 
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-                Cancel
+                {t('common.cancel')}
               </Button>
               <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting ? 'Saving...' : project ? 'Save Changes' : 'Create Project'}
+                {isSubmitting ? t('projects.dialog.saving') : project ? t('common.saveChanges') : t('projects.newProject')}
               </Button>
             </DialogFooter>
           </form>
