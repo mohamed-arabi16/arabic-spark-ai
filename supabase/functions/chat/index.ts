@@ -11,7 +11,7 @@ const corsHeaders = {
 const TEXT_MODEL = 'gpt-5.2';
 
 const REASONING_EFFORT: Record<string, string> = {
-  fast: 'minimal',
+  fast: 'none',       // No reasoning - fastest responses
   standard: 'low',
   deep: 'medium',
   pro: 'high',
@@ -85,7 +85,7 @@ serve(async (req) => {
     }
 
     // Determine reasoning effort and max tokens
-    const reasoningEffort = REASONING_EFFORT[mode] || 'minimal';
+    const reasoningEffort = REASONING_EFFORT[mode] || 'none';
     let maxCompletionTokens = 2048;
 
     if (reasoningEffort === 'medium') {

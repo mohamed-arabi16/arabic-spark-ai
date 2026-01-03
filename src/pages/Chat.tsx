@@ -283,6 +283,24 @@ export default function Chat() {
         }
       }
 
+      // Get message count after adding user + assistant
+      const currentMessageCount = messages.length + 2;
+
+      // Check if we should trigger auto-summarization (every 20 messages)
+      if (currentMessageCount > 0 && currentMessageCount % 20 === 0 && convId) {
+        try {
+          console.log('Triggering auto-summarization at', currentMessageCount, 'messages');
+          const summaryResp = await supabase.functions.invoke('summarize-conversation', {
+            body: { conversation_id: convId }
+          });
+          if (summaryResp.data?.summary) {
+            toast.success('Conversation summarized to save context');
+          }
+        } catch (err) {
+          console.error('Auto-summarization failed:', err);
+        }
+      }
+
       // Check for memory extraction
       try {
         const { data: { user } } = await supabase.auth.getUser();
@@ -297,9 +315,7 @@ export default function Chat() {
           });
 
           if (extractionResp.data?.saved_count > 0) {
-            // Memories are saved to DB as "proposed" - user will see them in Memory Manager
             toast.info(`${extractionResp.data.saved_count} memory suggestion(s) extracted. Review in Memory Bank.`);
-            // Refresh memories to show new proposed ones
             fetchMemories();
           }
         }
