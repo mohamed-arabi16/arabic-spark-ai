@@ -265,4 +265,29 @@
   .mode-pro-bg { background-color: hsl(var(--mode-pro)); }
   .mode-research-bg { background-color: hsl(var(--mode-research)); }
   .mode-image-bg { background-color: hsl(var(--mode-image)); }
+
+  /* Safe area insets for mobile */
+  .safe-area-top {
+    padding-top: env(safe-area-inset-top, 0);
+  }
+  
+  .safe-area-bottom {
+    padding-bottom: env(safe-area-inset-bottom, 0);
+  }
+
+  /* Typing indicator animation */
+  @keyframes typingDot {
+    0%, 100% {
+      opacity: 0.3;
+      transform: scale(0.8);
+    }
+    50% {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+
+  .animate-typing-dot {
+    animation: typingDot 1.2s ease-in-out infinite;
+  }
 }
