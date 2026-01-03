@@ -25,7 +25,10 @@
     "alreadyRegistered": "This email is already registered. Please sign in instead.",
     "invalidCredentials": "Invalid email or password",
     "welcomeBack": "Welcome back!",
-    "accountCreated": "Account created! Welcome aboard."
+    "accountCreated": "Account created! Welcome aboard.",
+    "emailPlaceholder": "you@example.com",
+    "passwordPlaceholder": "••••••••",
+    "namePlaceholder": "John Doe"
   },
   "sidebar": {
     "home": "Home",
@@ -51,5 +54,9 @@
     "emailNotifications": "Email Notifications",
     "emailNotificationsDesc": "Receive emails about project updates.",
     "themeDesc": "Switch between light and dark themes."
+  },
+  "validation": {
+    "invalidEmail": "Please enter a valid email address",
+    "passwordLength": "Password must be at least 6 characters"
   }
 }

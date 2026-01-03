@@ -139,7 +139,12 @@
 
   body {
     @apply bg-background text-foreground antialiased;
+    font-family: 'Inter', sans-serif;
     font-feature-settings: "rlig" 1, "calt" 1;
+  }
+
+  html[lang="ar"] body {
+    font-family: 'Noto Kufi Arabic', sans-serif;
   }
 
   /* Custom scrollbar */
