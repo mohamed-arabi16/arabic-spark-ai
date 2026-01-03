@@ -132,12 +132,8 @@ Key behaviors:
       stream: true,
     };
 
-    if (mode === 'research') {
-      requestBody.tools = [{
-        type: 'web_search_preview',
-        search_context_size: 'medium',
-      }];
-    }
+    // Research mode uses enhanced system prompt instead of tools
+    // (web_search_preview is not a valid OpenAI tool type)
 
     // Make request to OpenAI
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
