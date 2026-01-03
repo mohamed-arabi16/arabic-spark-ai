@@ -65,7 +65,7 @@ export type Database = {
           id: string
           is_archived: boolean | null
           mode: Database["public"]["Enums"]["chat_mode"] | null
-          project_id: string
+          project_id: string | null
           title: string | null
           total_cost: number | null
           total_tokens: number | null
@@ -77,7 +77,7 @@ export type Database = {
           id?: string
           is_archived?: boolean | null
           mode?: Database["public"]["Enums"]["chat_mode"] | null
-          project_id: string
+          project_id?: string | null
           title?: string | null
           total_cost?: number | null
           total_tokens?: number | null
@@ -89,7 +89,7 @@ export type Database = {
           id?: string
           is_archived?: boolean | null
           mode?: Database["public"]["Enums"]["chat_mode"] | null
-          project_id?: string
+          project_id?: string | null
           title?: string | null
           total_cost?: number | null
           total_tokens?: number | null

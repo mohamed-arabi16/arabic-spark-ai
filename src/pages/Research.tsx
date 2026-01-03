@@ -271,7 +271,7 @@ export default function Research() {
           ) : (
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
               {researchHistory.map((item) => (
-                <Card key={item.id} className="hover:bg-muted/50 transition-colors">
+                <Card key={item.id} className="hover:bg-accent hover:border-primary/30 transition-colors cursor-pointer">
                   <CardHeader className="pb-2">
                     <CardTitle className="text-base line-clamp-2">{item.topic}</CardTitle>
                     <CardDescription className="flex items-center gap-1">

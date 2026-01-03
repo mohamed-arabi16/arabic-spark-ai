@@ -60,46 +60,12 @@ serve(async (req) => {
     // Create or get conversation for this research
     let convId = conversation_id;
     if (!convId) {
-      // If no project_id provided, find or create "General" project
-      let targetProjectId = project_id;
-
-      if (!targetProjectId) {
-        const { data: generalProject } = await supabase
-          .from('projects')
-          .select('id')
-          .eq('user_id', user.id)
-          .eq('name', 'General')
-          .maybeSingle();
-
-        if (generalProject) {
-          targetProjectId = generalProject.id;
-        } else {
-          // Create General project if it doesn't exist
-          const { data: newProject, error: createProjectError } = await supabase
-            .from('projects')
-            .insert({
-              user_id: user.id,
-              name: 'General',
-              description: 'Default project for general research and conversations',
-              icon: '📂',
-              color: '#64748b'
-            })
-            .select('id')
-            .single();
-
-          if (createProjectError) {
-            console.error('Failed to create General project:', createProjectError);
-            throw new Error('Failed to create default project');
-          }
-          targetProjectId = newProject.id;
-        }
-      }
-
+      // project_id can be null - conversations.project_id is now nullable
       const { data: newConv, error: convError } = await supabase
         .from('conversations')
         .insert({
           user_id: user.id,
-          project_id: targetProjectId,
+          project_id: project_id || null, // Allow null for "General" conversations
           title: `Research: ${query.substring(0, 50)}${query.length > 50 ? '...' : ''}`,
           mode: 'research',
         })
@@ -108,9 +74,13 @@ serve(async (req) => {
 
       if (convError) {
         console.error('Failed to create conversation:', convError);
-        throw new Error('Failed to create research conversation');
+        return new Response(
+          JSON.stringify({ error: 'Failed to create research conversation', details: convError.message }),
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
       }
       convId = newConv.id;
+      console.log(`Created new research conversation: ${convId}`);
     }
 
     // Save user query as message
@@ -200,11 +170,21 @@ serve(async (req) => {
             });
           }
 
+          // Estimate tokens for usage tracking
+          const estimatedInputTokens = Math.ceil(query.length / 4);
+          const estimatedOutputTokens = Math.ceil(finalContent.length / 4);
+          const totalTokens = estimatedInputTokens + estimatedOutputTokens;
+          // Perplexity sonar pricing ~$1 per million tokens
+          const estimatedCost = totalTokens / 1000000;
+
           await supabase.from('messages').insert({
             conversation_id: convId,
             role: 'assistant',
             content: finalContent,
             model_used: 'perplexity-sonar',
+            input_tokens: estimatedInputTokens,
+            output_tokens: estimatedOutputTokens,
+            cost: estimatedCost,
           });
 
           // Update conversation timestamp
@@ -213,7 +193,41 @@ serve(async (req) => {
             .update({ updated_at: new Date().toISOString() })
             .eq('id', convId);
 
-          console.log(`Research saved - Conversation: ${convId}, Content length: ${finalContent.length}`);
+          // Update usage stats
+          const today = new Date().toISOString().split('T')[0];
+          
+          // First try to get existing usage for today
+          const { data: existingUsage } = await supabase
+            .from('usage_stats')
+            .select('*')
+            .eq('user_id', user.id)
+            .eq('date', today)
+            .maybeSingle();
+
+          if (existingUsage) {
+            // Update existing record
+            await supabase
+              .from('usage_stats')
+              .update({
+                total_tokens: (existingUsage.total_tokens || 0) + totalTokens,
+                total_cost: (existingUsage.total_cost || 0) + estimatedCost,
+                message_count: (existingUsage.message_count || 0) + 2, // user + assistant
+              })
+              .eq('id', existingUsage.id);
+          } else {
+            // Insert new record
+            await supabase
+              .from('usage_stats')
+              .insert({
+                user_id: user.id,
+                date: today,
+                total_tokens: totalTokens,
+                total_cost: estimatedCost,
+                message_count: 2,
+              });
+          }
+
+          console.log(`Research saved - Conversation: ${convId}, Content length: ${finalContent.length}, Tokens: ${totalTokens}`);
         } catch (err) {
           console.error('Failed to save research response:', err);
         }
