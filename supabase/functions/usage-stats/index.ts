@@ -50,12 +50,33 @@ serve(async (req) => {
     const totalImages = dailyStats.reduce((acc, curr) => acc + (curr.image_count || 0), 0);
     const totalMessages = dailyStats.reduce((acc, curr) => acc + (curr.message_count || 0), 0);
 
-    // Mocking breakdown by model
-    const breakdown = [
-        { model: 'gpt-5-mini', tokens: Math.floor(totalTokens * 0.7), cost: totalCost * 0.4 },
-        { model: 'gpt-5', tokens: Math.floor(totalTokens * 0.25), cost: totalCost * 0.5 },
-        { model: 'gpt-image-1', tokens: 0, cost: totalCost * 0.1 }
-    ];
+    // Get real model breakdown from messages table
+    const { data: modelStats } = await supabase
+      .from('messages')
+      .select('model_used, input_tokens, output_tokens, cost')
+      .gte('created_at', start_date)
+      .lte('created_at', end_date + 'T23:59:59Z');
+
+    // Aggregate by model
+    const breakdownMap = new Map<string, { tokens: number; cost: number }>();
+    modelStats?.forEach((msg: any) => {
+      const model = msg.model_used || 'unknown';
+      const existing = breakdownMap.get(model) || { tokens: 0, cost: 0 };
+      existing.tokens += (msg.input_tokens || 0) + (msg.output_tokens || 0);
+      existing.cost += msg.cost || 0;
+      breakdownMap.set(model, existing);
+    });
+
+    const breakdown = Array.from(breakdownMap.entries()).map(([model, stats]) => ({
+      model,
+      tokens: stats.tokens,
+      cost: stats.cost
+    }));
+
+    // Fallback if no data
+    if (breakdown.length === 0 && totalTokens > 0) {
+      breakdown.push({ model: 'gpt-5.2', tokens: totalTokens, cost: totalCost });
+    }
 
     return new Response(
       JSON.stringify({

@@ -12,6 +12,7 @@ import Usage from "./pages/Usage";
 import Settings from "./pages/Settings";
 import Research from "./pages/Research";
 import History from "./pages/History";
+import Memory from "./pages/Memory";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 import { Loader2 } from "lucide-react";
@@ -120,6 +121,14 @@ function AppRoutes() {
         element={
           <ProtectedRoute>
             <History />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/memory"
+        element={
+          <ProtectedRoute>
+            <Memory />
           </ProtectedRoute>
         }
       />
