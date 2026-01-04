@@ -8,8 +8,8 @@
 
 @layer base {
   :root {
-    /* Light mode - Clean and minimal */
-    --background: 220 20% 97%;
+    /* Light mode - Sand, Slate, and Deep Blue/Teal */
+    --background: 210 20% 98%; /* Off-white/Slate hint */
     --foreground: 222 47% 11%;
 
     --card: 0 0% 100%;
@@ -18,16 +18,17 @@
     --popover: 0 0% 100%;
     --popover-foreground: 222 47% 11%;
 
-    --primary: 250 84% 54%;
+    /* Deep Blue / Teal Primary */
+    --primary: 200 80% 40%; /* Deep Teal/Blue */
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 220 14% 96%;
+    --secondary: 40 20% 96%; /* Sand hint */
     --secondary-foreground: 222 47% 11%;
 
     --muted: 220 14% 96%;
     --muted-foreground: 220 9% 46%;
 
-    --accent: 250 84% 54%;
+    --accent: 200 80% 40%;
     --accent-foreground: 0 0% 100%;
 
     --destructive: 0 84% 60%;
@@ -35,19 +36,19 @@
 
     --border: 220 13% 91%;
     --input: 220 13% 91%;
-    --ring: 250 84% 54%;
+    --ring: 200 80% 40%;
 
     --radius: 0.75rem;
 
     /* Sidebar */
     --sidebar-background: 0 0% 100%;
     --sidebar-foreground: 222 47% 11%;
-    --sidebar-primary: 250 84% 54%;
+    --sidebar-primary: 200 80% 40%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 250 84% 97%;
-    --sidebar-accent-foreground: 250 84% 40%;
+    --sidebar-accent: 200 80% 96%;
+    --sidebar-accent-foreground: 200 80% 40%;
     --sidebar-border: 220 13% 91%;
-    --sidebar-ring: 250 84% 54%;
+    --sidebar-ring: 200 80% 40%;
 
     /* Custom tokens */
     --success: 142 76% 36%;
@@ -71,44 +72,44 @@
   }
 
   .dark {
-    /* Dark mode - Premium, deep, sophisticated */
-    --background: 225 25% 6%;
+    /* Dark mode - Premium, deep, sophisticated with Teal/Blue accent */
+    --background: 222 30% 10%; /* Deep Slate */
     --foreground: 220 20% 95%;
 
-    --card: 225 25% 8%;
+    --card: 222 30% 12%;
     --card-foreground: 220 20% 95%;
 
-    --popover: 225 25% 10%;
+    --popover: 222 30% 12%;
     --popover-foreground: 220 20% 95%;
 
-    --primary: 250 84% 60%;
+    --primary: 200 80% 50%; /* Brighter Teal for Dark Mode */
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 225 20% 14%;
+    --secondary: 222 25% 18%;
     --secondary-foreground: 220 20% 95%;
 
-    --muted: 225 20% 14%;
+    --muted: 222 25% 18%;
     --muted-foreground: 220 15% 55%;
 
-    --accent: 250 84% 60%;
+    --accent: 200 80% 50%;
     --accent-foreground: 0 0% 100%;
 
     --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 225 20% 16%;
-    --input: 225 20% 16%;
-    --ring: 250 84% 60%;
+    --border: 222 25% 20%;
+    --input: 222 25% 20%;
+    --ring: 200 80% 50%;
 
     /* Sidebar */
-    --sidebar-background: 225 25% 7%;
+    --sidebar-background: 222 30% 11%;
     --sidebar-foreground: 220 20% 95%;
-    --sidebar-primary: 250 84% 60%;
+    --sidebar-primary: 200 80% 50%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 250 50% 15%;
-    --sidebar-accent-foreground: 250 84% 75%;
-    --sidebar-border: 225 20% 14%;
-    --sidebar-ring: 250 84% 60%;
+    --sidebar-accent: 200 60% 20%;
+    --sidebar-accent-foreground: 200 80% 75%;
+    --sidebar-border: 222 25% 18%;
+    --sidebar-ring: 200 80% 50%;
 
     /* Custom tokens */
     --success: 142 70% 45%;
@@ -147,9 +148,17 @@
   html[lang="ar"] body,
   [dir="rtl"] {
     font-family: 'Noto Kufi Arabic', 'Inter', sans-serif;
+    font-size: 110%; /* Increase font size */
     font-feature-settings: "liga" 1, "calt" 1, "kern" 1;
-    line-height: 1.9;
+    line-height: 1.7; /* Adjusted generous line height */
     letter-spacing: 0.01em;
+  }
+
+  /* Alexandria for headings in Arabic - High Specificity */
+  html[lang="ar"] h1, html[lang="ar"] h2, html[lang="ar"] h3, html[lang="ar"] h4, html[lang="ar"] h5, html[lang="ar"] h6,
+  [dir="rtl"] h1, [dir="rtl"] h2, [dir="rtl"] h3, [dir="rtl"] h4, [dir="rtl"] h5, [dir="rtl"] h6 {
+    font-family: 'Alexandria', 'Noto Kufi Arabic', sans-serif;
+    font-weight: 600;
   }
 
   /* Auto-direction for mixed content */

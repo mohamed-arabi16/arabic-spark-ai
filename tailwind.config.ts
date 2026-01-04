@@ -16,6 +16,7 @@ export default {
       fontFamily: {
         sans: ["Inter", "system-ui", "sans-serif"],
         display: ["Cal Sans", "Inter", "system-ui", "sans-serif"],
+        heading: ["Alexandria", "Noto Kufi Arabic", "sans-serif"],
       },
       colors: {
         border: "hsl(var(--border))",
