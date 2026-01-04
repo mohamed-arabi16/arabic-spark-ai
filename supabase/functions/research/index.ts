@@ -187,6 +187,27 @@ serve(async (req) => {
             cost: estimatedCost,
           });
 
+          // Record individual usage event
+          try {
+            await supabase.from('usage_events').insert({
+              user_id: user.id,
+              project_id: project_id || null,
+              request_type: 'research',
+              model_id: 'perplexity-sonar',
+              prompt_tokens: estimatedInputTokens,
+              completion_tokens: estimatedOutputTokens,
+              total_tokens: totalTokens,
+              cost: estimatedCost,
+              meta: {
+                conversation_id: convId,
+                query: query
+              }
+            });
+            console.log('Research usage event recorded');
+          } catch (eventError) {
+             console.error('Failed to record research usage event:', eventError);
+          }
+
           // Update conversation timestamp
           await supabase
             .from('conversations')

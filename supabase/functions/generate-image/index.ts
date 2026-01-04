@@ -182,6 +182,32 @@ serve(async (req) => {
       throw error;
     }
 
+    // Record individual usage event
+    try {
+      await supabase.from('usage_events').insert({
+        user_id: user.id,
+        project_id: null, // Images might be associated with a conversation, but project_id is not directly passed here usually.
+                         // We could fetch it via conversation_id if needed, but for now null is safe or we can try to get it from conversation?
+                         // The generate-image endpoint doesn't seem to receive project_id.
+                         // Let's leave it null for now.
+        request_type: 'image',
+        model_id: 'gemini-2.5-flash-image',
+        prompt_tokens: 0, // Images don't have tokens in the same way
+        completion_tokens: 0,
+        total_tokens: 0,
+        cost: cost,
+        meta: {
+          conversation_id,
+          prompt,
+          size,
+          style
+        }
+      });
+      console.log('Image usage event recorded');
+    } catch (eventError) {
+      console.error('Failed to record image usage event:', eventError);
+    }
+
     console.log('Image saved to database');
 
     return new Response(

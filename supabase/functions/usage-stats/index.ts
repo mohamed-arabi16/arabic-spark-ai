@@ -33,39 +33,75 @@ serve(async (req) => {
       throw new Error('Invalid token')
     }
 
-    // Fetch usage stats for the authenticated user
-    const { data: dailyStats, error: statsError } = await supabase
-      .from('usage_stats')
+    // RECONCILIATION: Aggregate directly from usage_events to ensure truthfulness
+    // This replaces the reliance on pre-aggregated usage_stats table for the dashboard
+
+    // Fetch all usage events for the period
+    const { data: events, error: eventsError } = await supabase
+      .from('usage_events')
       .select('*')
       .eq('user_id', user.id)
-      .gte('date', start_date)
-      .lte('date', end_date)
-      .order('date', { ascending: true });
+      .gte('created_at', `${start_date}T00:00:00Z`)
+      .lte('created_at', `${end_date}T23:59:59Z`)
+      .order('created_at', { ascending: true });
 
-    if (statsError) throw statsError
+    if (eventsError) throw eventsError;
 
-    // Calculate totals
-    const totalTokens = dailyStats.reduce((acc, curr) => acc + (curr.total_tokens || 0), 0);
-    const totalCost = dailyStats.reduce((acc, curr) => acc + (curr.total_cost || 0), 0);
-    const totalImages = dailyStats.reduce((acc, curr) => acc + (curr.image_count || 0), 0);
-    const totalMessages = dailyStats.reduce((acc, curr) => acc + (curr.message_count || 0), 0);
+    // Calculate daily stats on the fly
+    const dailyStatsMap = new Map<string, {
+      date: string;
+      total_tokens: number;
+      total_cost: number;
+      message_count: number;
+      image_count: number;
+    }>();
 
-    // Get real model breakdown from messages table
-    const { data: modelStats } = await supabase
-      .from('messages')
-      .select('model_used, input_tokens, output_tokens, cost')
-      .gte('created_at', start_date)
-      .lte('created_at', end_date + 'T23:59:59Z');
-
-    // Aggregate by model
+    // Calculate model breakdown on the fly
     const breakdownMap = new Map<string, { tokens: number; cost: number }>();
-    modelStats?.forEach((msg: any) => {
-      const model = msg.model_used || 'unknown';
-      const existing = breakdownMap.get(model) || { tokens: 0, cost: 0 };
-      existing.tokens += (msg.input_tokens || 0) + (msg.output_tokens || 0);
-      existing.cost += msg.cost || 0;
-      breakdownMap.set(model, existing);
+
+    let totalTokens = 0;
+    let totalCost = 0;
+    let totalImages = 0;
+    let totalMessages = 0;
+
+    events?.forEach((event: any) => {
+        const date = event.created_at.split('T')[0];
+
+        // Update daily stats
+        if (!dailyStatsMap.has(date)) {
+            dailyStatsMap.set(date, {
+                date,
+                total_tokens: 0,
+                total_cost: 0,
+                message_count: 0,
+                image_count: 0
+            });
+        }
+        const daily = dailyStatsMap.get(date)!;
+        daily.total_tokens += event.total_tokens || 0;
+        daily.total_cost += event.cost || 0;
+
+        if (event.request_type === 'image') {
+            daily.image_count += 1;
+            totalImages += 1;
+        } else {
+            daily.message_count += 1;
+            totalMessages += 1;
+        }
+
+        // Update totals
+        totalTokens += event.total_tokens || 0;
+        totalCost += event.cost || 0;
+
+        // Update model breakdown
+        const model = event.model_id || 'unknown';
+        const modelStat = breakdownMap.get(model) || { tokens: 0, cost: 0 };
+        modelStat.tokens += event.total_tokens || 0;
+        modelStat.cost += event.cost || 0;
+        breakdownMap.set(model, modelStat);
     });
+
+    const dailyStats = Array.from(dailyStatsMap.values()).sort((a, b) => a.date.localeCompare(b.date));
 
     const breakdown = Array.from(breakdownMap.entries()).map(([model, stats]) => ({
       model,
