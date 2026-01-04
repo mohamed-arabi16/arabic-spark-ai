@@ -19,10 +19,18 @@ export interface ModelBreakdown {
   cost: number;
 }
 
+export interface ProjectBreakdown {
+  project_id: string;
+  project_name?: string;
+  tokens: number;
+  cost: number;
+}
+
 export function useUsage() {
   const [dailyStats, setDailyStats] = useState<UsageStat[]>([]);
   const [summary, setSummary] = useState<UsageSummary | null>(null);
   const [breakdown, setBreakdown] = useState<ModelBreakdown[]>([]);
+  const [projectBreakdown, setProjectBreakdown] = useState<ProjectBreakdown[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
   const fetchUsage = useCallback(async (days = 30) => {
@@ -36,6 +44,7 @@ export function useUsage() {
       const startDate = format(subDays(new Date(), days), 'yyyy-MM-dd');
       const endDate = format(new Date(), 'yyyy-MM-dd');
 
+      // 1. Fetch main stats from edge function
       const { data, error } = await supabase.functions.invoke('usage-stats', {
         body: { user_id: user.id, start_date: startDate, end_date: endDate }
       });
@@ -51,6 +60,44 @@ export function useUsage() {
       setDailyStats(data.daily_stats);
       setSummary(data.summary);
       setBreakdown(data.breakdown);
+
+      // 2. Fetch project stats directly from DB to group by project_id
+      const { data: rawStats, error: statsError } = await supabase
+        .from('usage_stats')
+        .select(`
+          project_id,
+          tokens,
+          cost,
+          projects (name)
+        `)
+        .eq('user_id', user.id)
+        .gte('created_at', startDate + 'T00:00:00');
+
+      if (!statsError && rawStats) {
+        // Aggregate by project
+        const projectMap = new Map<string, ProjectBreakdown>();
+
+        rawStats.forEach((stat: any) => {
+          const pid = stat.project_id || 'unknown';
+          const pname = stat.projects?.name || (pid === 'unknown' ? 'Unknown Project' : 'Deleted Project');
+
+          if (!projectMap.has(pid)) {
+            projectMap.set(pid, {
+              project_id: pid,
+              project_name: pname,
+              tokens: 0,
+              cost: 0
+            });
+          }
+
+          const entry = projectMap.get(pid)!;
+          entry.tokens += stat.tokens || 0;
+          entry.cost += stat.cost || 0;
+        });
+
+        setProjectBreakdown(Array.from(projectMap.values()).sort((a, b) => b.cost - a.cost));
+      }
+
     } catch (error) {
       console.error('Error fetching usage:', error);
       // Fallback to mock data if API fails so UI isn't blank
@@ -78,9 +125,16 @@ export function useUsage() {
           { model: 'gpt-image-1', tokens: 0, cost: 0.20 }
       ];
 
+      const mockProjectBreakdown = [
+        { project_id: '1', project_name: 'General', tokens: 50000, cost: 2.50 },
+        { project_id: '2', project_name: 'Marketing Campaign', tokens: 30000, cost: 1.50 },
+        { project_id: '3', project_name: 'Research', tokens: 45000, cost: 0.50 }
+      ];
+
       setDailyStats(mockDailyStats);
       setSummary(mockSummary);
       setBreakdown(mockBreakdown);
+      setProjectBreakdown(mockProjectBreakdown);
     } finally {
       setIsLoading(false);
     }
@@ -90,6 +144,7 @@ export function useUsage() {
     dailyStats,
     summary,
     breakdown,
+    projectBreakdown,
     isLoading,
     fetchUsage
   };

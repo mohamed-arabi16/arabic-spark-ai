@@ -6,11 +6,13 @@ import { UsageSummaryCards } from '@/components/usage/UsageSummary';
 import { UsageChart } from '@/components/usage/UsageChart';
 import { UsageBreakdown } from '@/components/usage/UsageBreakdown';
 import { QuotaDisplay } from '@/components/usage/QuotaDisplay';
+import { BudgetCard } from '@/components/usage/BudgetCard';
+import { ProjectUsageTable } from '@/components/usage/ProjectUsageTable';
 import { Loader2 } from 'lucide-react';
 
 export default function Usage() {
   const { t } = useTranslation();
-  const { dailyStats, summary, breakdown, isLoading, fetchUsage } = useUsage();
+  const { dailyStats, summary, breakdown, projectBreakdown, isLoading, fetchUsage } = useUsage();
 
   useEffect(() => {
     fetchUsage();
@@ -39,8 +41,12 @@ export default function Usage() {
               <UsageBreakdown data={breakdown} />
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              <QuotaDisplay currentCost={summary?.total_cost || 0} />
+            <div className="grid grid-cols-1 lg:grid-cols-7 gap-6">
+               <ProjectUsageTable data={projectBreakdown} />
+               <div className="col-span-1 lg:col-span-3 space-y-6">
+                 <BudgetCard currentCost={summary?.total_cost || 0} />
+                 <QuotaDisplay currentCost={summary?.total_cost || 0} />
+               </div>
             </div>
           </div>
         )}

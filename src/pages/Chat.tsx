@@ -184,12 +184,20 @@ export default function Chat() {
       let assistantContent = '';
       let streamDone = false;
 
-      // Create assistant message placeholder
-      const assistantMessageId = crypto.randomUUID();
-      const modelName = chatMode === 'pro' ? 'gpt-5.2 (high)' : 
+      // Determine model name for display
+      let modelName = '';
+
+      // Check project settings for model override
+      const projectSettings = project?.settings as any;
+      if (projectSettings?.model) {
+         modelName = projectSettings.model;
+      } else {
+         // Fallback to mode-based or default
+         modelName = chatMode === 'pro' ? 'gpt-5.2 (high)' :
                         chatMode === 'deep' ? 'gpt-5.2 (medium)' : 
                         chatMode === 'standard' ? 'gpt-5.2 (low)' : 
                         chatMode === 'research' ? 'gpt-5.2 (research)' : 'gpt-5.2 (minimal)';
+      }
       
       setMessages((prev) => [
         ...prev,
@@ -201,6 +209,8 @@ export default function Chat() {
           model: modelName,
         } as Message,
       ]);
+
+      const assistantMessageId = crypto.randomUUID();
 
       while (!streamDone) {
         const { done, value } = await reader.read();
@@ -348,6 +358,16 @@ export default function Chat() {
     setIsLoading(false);
   };
 
+  // Determine current active model for input display
+  const getActiveModel = () => {
+     const projectSettings = project?.settings as any;
+     if (projectSettings?.model) {
+        return projectSettings.model;
+     }
+     const savedModel = localStorage.getItem('app_default_model');
+     return savedModel || 'gpt-5.2';
+  };
+
   if (isLoadingMessages) {
     return (
       <MainLayout>
@@ -420,6 +440,7 @@ export default function Chat() {
           setMessage={setMessage}
           mode={mode}
           setMode={setMode}
+          activeModel={getActiveModel()}
         />
       </div>
     </MainLayout>
