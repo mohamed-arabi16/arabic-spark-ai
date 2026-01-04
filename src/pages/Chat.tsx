@@ -151,6 +151,9 @@ export default function Chat() {
         throw new Error('No active session');
       }
 
+      // Get user's dialect preference from localStorage or project setting
+      const userDialect = project?.dialect_preset || localStorage.getItem('app_dialect') || 'msa';
+
       const resp = await fetch(CHAT_URL, {
         method: 'POST',
         headers: {
@@ -163,7 +166,8 @@ export default function Chat() {
           project_id: projectId,
           conversation_id: convId,
           system_instructions: project?.system_instructions,
-          memory_context: memoryContext
+          memory_context: memoryContext,
+          dialect: userDialect,
         }),
         signal: abortControllerRef.current.signal,
       });
