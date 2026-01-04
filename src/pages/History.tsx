@@ -3,7 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { format, isToday, isYesterday, isThisWeek, parseISO } from 'date-fns';
 import { MainLayout } from '@/components/layout/MainLayout';
-import { useConversations, Conversation } from '@/hooks/useConversations';
+import { useConversations, ConversationWithSnippet } from '@/hooks/useConversations';
 import { useProjects } from '@/hooks/useProjects';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -37,17 +37,17 @@ export default function History() {
   const [filterType, setFilterType] = useState<'all' | 'chat' | 'research' | 'image'>('all');
 
   useEffect(() => {
-    fetchConversations(selectedProject === 'all' ? undefined : selectedProject);
+    fetchConversations({ projectId: selectedProject === 'all' ? undefined : selectedProject });
   }, [fetchConversations, selectedProject]);
 
   const filteredConversations = conversations.filter(conv => {
     const matchesSearch = (conv.title || '').toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesType = filterType === 'all' || conv.type === filterType;
+    const matchesType = filterType === 'all' || conv.mode === filterType;
     return matchesSearch && matchesType;
   });
 
-  const groupConversationsByDate = (convs: Conversation[]) => {
-    const groups: Record<string, Conversation[]> = {
+  const groupConversationsByDate = (convs: ConversationWithSnippet[]) => {
+    const groups: Record<string, ConversationWithSnippet[]> = {
       [t('history.today')]: [],
       [t('history.yesterday')]: [],
       [t('history.thisWeek')]: [],
@@ -203,7 +203,7 @@ export default function History() {
                               </CardHeader>
                               <CardContent className="pb-3 pt-0">
                                 <p className="text-sm text-muted-foreground line-clamp-2">
-                                  {conv.summary || conv.last_message || 'No preview available'}
+                                  {conv.snippet || 'No preview available'}
                                 </p>
                               </CardContent>
                             </Card>
@@ -219,7 +219,7 @@ export default function History() {
 
           <TabsContent value="memory" className="flex-1 overflow-hidden m-0">
              <ScrollArea className="h-full p-6">
-                <MemoryList projectId={selectedProject === 'all' ? undefined : selectedProject} />
+                <MemoryList memories={[]} />
              </ScrollArea>
           </TabsContent>
         </Tabs>

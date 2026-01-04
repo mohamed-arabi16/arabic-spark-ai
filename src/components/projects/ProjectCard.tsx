@@ -26,12 +26,16 @@ import { ProjectSettingsDialog } from './ProjectSettingsDialog';
 
 interface ProjectCardProps {
   project: Tables<'projects'>;
-  onArchive: (id: string) => void;
-  onDelete: (id: string) => void;
+  onArchive: (project: Tables<'projects'>) => void;
+  onDelete: (project: Tables<'projects'>) => void;
   onUpdate: () => void;
+  onEdit?: (project: Tables<'projects'>) => void;
+  onSelect?: (project: Tables<'projects'>) => void;
+  onViewMemory?: (project: Tables<'projects'>) => void;
+  isSelected?: boolean;
 }
 
-export function ProjectCard({ project, onArchive, onDelete, onUpdate }: ProjectCardProps) {
+export function ProjectCard({ project, onArchive, onDelete, onUpdate, onEdit, onSelect, onViewMemory, isSelected }: ProjectCardProps) {
   const navigate = useNavigate();
   const { t, i18n } = useTranslation();
   const [showSettings, setShowSettings] = useState(false);
@@ -85,13 +89,13 @@ export function ProjectCard({ project, onArchive, onDelete, onUpdate }: ProjectC
 
                 {!isDefault && (
                   <>
-                    <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onArchive(project.id); }}>
+                    <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onArchive(project); }}>
                       <Archive className="mr-2 h-4 w-4" />
-                      {t('common.archive')}
+                      {project.is_archived ? t('projects.restore') : t('common.archive')}
                     </DropdownMenuItem>
                     <DropdownMenuItem
                       className="text-destructive focus:text-destructive"
-                      onClick={(e) => { e.stopPropagation(); onDelete(project.id); }}
+                      onClick={(e) => { e.stopPropagation(); onDelete(project); }}
                     >
                       <Trash2 className="mr-2 h-4 w-4" />
                       {t('common.delete')}
@@ -104,8 +108,8 @@ export function ProjectCard({ project, onArchive, onDelete, onUpdate }: ProjectC
         </CardHeader>
         <CardContent className="pb-3">
           <div className="flex gap-2">
-            <Badge variant={project.status === 'active' ? 'default' : 'secondary'}>
-              {project.status === 'active' ? t('projects.active') : t('projects.archived')}
+            <Badge variant={project.is_archived ? 'secondary' : 'default'}>
+              {project.is_archived ? t('projects.archived') : t('projects.active')}
             </Badge>
           </div>
         </CardContent>
