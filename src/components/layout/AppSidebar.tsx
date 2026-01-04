@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/hooks/useAuth';
 import { useProjects, ProjectInsert, ProjectUpdate } from '@/hooks/useProjects';
@@ -29,7 +29,7 @@ import {
   LayoutDashboard,
   MessageSquare,
   FolderOpen,
-  Image,
+  Image as ImageIcon,
   Search,
   Settings,
   LogOut,
@@ -41,6 +41,7 @@ import {
   Briefcase,
   Clock,
   Brain,
+  Layers,
 } from 'lucide-react';
 
 interface AppSidebarProps {
@@ -59,6 +60,7 @@ export function AppSidebar({ collapsed, onToggle }: AppSidebarProps) {
   const { user, signOut } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [isDark, setIsDark] = useState(true);
   const { projects, currentProject, selectProject, fetchProjects, createProject } = useProjects();
   const [isProjectDialogOpen, setIsProjectDialogOpen] = useState(false);
@@ -94,23 +96,6 @@ export function AppSidebar({ collapsed, onToggle }: AppSidebarProps) {
     document.documentElement.classList.toggle('dark');
   };
 
-  const navItems = [
-    { icon: LayoutDashboard, label: t('sidebar.home'), href: '/' },
-    { icon: MessageSquare, label: t('sidebar.chat'), href: '/chat' },
-    { icon: FolderOpen, label: t('sidebar.projects'), href: '/projects' },
-    { icon: Brain, label: t('sidebar.memory'), href: '/memory' },
-    { icon: Image, label: t('sidebar.images'), href: '/images' },
-    { icon: Search, label: t('sidebar.research'), href: '/research' },
-    { icon: BarChart, label: t('sidebar.usage'), href: '/usage' },
-    { icon: Clock, label: t('sidebar.history'), href: '/history' },
-  ];
-
-  const userInitials = user?.user_metadata?.full_name
-    ?.split(' ')
-    .map((n: string) => n[0])
-    .join('')
-    .toUpperCase() || user?.email?.[0].toUpperCase() || '?';
-
   const handleProjectCreate = async (data: ProjectInsert | ProjectUpdate) => {
       await createProject(data as ProjectInsert);
       setIsProjectDialogOpen(false);
@@ -118,13 +103,49 @@ export function AppSidebar({ collapsed, onToggle }: AppSidebarProps) {
 
   const handleProjectSelect = (projectId: string) => {
     selectProject(projectId);
-    navigate(`/chat?project=${projectId}`);
+
+    // If we are on a route that typically needs project context, update the URL
+    // List of routes that are project-specific
+    const projectRoutes = ['/chat', '/images', '/research', '/usage'];
+    const isProjectRoute = projectRoutes.some(route => location.pathname.startsWith(route));
+
+    if (isProjectRoute) {
+       const newSearchParams = new URLSearchParams(location.search);
+       newSearchParams.set('project', projectId);
+       // Preserve other params if needed, or clear conversation if switching projects?
+       // Usually switching project in chat clears conversation unless that conversation belongs to the project.
+       // For safety, let's keep it simple: just update the project param.
+       // However, if we are in a conversation, it might be confusing.
+       // Ideally: navigate to /chat?project=ID (new chat in that project)
+       navigate(`${location.pathname}?project=${projectId}`);
+    }
   };
+
+  const userInitials = user?.user_metadata?.full_name
+    ?.split(' ')
+    .map((n: string) => n[0])
+    .join('')
+    .toUpperCase() || user?.email?.[0].toUpperCase() || '?';
+
+  // Navigation Items
+  const projectTools = [
+    { icon: MessageSquare, label: t('sidebar.chat'), href: `/chat${currentProject ? `?project=${currentProject.id}` : ''}` },
+    { icon: Search, label: t('sidebar.research'), href: '/research' },
+    { icon: ImageIcon, label: t('sidebar.images'), href: '/images' },
+    { icon: BarChart, label: t('sidebar.usage'), href: '/usage' },
+  ];
+
+  const globalTools = [
+    { icon: FolderOpen, label: t('sidebar.projects'), href: '/projects' },
+    { icon: Clock, label: t('sidebar.history'), href: '/history' },
+    { icon: Brain, label: t('sidebar.memory'), href: '/memory' },
+    { icon: Settings, label: t('settings.title'), href: '/settings' },
+  ];
 
   return (
     <aside
       className={cn(
-        'flex flex-col bg-sidebar border-r border-sidebar-border transition-all duration-300',
+        'flex flex-col bg-sidebar border-e border-sidebar-border transition-all duration-300',
         collapsed ? 'w-16' : 'w-64'
       )}
     >
@@ -207,7 +228,6 @@ export function AppSidebar({ collapsed, onToggle }: AppSidebarProps) {
           </div>
       )}
 
-
       {/* New chat button */}
       <div className="p-3">
         <Button
@@ -224,25 +244,84 @@ export function AppSidebar({ collapsed, onToggle }: AppSidebarProps) {
 
       {/* Navigation */}
       <ScrollArea className="flex-1 px-3">
-        <nav className="space-y-1">
-          {navItems.map((item) => {
-            const isActive = location.pathname === item.href;
-            return (
-              <Link
-                key={item.href}
-                to={item.href}
-                className={cn(
-                  'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors',
-                  isActive
-                    ? 'bg-sidebar-accent text-sidebar-accent-foreground'
-                    : 'text-sidebar-foreground hover:bg-sidebar-accent/50'
-                )}
-              >
-                <item.icon className="h-5 w-5 shrink-0" />
-                {!collapsed && <span>{item.label}</span>}
-              </Link>
-            );
-          })}
+        <nav className="space-y-6">
+          {/* Project Context Tools */}
+          {currentProject && !collapsed && (
+            <div className="space-y-1">
+              <div className="px-3 text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2">
+                {currentProject.name}
+              </div>
+              {projectTools.map((item) => {
+                const isActive = location.pathname.startsWith(item.href.split('?')[0]);
+                return (
+                  <Link
+                    key={item.href}
+                    to={item.href}
+                    className={cn(
+                      'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors',
+                      isActive
+                        ? 'bg-sidebar-accent text-sidebar-accent-foreground'
+                        : 'text-sidebar-foreground hover:bg-sidebar-accent/50'
+                    )}
+                  >
+                    <item.icon className="h-5 w-5 shrink-0" />
+                    <span>{item.label}</span>
+                  </Link>
+                );
+              })}
+            </div>
+          )}
+
+          {/* If collapsed or no project selected, show tools flattened or generic */}
+          {(!currentProject || collapsed) && (
+             <div className="space-y-1">
+               {[...projectTools].map((item) => {
+                 const isActive = location.pathname.startsWith(item.href.split('?')[0]);
+                 return (
+                  <Link
+                    key={item.href}
+                    to={item.href}
+                    className={cn(
+                      'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors',
+                      isActive
+                        ? 'bg-sidebar-accent text-sidebar-accent-foreground'
+                        : 'text-sidebar-foreground hover:bg-sidebar-accent/50'
+                    )}
+                  >
+                    <item.icon className="h-5 w-5 shrink-0" />
+                    {!collapsed && <span>{item.label}</span>}
+                  </Link>
+                );
+               })}
+             </div>
+          )}
+
+          {/* Global Tools */}
+          <div className="space-y-1">
+            {!collapsed && currentProject && (
+               <div className="px-3 text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2 mt-4">
+                 {t('sidebar.workspace')}
+               </div>
+            )}
+            {globalTools.map((item) => {
+               const isActive = location.pathname === item.href;
+               return (
+                <Link
+                  key={item.href}
+                  to={item.href}
+                  className={cn(
+                    'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors',
+                    isActive
+                      ? 'bg-sidebar-accent text-sidebar-accent-foreground'
+                      : 'text-sidebar-foreground hover:bg-sidebar-accent/50'
+                  )}
+                >
+                  <item.icon className="h-5 w-5 shrink-0" />
+                  {!collapsed && <span>{item.label}</span>}
+                </Link>
+              );
+            })}
+          </div>
         </nav>
 
         {/* Recent conversations - Real data */}
@@ -282,21 +361,6 @@ export function AppSidebar({ collapsed, onToggle }: AppSidebarProps) {
           {isDark ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
           {!collapsed && <span>{isDark ? t('common.darkMode') : t('common.lightMode')}</span>}
         </Button>
-
-        {/* Settings */}
-        <Link to="/settings">
-          <Button
-            variant="ghost"
-            size="sm"
-            className={cn(
-              'w-full justify-start gap-3 text-sidebar-foreground hover:bg-sidebar-accent',
-              collapsed && 'justify-center px-0'
-            )}
-          >
-            <Settings className="h-4 w-4" />
-            {!collapsed && <span>{t('common.settings')}</span>}
-          </Button>
-        </Link>
 
         {/* Language Switcher */}
         {!collapsed && (
