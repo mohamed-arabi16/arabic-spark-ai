@@ -10,7 +10,7 @@ Arabic-first experience is directionally correct (RTL intent), but there are tra
 
 Memory appears as a concept page but lacks evidence of end-to-end approval prompts and CRUD flows tied to chat; history search needs Arabic-first improvements (stemming/synonyms) per the report recommendations. [EXEC-6][TEST-16..TEST-19][TEST-13][REC-6][REC-7]
 
-SOURCE INDEX (create IDs)
+SOURCE INDEX (create IDs).
 
 Tests:
 
