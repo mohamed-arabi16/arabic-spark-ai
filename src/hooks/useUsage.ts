@@ -100,41 +100,17 @@ export function useUsage() {
 
     } catch (error) {
       console.error('Error fetching usage:', error);
-      // Fallback to mock data if API fails so UI isn't blank
-      const mockSummary = {
-          total_tokens: 125000,
-          total_cost: 4.50,
-          total_images: 12,
-          total_messages: 340
-      };
-
-      const mockDailyStats = Array.from({ length: 14 }).map((_, i) => ({
-          date: format(subDays(new Date(), 13 - i), 'yyyy-MM-dd'),
-          total_cost: Math.random() * 0.5,
-          total_tokens: Math.floor(Math.random() * 5000),
-          message_count: Math.floor(Math.random() * 20),
-          image_count: Math.floor(Math.random() * 3),
-          user_id: userId,
-          id: crypto.randomUUID(),
-          created_at: new Date().toISOString()
-      })) as UsageStat[];
-
-      const mockBreakdown = [
-          { model: 'gpt-5-mini', tokens: 80000, cost: 1.50 },
-          { model: 'gpt-5', tokens: 45000, cost: 2.80 },
-          { model: 'gpt-image-1', tokens: 0, cost: 0.20 }
-      ];
-
-      const mockProjectBreakdown = [
-        { project_id: '1', project_name: 'General', tokens: 50000, cost: 2.50 },
-        { project_id: '2', project_name: 'Marketing Campaign', tokens: 30000, cost: 1.50 },
-        { project_id: '3', project_name: 'Research', tokens: 45000, cost: 0.50 }
-      ];
-
-      setDailyStats(mockDailyStats);
-      setSummary(mockSummary);
-      setBreakdown(mockBreakdown);
-      setProjectBreakdown(mockProjectBreakdown);
+      toast.error('Failed to load usage data');
+      // Set empty state - no mock data
+      setDailyStats([]);
+      setSummary({
+        total_tokens: 0,
+        total_cost: 0,
+        total_images: 0,
+        total_messages: 0
+      });
+      setBreakdown([]);
+      setProjectBreakdown([]);
     } finally {
       setIsLoading(false);
     }
