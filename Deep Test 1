@@ -1,0 +1,81 @@
+CONTEXT SNAPSHOT (3–6 bullet points)
+
+The current product experience shows “usage/cost” surfaces, but cost values appear non-changing (e.g., session/estimated cost staying at $0.00) while token counters/usage visuals exist, indicating a likely UI-only or partially wired implementation. [EXEC-1][TEST-1][TEST-8]
+
+Model switching is available in the UI and appears to change labels and sometimes response style, but it is not clearly reflected in usage/cost and lacks transparency about what is active and why. [EXEC-2][TEST-6][TEST-7][TEST-8][REC-2]
+
+Dialect selection exists and can influence outputs, but it is buried in Settings and lacks in-chat visibility, stability enforcement, and a “correct dialect” control when drift occurs. [EXEC-3][TEST-9][TEST-10][TEST-11][REC-5]
+
+Arabic-first experience is directionally correct (RTL intent), but there are translation/string gaps, numerals inconsistency issues, and typography inconsistencies; the UI does not feel “minimal premium,” especially on mobile. [EXEC-4][EXEC-5][EXEC-7][REC-3][REC-4][REC-8]
+
+Memory appears as a concept page but lacks evidence of end-to-end approval prompts and CRUD flows tied to chat; history search needs Arabic-first improvements (stemming/synonyms) per the report recommendations. [EXEC-6][TEST-16..TEST-19][TEST-13][REC-6][REC-7]
+
+SOURCE INDEX (create IDs)
+
+Tests:
+
+[TEST-1] Usage/Cost delta via short vs long prompts — Send short/long messages and verify cost changes per message and in the Usage view.
+
+[TEST-4] Arabic-first comfort (RTL/i18n/numerals) — Verify RTL completeness, translation coverage, typography readability, and numeral rendering consistency.
+
+[TEST-6] Model switch to Deep then compare outputs — Switch model, run the same request, compare latency, response depth, and labeling.
+
+[TEST-8] Cost reflection across models — Compare token/cost deltas for the same task across Fast vs Deep and verify Usage totals reconcile.
+
+[TEST-9] Dialect set to Egyptian then verify output — Set dialect in Settings, run standard prompts, verify consistent dialect vocabulary and punctuation.
+
+[TEST-10] Dialect set to Levantine then verify output — Repeat dialect verification with a different dialect and ensure stability over multiple turns.
+
+[TEST-12] Numerals setting propagation — Switch numerals (Arabic-Indic vs Western) and verify consistent rendering across chat and dashboards.
+
+[TEST-13] History search by Arabic keyword — Create multiple chats and verify history search returns correct results for Arabic queries.
+
+[TEST-14] Image generation request — Generate an image and verify output plus usage/cost accounting.
+
+[TEST-15] Research task request — Run a research query and verify output plus usage/cost accounting.
+
+[TEST-16] Memory save via in-chat approval — Trigger memory suggestion and verify “Save” persists and appears in memory bank.
+
+[TEST-18] Memory edit persistence — Edit a saved memory and verify it remains updated after refresh.
+
+[TEST-19] Memory delete persistence — Delete a memory and verify it does not reappear after refresh.
+
+[TEST-21] Dark mode legibility — Enable dark mode and verify contrast/readability and RTL integrity.
+
+[TEST-22] Slow network behavior — Simulate slow connection; verify loader/error states and retry flows.
+
+Executive Summary points:
+
+[EXEC-1] Cost tracking lacks credibility — Cost appears static ($0.00) despite interactions; tokens/usage visuals exist but totals don’t change.
+
+[EXEC-2] Model switching is semi-real — Model selection changes UI labels and may change style, but cost/usage linkage and clarity are missing.
+
+[EXEC-3] Dialect works but is hidden — Dialect can affect outputs, but it’s buried and lacks in-chat indicators and stability controls.
+
+[EXEC-4] Arabic UX needs tightening — Translation gaps, numerals inconsistency, and typography issues reduce Arabic-first comfort.
+
+[EXEC-5] Mobile-first coherence is weak — Desktop-first layout (sidebar/composer) causes thumb-zone friction and clutter.
+
+[EXEC-6] Memory lacks end-to-end evidence — Memory page exists but approval prompts and full CRUD integration are not evidenced in chat.
+
+[EXEC-7] Not “premium minimal” — Too much visual noise; needs restrained color system, spacing, and micro-interactions.
+
+Recommendations:
+
+[REC-1] Wire real usage/cost — Compute per-message cost (chat/research/image) and reconcile Usage totals; if unavailable, explicitly message “not available.”
+
+[REC-2] Surface model state in-chat — Move model picker into chat UI, show “active now,” add tooltips describing tradeoffs.
+
+[REC-3] Standardize Arabic typography + numerals — Adopt consistent Arabic fonts and line-height; ensure numeral preference propagates everywhere.
+
+[REC-4] Mobile-first navigation — Replace mobile sidebar with bottom nav and thumb-zone actions; reduce clutter.
+
+[REC-5] Dialect enforcement UX — Implement hybrid enforcement (policy/system prompt + examples + post-check) and add “Correct dialect” control.
+
+[REC-6] Improve history search Arabic-first — Add stemming/synonyms support and improve search UX for Arabic queries.
+
+[REC-7] Implement memory approval + CRUD — In-chat approval card, and edit/delete flows with persistence guarantees.
+
+[REC-8] Minimal premium UI tokens — Reduce palette, add spacing discipline, soft elevation, consistent radius, measured micro-interactions.
+
+[REC-9] Loading/error states — Provide clear loader, offline banners, retry, and avoid silent failures (especially on weak connections).
