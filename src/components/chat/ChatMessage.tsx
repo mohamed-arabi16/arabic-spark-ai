@@ -5,6 +5,8 @@ import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import { useTranslation } from 'react-i18next';
+import { formatLocalizedNumber } from '@/lib/formatters';
 
 export interface Message {
   id: string;
@@ -13,6 +15,7 @@ export interface Message {
   timestamp: Date;
   model?: string;
   cost?: number;
+  usage_event_id?: string;
 }
 
 interface ChatMessageProps {
@@ -21,11 +24,12 @@ interface ChatMessageProps {
 }
 
 export function ChatMessage({ message, isStreaming }: ChatMessageProps) {
+  const { t, i18n } = useTranslation();
   const isUser = message.role === 'user';
 
   const copyToClipboard = () => {
     navigator.clipboard.writeText(message.content);
-    toast.success('Copied to clipboard');
+    toast.success(t('common.copied') || 'Copied to clipboard');
   };
 
   return (
@@ -50,7 +54,7 @@ export function ChatMessage({ message, isStreaming }: ChatMessageProps) {
       <div className="flex-1 space-y-2 overflow-hidden">
         <div className="flex items-center gap-2">
           <span className="font-medium text-sm">
-            {isUser ? 'You' : 'AI Assistant'}
+            {isUser ? t('chat.you') : t('chat.assistant')}
           </span>
           {message.model && (
             <span className="text-xs text-muted-foreground bg-secondary/80 px-2 py-0.5 rounded-full border border-border/50">
@@ -127,7 +131,7 @@ export function ChatMessage({ message, isStreaming }: ChatMessageProps) {
             </Button>
             {message.cost !== undefined && message.cost > 0 && (
               <span className="ms-2 text-xs text-muted-foreground">
-                ${message.cost.toFixed(4)}
+                ${formatLocalizedNumber(message.cost, i18n.language)}
               </span>
             )}
           </div>

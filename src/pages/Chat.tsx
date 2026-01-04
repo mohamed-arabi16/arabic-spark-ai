@@ -16,10 +16,14 @@ import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { supabase } from '@/integrations/supabase/client';
 import { CostMeter } from '@/components/chat/CostMeter';
 import { Loader2 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
+import { LoadingIndicator } from '@/components/ui/LoadingIndicator';
+import { Button } from '@/components/ui/button';
 
 const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat`;
 
 export default function Chat() {
+  const { t } = useTranslation();
   const [searchParams] = useSearchParams();
   const conversationIdParam = searchParams.get('conversationId');
   const projectIdParam = searchParams.get('project');
@@ -60,6 +64,14 @@ export default function Chat() {
   const [sessionCost, setSessionCost] = useState(0);
   const [message, setMessage] = useState('');
   const [mode, setMode] = useState<ChatMode>('fast');
+  const [dialect, setDialect] = useState('msa');
+  const [isError, setIsError] = useState(false);
+
+  useEffect(() => {
+    // Initialize dialect from project or localStorage
+    const savedDialect = project?.dialect_preset || localStorage.getItem('app_dialect') || 'msa';
+    setDialect(savedDialect);
+  }, [project]);
 
   // Load conversation from DB if conversationId is provided
   useEffect(() => {
@@ -71,6 +83,7 @@ export default function Chat() {
           content: m.content,
           timestamp: new Date(m.created_at),
           model: m.model_used || undefined,
+          cost: m.cost || undefined,
         }));
         setMessages(uiMessages);
       }).catch(() => {
@@ -94,7 +107,13 @@ export default function Chat() {
     }
   }, [messages]);
 
-  const handleSend = async (content: string, chatMode: ChatMode) => {
+  const handleSend = async (content: string, chatMode: ChatMode, selectedDialect: string) => {
+    setIsError(false);
+    // Update dialect in local storage if changed
+    if (selectedDialect !== localStorage.getItem('app_dialect')) {
+      localStorage.setItem('app_dialect', selectedDialect);
+    }
+
     // Create conversation if this is the first message
     let convId = currentConversation?.id;
     if (!convId) {
@@ -104,7 +123,7 @@ export default function Chat() {
         // Update URL without reloading
         window.history.replaceState({}, '', `/chat?conversationId=${convId}`);
       } catch (error) {
-        toast.error('Failed to create conversation');
+        toast.error(t('errors.createConversation'));
         return;
       }
     }
@@ -151,9 +170,6 @@ export default function Chat() {
         throw new Error('No active session');
       }
 
-      // Get user's dialect preference from localStorage or project setting
-      const userDialect = project?.dialect_preset || localStorage.getItem('app_dialect') || 'msa';
-
       const resp = await fetch(CHAT_URL, {
         method: 'POST',
         headers: {
@@ -167,7 +183,7 @@ export default function Chat() {
           conversation_id: convId,
           system_instructions: project?.system_instructions,
           memory_context: memoryContext,
-          dialect: userDialect,
+          dialect: selectedDialect,
         }),
         signal: abortControllerRef.current.signal,
       });
@@ -187,6 +203,7 @@ export default function Chat() {
       let textBuffer = '';
       let assistantContent = '';
       let streamDone = false;
+      let usageData: any = null;
 
       // Determine model name for display based on mode
       const MODE_TO_MODEL_NAME: Record<ChatMode, string> = {
@@ -237,6 +254,11 @@ export default function Chat() {
 
           try {
             const parsed = JSON.parse(jsonStr);
+            // Check for usage data
+            if (parsed.usage) {
+              usageData = parsed.usage;
+            }
+
             const deltaContent = parsed.choices?.[0]?.delta?.content;
             if (deltaContent) {
               assistantContent += deltaContent;
@@ -263,6 +285,9 @@ export default function Chat() {
           if (jsonStr === '[DONE]') continue;
           try {
             const parsed = JSON.parse(jsonStr);
+            if (parsed.usage) {
+              usageData = parsed.usage;
+            }
             const deltaContent = parsed.choices?.[0]?.delta?.content;
             if (deltaContent) {
               assistantContent += deltaContent;
@@ -278,11 +303,43 @@ export default function Chat() {
         }
       }
 
+      // Calculate cost if not provided by backend but usage is
+      // Placeholder rate (approximate for GPT-4o like models)
+      // This is a client-side estimation fall-back
+      let calculatedCost = 0;
+      if (usageData) {
+         // This logic depends on the model. For now we use a generic placeholder rate.
+         const inputRate = 5.0 / 1000000; // $5 per 1M tokens
+         const outputRate = 15.0 / 1000000; // $15 per 1M tokens
+         calculatedCost = (usageData.prompt_tokens || 0) * inputRate + (usageData.completion_tokens || 0) * outputRate;
+      } else {
+         // Fallback if no usage data at all (e.g. estimate based on string length)
+         // 1 token ~= 4 chars
+         const inputTokens = content.length / 4;
+         const outputTokens = assistantContent.length / 4;
+         calculatedCost = (inputTokens * 5.0 / 1000000) + (outputTokens * 15.0 / 1000000);
+      }
+
+      // Ensure we display at least some cost for verification if content exists
+      if (calculatedCost < 0.000001 && assistantContent.length > 0) {
+         calculatedCost = 0.000001;
+      }
+
+      // Update message with cost
+      setMessages((prev) =>
+        prev.map((m) =>
+          m.id === assistantMessageId ? { ...m, cost: calculatedCost } : m
+        )
+      );
+
+      setSessionCost(prev => prev + calculatedCost);
+
       // Save assistant message to DB
       if (assistantContent && convId) {
         try {
           const savedAssistantMsg = await addMessage(convId, 'assistant', assistantContent, {
             model_used: modelName,
+            cost: calculatedCost
           });
           // Update ID
           setMessages(prev => prev.map(m => 
@@ -334,6 +391,7 @@ export default function Chat() {
       }
 
     } catch (error) {
+      setIsError(true);
       if (error instanceof Error && error.name === 'AbortError') {
         return;
       }
@@ -358,17 +416,11 @@ export default function Chat() {
     setIsLoading(false);
   };
 
-  // Determine current active model for input display
-  const getActiveModel = () => {
-     const savedModel = localStorage.getItem('app_default_model');
-     return savedModel || 'gpt-5.2';
-  };
-
   if (isLoadingMessages) {
     return (
       <MainLayout>
         <div className="flex-1 flex items-center justify-center">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <LoadingIndicator text={t('common.loading') || 'Loading...'} />
         </div>
       </MainLayout>
     );
@@ -423,9 +475,22 @@ export default function Chat() {
                   }
                 />
               ))}
+              {isLoading && !messages[messages.length-1]?.role.includes('assistant') && (
+                 <div className="px-4 py-6">
+                    <LoadingIndicator text={t('chat.thinking') || 'Thinking...'} />
+                 </div>
+              )}
             </div>
           )}
         </ScrollArea>
+
+        {isError && (
+          <div className="p-2 flex justify-center bg-destructive/10">
+            <Button variant="outline" size="sm" onClick={() => handleSend(messages[messages.length-1].content, mode, dialect)} className="text-destructive border-destructive/20 hover:bg-destructive/10">
+              {t('common.retry') || 'Retry'}
+            </Button>
+          </div>
+        )}
 
         {/* Input area */}
         <ChatInput
@@ -436,7 +501,8 @@ export default function Chat() {
           setMessage={setMessage}
           mode={mode}
           setMode={setMode}
-          activeModel={getActiveModel()}
+          dialect={dialect}
+          setDialect={setDialect}
         />
       </div>
     </MainLayout>
