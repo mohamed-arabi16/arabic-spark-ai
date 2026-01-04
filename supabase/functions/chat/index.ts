@@ -7,8 +7,7 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// All text modes use GPT-5.2 with different reasoning efforts
-const TEXT_MODEL = 'gpt-5.2';
+const LOVABLE_AI_URL = 'https://ai.gateway.lovable.dev/v1/chat/completions';
 
 const REASONING_EFFORT: Record<string, string> = {
   fast: 'none',       // No reasoning - fastest responses
@@ -19,11 +18,12 @@ const REASONING_EFFORT: Record<string, string> = {
 };
 
 // Cost per 1M tokens
-const COST_PER_1M = {
-  'gpt-5.2': {
-    input: 2.50,
-    output: 10.00,
-  },
+const COST_PER_1M: Record<string, { input: number; output: number } | { per_image: number }> = {
+  'gpt-5.2': { input: 2.50, output: 10.00 },
+  'google/gemini-2.5-flash': { input: 0.10, output: 0.40 },
+  'google/gemini-2.5-pro': { input: 2.50, output: 10.00 },
+  'openai/gpt-5-mini': { input: 1.00, output: 4.00 },
+  'openai/gpt-5': { input: 5.00, output: 20.00 },
   'gpt-image-1': { per_image: 0.04 },
 };
 
@@ -49,6 +49,7 @@ interface ChatRequest {
   system_instructions?: string;
   memory_context?: string;
   dialect?: string;
+  model?: string;
 }
 
 serve(async (req) => {
@@ -83,10 +84,10 @@ serve(async (req) => {
       );
     }
 
-    const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
-    if (!openAIApiKey) {
-      console.error('OPENAI_API_KEY is not configured');
-      throw new Error('OpenAI API key not configured');
+    const lovableApiKey = Deno.env.get('LOVABLE_API_KEY');
+    if (!lovableApiKey) {
+      console.error('LOVABLE_API_KEY is not configured');
+      throw new Error('Lovable API key not configured');
     }
 
     const { 
@@ -96,12 +97,15 @@ serve(async (req) => {
       conversation_id,
       system_instructions, 
       memory_context,
-      dialect = 'msa'
+      dialect = 'msa',
+      model
     }: ChatRequest = await req.json();
     
     if (!messages || !Array.isArray(messages)) {
       throw new Error('Messages array is required');
     }
+
+    const selectedModel = model || 'google/gemini-2.5-flash';
 
     // Determine reasoning effort and max tokens
     const reasoningEffort = REASONING_EFFORT[mode] || 'none';
@@ -113,7 +117,7 @@ serve(async (req) => {
       maxCompletionTokens = 16384;
     }
 
-    console.log(`Chat request - Mode: ${mode}, Model: ${TEXT_MODEL}, Reasoning: ${reasoningEffort}, Dialect: ${dialect}, Messages: ${messages.length}`);
+    console.log(`Chat request - Mode: ${mode}, Model: ${selectedModel}, Reasoning: ${reasoningEffort}, Dialect: ${dialect}, Messages: ${messages.length}`);
 
     // Build base system prompt
     let systemContent = `You are a helpful, intelligent AI assistant. You provide clear, accurate, and thoughtful responses.
@@ -147,7 +151,7 @@ Key behaviors:
 
     // Construct request body with stream_options to get usage data
     const requestBody: any = {
-      model: TEXT_MODEL,
+      model: selectedModel,
       messages: allMessages,
       reasoning_effort: reasoningEffort,
       max_completion_tokens: maxCompletionTokens,
@@ -155,11 +159,11 @@ Key behaviors:
       stream_options: { include_usage: true }, // Request usage data in stream
     };
 
-    // Make request to OpenAI
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    // Make request to Lovable Gateway
+    const response = await fetch(LOVABLE_AI_URL, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${openAIApiKey}`,
+        'Authorization': `Bearer ${lovableApiKey}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify(requestBody),
@@ -167,7 +171,7 @@ Key behaviors:
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('OpenAI API error:', response.status, errorText);
+      console.error('Lovable API error:', response.status, errorText);
       
       // Handle specific error codes
       if (response.status === 429) {
@@ -179,12 +183,12 @@ Key behaviors:
       
       if (response.status === 401) {
         return new Response(
-          JSON.stringify({ error: 'Invalid API key. Please check your OpenAI API key.' }),
+          JSON.stringify({ error: 'Invalid API key. Please check your Lovable API key.' }),
           { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
 
-      throw new Error(`OpenAI API error: ${response.status}`);
+      throw new Error(`Lovable API error: ${response.status}`);
     }
 
     // Parse the stream to extract usage and pass through to client
@@ -232,7 +236,9 @@ Key behaviors:
               const totalTokens = usageData.total_tokens || (inputTokens + outputTokens);
               
               // Calculate cost
-              const modelPricing = COST_PER_1M['gpt-5.2'];
+              const pricingConfig = COST_PER_1M[selectedModel] || COST_PER_1M['gpt-5.2'];
+              const modelPricing = pricingConfig as { input: number; output: number };
+
               const inputCost = (inputTokens / 1_000_000) * modelPricing.input;
               const outputCost = (outputTokens / 1_000_000) * modelPricing.output;
               const totalCost = inputCost + outputCost;
@@ -245,7 +251,7 @@ Key behaviors:
                   user_id: user.id,
                   project_id: project_id || null,
                   request_type: 'chat',
-                  model_id: TEXT_MODEL,
+                  model_id: selectedModel,
                   prompt_tokens: inputTokens,
                   completion_tokens: outputTokens,
                   total_tokens: totalTokens,

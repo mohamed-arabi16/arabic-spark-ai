@@ -56,7 +56,7 @@ interface RecentConversation {
 }
 
 export function AppSidebar({ collapsed, onToggle }: AppSidebarProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { user, signOut } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
@@ -144,6 +144,7 @@ export function AppSidebar({ collapsed, onToggle }: AppSidebarProps) {
 
   return (
     <aside
+      dir={i18n.dir()}
       className={cn(
         'flex flex-col bg-sidebar border-e border-sidebar-border transition-all duration-300',
         collapsed ? 'w-16' : 'w-64'
