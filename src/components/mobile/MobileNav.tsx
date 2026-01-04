@@ -5,8 +5,7 @@ import {
   MessageSquare, 
   Search, 
   FolderOpen, 
-  Clock, 
-  BarChart,
+  Settings,
   Plus
 } from 'lucide-react';
 
@@ -21,10 +20,9 @@ export function MobileNav({ onNewChat }: MobileNavProps) {
 
   const navItems = [
     { icon: MessageSquare, label: t('sidebar.chat'), href: '/chat' },
-    { icon: Search, label: t('sidebar.research'), href: '/research' },
     { icon: FolderOpen, label: t('sidebar.projects'), href: '/projects' },
-    { icon: Clock, label: t('sidebar.history'), href: '/history' },
-    { icon: BarChart, label: t('sidebar.usage'), href: '/usage' },
+    { icon: Search, label: t('sidebar.research'), href: '/research' },
+    { icon: Settings, label: t('settings.title'), href: '/settings' },
   ];
 
   return (

@@ -1,6 +1,8 @@
 import { Badge } from '@/components/ui/badge';
 import { DollarSign } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
+import { formatLocalizedNumber } from '@/lib/formatters';
 
 interface CostMeterProps {
   sessionCost?: number;
@@ -8,6 +10,7 @@ interface CostMeterProps {
 
 export function CostMeter({ sessionCost = 0 }: CostMeterProps) {
   const navigate = useNavigate();
+  const { i18n } = useTranslation();
 
   return (
     <div
@@ -15,7 +18,7 @@ export function CostMeter({ sessionCost = 0 }: CostMeterProps) {
       onClick={() => navigate('/usage')}
     >
       <DollarSign className="h-3 w-3" />
-      <span>Session: ${sessionCost.toFixed(4)}</span>
+      <span>Session: ${formatLocalizedNumber(sessionCost, i18n.language)}</span>
     </div>
   );
 }
