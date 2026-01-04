@@ -1,282 +1,226 @@
-import { useEffect, useState, useMemo } from 'react';
-import { MainLayout } from '@/components/layout/MainLayout';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { MessageSquare, Clock, Trash2, Edit2, Archive, Search, Loader2 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { useNavigate } from 'react-router-dom';
-import { useConversations, ConversationWithSnippet } from '@/hooks/useConversations';
-import { useProjects } from '@/hooks/useProjects';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Badge } from '@/components/ui/badge';
-import { formatDistanceToNow, isToday, isYesterday, isThisWeek, parseISO } from 'date-fns';
-import { toast } from 'sonner';
+import { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-
-type DateGroup = 'today' | 'yesterday' | 'thisWeek' | 'older';
+import { format, isToday, isYesterday, isThisWeek, parseISO } from 'date-fns';
+import { MainLayout } from '@/components/layout/MainLayout';
+import { useConversations, Conversation } from '@/hooks/useConversations';
+import { useProjects } from '@/hooks/useProjects';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Search, MessageSquare, ArrowRight, Trash2, Archive, Calendar as CalendarIcon, Filter, Rocket } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { MemoryList } from '@/components/memory/MemoryList';
+import { Loader2 } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { EmptyState } from '@/components/common/EmptyState';
 
 export default function History() {
   const { t } = useTranslation();
-  const navigate = useNavigate();
-  const [searchQuery, setSearchQuery] = useState('');
-  const [activeTab, setActiveTab] = useState('recent');
+  const [searchParams] = useSearchParams();
+  const projectParam = searchParams.get('project');
   
   const {
     conversations,
     isLoading,
     fetchConversations,
-    updateConversation,
-    archiveConversation,
     deleteConversation,
+    archiveConversation
   } = useConversations();
 
   const { projects } = useProjects();
 
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedProject, setSelectedProject] = useState<string>(projectParam || 'all');
+  const [filterType, setFilterType] = useState<'all' | 'chat' | 'research' | 'image'>('all');
+
   useEffect(() => {
-    fetchConversations({ archived: activeTab === 'archived' });
-  }, [fetchConversations, activeTab]);
+    fetchConversations(selectedProject === 'all' ? undefined : selectedProject);
+  }, [fetchConversations, selectedProject]);
 
-  const filteredConversations = conversations.filter(conv =>
-    (conv.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-     conv.snippet?.toLowerCase().includes(searchQuery.toLowerCase()))
-  );
+  const filteredConversations = conversations.filter(conv => {
+    const matchesSearch = (conv.title || '').toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesType = filterType === 'all' || conv.type === filterType;
+    return matchesSearch && matchesType;
+  });
 
-  // Group by project for the "by project" tab
-  const groupedByProject = filteredConversations.reduce((acc, conv) => {
-    const projectId = conv.project_id || 'no-project';
-    if (!acc[projectId]) {
-      acc[projectId] = [];
-    }
-    acc[projectId].push(conv);
-    return acc;
-  }, {} as Record<string, ConversationWithSnippet[]>);
-
-  // Group by date for timeline view
-  const groupedByDate = useMemo(() => {
-    const groups: Record<DateGroup, ConversationWithSnippet[]> = {
-      today: [],
-      yesterday: [],
-      thisWeek: [],
-      older: [],
+  const groupConversationsByDate = (convs: Conversation[]) => {
+    const groups: Record<string, Conversation[]> = {
+      [t('history.today')]: [],
+      [t('history.yesterday')]: [],
+      [t('history.thisWeek')]: [],
+      [t('history.older')]: [],
     };
 
-    filteredConversations.forEach(conv => {
-      const date = parseISO(conv.updated_at);
+    convs.forEach(conv => {
+      const date = parseISO(conv.created_at);
       if (isToday(date)) {
-        groups.today.push(conv);
+        groups[t('history.today')].push(conv);
       } else if (isYesterday(date)) {
-        groups.yesterday.push(conv);
+        groups[t('history.yesterday')].push(conv);
       } else if (isThisWeek(date)) {
-        groups.thisWeek.push(conv);
+        groups[t('history.thisWeek')].push(conv);
       } else {
-        groups.older.push(conv);
+        groups[t('history.older')].push(conv);
       }
     });
 
     return groups;
-  }, [filteredConversations]);
-
-  const dateGroupLabels: Record<DateGroup, string> = {
-    today: t('history.today', 'Today'),
-    yesterday: t('history.yesterday', 'Yesterday'),
-    thisWeek: t('history.thisWeek', 'This Week'),
-    older: t('history.older', 'Older'),
   };
 
-  const handleDelete = async (e: React.MouseEvent, id: string) => {
-    e.stopPropagation();
-    if (confirm('Permanently delete this conversation?')) {
-      await deleteConversation(id);
-    }
-  };
-
-  const handleArchive = async (e: React.MouseEvent, id: string) => {
-    e.stopPropagation();
-    await archiveConversation(id);
-  };
-
-  const handleRename = async (e: React.MouseEvent, conv: ConversationWithSnippet) => {
-    e.stopPropagation();
-    const newTitle = prompt('Rename conversation:', conv.title || '');
-    if (newTitle && newTitle !== conv.title) {
-      await updateConversation(conv.id, { title: newTitle });
-      toast.success('Conversation renamed');
-    }
-  };
-
-  const handleSelect = (conv: ConversationWithSnippet) => {
-    navigate(`/chat?conversationId=${conv.id}`);
-  };
+  const groupedConversations = groupConversationsByDate(filteredConversations);
 
   const getProjectName = (projectId: string | null) => {
-    if (!projectId) return 'General';
-    const project = projects.find(p => p.id === projectId);
-    return project?.name || 'General';
+    if (!projectId) return null;
+    return projects.find(p => p.id === projectId)?.name;
   };
 
-  const renderConversationCard = (conv: ConversationWithSnippet) => (
-    <Card 
-      key={conv.id} 
-      className="hover:bg-accent hover:border-primary/30 transition-all cursor-pointer group" 
-      onClick={() => handleSelect(conv)}
-    >
-      <CardHeader className="flex flex-row items-center justify-between pb-2">
-        <CardTitle className="text-lg font-medium flex items-center gap-2">
-          <MessageSquare className="h-4 w-4 text-primary" />
-          {conv.title || 'Untitled Conversation'}
-        </CardTitle>
-        <div className="flex items-center gap-2">
-          <div className="flex items-center text-xs text-muted-foreground gap-1">
-            <Clock className="h-3 w-3" />
-            {formatDistanceToNow(new Date(conv.updated_at), { addSuffix: true })}
-          </div>
-          <div className="opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              className="h-6 w-6" 
-              onClick={(e) => handleRename(e, conv)}
-            >
-              <Edit2 className="h-3 w-3" />
-            </Button>
-            {activeTab !== 'archived' && (
-              <Button 
-                variant="ghost" 
-                size="icon" 
-                className="h-6 w-6" 
-                onClick={(e) => handleArchive(e, conv.id)}
-              >
-                <Archive className="h-3 w-3" />
-              </Button>
-            )}
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              className="h-6 w-6 hover:text-destructive" 
-              onClick={(e) => handleDelete(e, conv.id)}
-            >
-              <Trash2 className="h-3 w-3" />
-            </Button>
-          </div>
-        </div>
-      </CardHeader>
-      <CardContent>
-        <p className="text-sm text-muted-foreground line-clamp-2 mb-2">
-          {conv.snippet || 'No messages yet'}
-        </p>
-        <div className="flex items-center gap-2">
-          {conv.mode && (
-            <Badge variant="secondary" className="text-xs">
-              {conv.mode}
-            </Badge>
-          )}
-          {conv.message_count !== undefined && (
-            <span className="text-xs text-muted-foreground">
-              {conv.message_count} messages
-            </span>
-          )}
-        </div>
-      </CardContent>
-    </Card>
-  );
+  const getModeBadge = (mode: string) => {
+    const colors: Record<string, string> = {
+      fast: 'bg-green-100 text-green-800',
+      standard: 'bg-blue-100 text-blue-800',
+      deep: 'bg-purple-100 text-purple-800',
+      pro: 'bg-orange-100 text-orange-800',
+      research: 'bg-teal-100 text-teal-800',
+      image: 'bg-pink-100 text-pink-800',
+    };
+    return colors[mode] || 'bg-gray-100 text-gray-800';
+  };
 
   return (
-    <MainLayout title={t('sidebar.history')}>
-      <div className="flex-1 p-4 md:p-8 space-y-6 md:space-y-8 overflow-y-auto">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div className="space-y-1 md:space-y-2">
-            <h1 className="text-2xl md:text-3xl font-bold tracking-tight">{t('sidebar.history')}</h1>
-            <p className="text-muted-foreground text-sm md:text-lg">
-              {t('history.description', 'View and manage your past conversations.')}
-            </p>
+    <MainLayout>
+      <div className="flex-1 flex flex-col overflow-hidden">
+        <div className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+          <div className="p-6">
+            <h1 className="text-2xl font-bold tracking-tight mb-2">{t('sidebar.history')}</h1>
+            <p className="text-muted-foreground">{t('history.description')}</p>
           </div>
-          <div className="relative w-full md:w-64">
-            <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Search conversations..."
-              className="pl-8"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
+
+          <div className="px-6 pb-4 flex flex-col md:flex-row gap-4 items-center justify-between">
+            <div className="relative w-full md:w-96">
+              <Search className="absolute start-2 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search conversations..."
+                className="ps-8"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </div>
+
+            <div className="flex gap-2 w-full md:w-auto">
+              <Select value={selectedProject} onValueChange={setSelectedProject}>
+                <SelectTrigger className="w-[180px]">
+                  <SelectValue placeholder="Project" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Projects</SelectItem>
+                  {projects.map(p => (
+                    <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              <Select value={filterType} onValueChange={(v: any) => setFilterType(v)}>
+                <SelectTrigger className="w-[140px]">
+                  <Filter className="w-4 h-4 mr-2" />
+                  <SelectValue placeholder="Type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Types</SelectItem>
+                  <SelectItem value="chat">Chat</SelectItem>
+                  <SelectItem value="research">Research</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
         </div>
 
-        <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList>
-            <TabsTrigger value="recent">Recent</TabsTrigger>
-            <TabsTrigger value="by-project">By Project</TabsTrigger>
-            <TabsTrigger value="archived">Archived</TabsTrigger>
-          </TabsList>
+        <Tabs defaultValue="conversations" className="flex-1 flex flex-col overflow-hidden">
+          <div className="px-6 pt-2 border-b">
+            <TabsList>
+              <TabsTrigger value="conversations">Conversations</TabsTrigger>
+              <TabsTrigger value="memory">Memory Timeline</TabsTrigger>
+            </TabsList>
+          </div>
 
-          <TabsContent value="recent" className="mt-4 md:mt-6">
-            {isLoading ? (
-              <div className="flex items-center justify-center h-40">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
-              </div>
-            ) : filteredConversations.length === 0 ? (
-              <div className="text-center py-10 text-muted-foreground border border-dashed rounded-lg">
-                {t('history.noConversations', 'No conversations found. Start a new chat!')}
-              </div>
-            ) : (
-              <div className="space-y-6">
-                {(Object.keys(groupedByDate) as DateGroup[]).map(group => {
-                  const convs = groupedByDate[group];
-                  if (convs.length === 0) return null;
-                  return (
-                    <div key={group}>
-                      <h3 className="text-sm font-medium text-muted-foreground mb-3 uppercase tracking-wider">
-                        {dateGroupLabels[group]}
-                      </h3>
-                      <div className="grid gap-3 md:gap-4">
-                        {convs.map(renderConversationCard)}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </TabsContent>
-
-          <TabsContent value="by-project" className="mt-6">
-            {isLoading ? (
-              <div className="flex items-center justify-center h-40">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
-              </div>
-            ) : Object.keys(groupedByProject).length === 0 ? (
-              <div className="text-center py-10 text-muted-foreground border border-dashed rounded-lg">
-                No conversations found.
-              </div>
-            ) : (
-              <div className="space-y-8">
-                {Object.entries(groupedByProject).map(([projectId, convs]) => (
-                  <div key={projectId}>
-                    <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                      {projectId === 'no-project' ? 'General' : getProjectName(projectId)}
-                      <Badge variant="outline">{convs.length}</Badge>
-                    </h3>
-                    <div className="grid gap-4">
-                      {convs.map(renderConversationCard)}
-                    </div>
+          <TabsContent value="conversations" className="flex-1 overflow-hidden m-0">
+             <ScrollArea className="h-full">
+              <div className="p-6 space-y-8">
+                {isLoading ? (
+                  <div className="flex justify-center py-10">
+                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
                   </div>
-                ))}
+                ) : filteredConversations.length === 0 ? (
+                  <EmptyState
+                    icon={MessageSquare}
+                    title={t('history.noConversations')}
+                    description="Your chat history will appear here once you start a conversation."
+                    actionLabel="Start Chat"
+                    onAction={() => window.location.href = '/chat'}
+                  />
+                ) : (
+                  Object.entries(groupedConversations).map(([dateGroup, items]) => (
+                    items.length > 0 && (
+                      <div key={dateGroup} className="space-y-4">
+                        <h2 className="text-sm font-semibold text-muted-foreground sticky top-0 bg-background py-2 z-10">
+                          {dateGroup}
+                        </h2>
+                        <div className="grid gap-4">
+                          {items.map((conv) => (
+                            <Card key={conv.id} className="group hover:shadow-md transition-shadow">
+                              <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-2">
+                                <div className="space-y-1">
+                                  <CardTitle className="text-base font-medium flex items-center gap-2">
+                                    <span className="line-clamp-1">{conv.title || 'Untitled Conversation'}</span>
+                                    <Badge variant="secondary" className={`text-xs font-normal ${getModeBadge(conv.mode || 'standard')}`}>
+                                      {conv.mode}
+                                    </Badge>
+                                  </CardTitle>
+                                  <CardDescription className="flex items-center gap-2 text-xs">
+                                    <CalendarIcon className="h-3 w-3" />
+                                    {format(parseISO(conv.created_at), 'h:mm a')}
+                                    {conv.project_id && (
+                                      <>
+                                        <span>•</span>
+                                        <span className="flex items-center gap-1">
+                                           {getProjectName(conv.project_id) === 'General' ? <Rocket className="h-3 w-3" /> : null}
+                                           {getProjectName(conv.project_id)}
+                                        </span>
+                                      </>
+                                    )}
+                                  </CardDescription>
+                                </div>
+                                <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                  <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground" onClick={() => window.location.href = `/chat?conversationId=${conv.id}`}>
+                                    <ArrowRight className="h-4 w-4" />
+                                  </Button>
+                                  <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:bg-destructive/10" onClick={() => deleteConversation(conv.id)}>
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
+                                </div>
+                              </CardHeader>
+                              <CardContent className="pb-3 pt-0">
+                                <p className="text-sm text-muted-foreground line-clamp-2">
+                                  {conv.summary || conv.last_message || 'No preview available'}
+                                </p>
+                              </CardContent>
+                            </Card>
+                          ))}
+                        </div>
+                      </div>
+                    )
+                  ))
+                )}
               </div>
-            )}
+            </ScrollArea>
           </TabsContent>
 
-          <TabsContent value="archived" className="mt-6">
-            {isLoading ? (
-              <div className="flex items-center justify-center h-40">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
-              </div>
-            ) : filteredConversations.length === 0 ? (
-              <div className="text-center py-10 text-muted-foreground border border-dashed rounded-lg">
-                No archived conversations.
-              </div>
-            ) : (
-              <div className="grid gap-4">
-                {filteredConversations.map(renderConversationCard)}
-              </div>
-            )}
+          <TabsContent value="memory" className="flex-1 overflow-hidden m-0">
+             <ScrollArea className="h-full p-6">
+                <MemoryList projectId={selectedProject === 'all' ? undefined : selectedProject} />
+             </ScrollArea>
           </TabsContent>
         </Tabs>
       </div>

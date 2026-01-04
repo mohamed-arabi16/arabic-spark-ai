@@ -1,171 +1,131 @@
-import { Project } from '@/hooks/useProjects';
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import { MessageSquare, Calendar, Edit, Archive, Rocket, Brain, History as HistoryIcon, PlusCircle } from 'lucide-react';
-import { formatDistanceToNow } from 'date-fns';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
+import { formatDistanceToNow } from 'date-fns';
+import { enUS, arSA } from 'date-fns/locale';
+import { MessageSquare, Calendar, Archive, Trash2, Rocket, MoreVertical, Settings } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator
+} from '@/components/ui/dropdown-menu';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Tables } from '@/integrations/supabase/types';
+import { ProjectSettingsDialog } from './ProjectSettingsDialog';
 
 interface ProjectCardProps {
-  project: Project;
-  onEdit: (project: Project) => void;
-  onDelete: (project: Project) => void;
-  onSelect: (project: Project) => void;
-  onViewMemory?: (project: Project) => void;
-  isSelected: boolean;
+  project: Tables<'projects'>;
+  onArchive: (id: string) => void;
+  onDelete: (id: string) => void;
+  onUpdate: () => void;
 }
 
-export function ProjectCard({ project, onEdit, onDelete, onSelect, onViewMemory, isSelected }: ProjectCardProps) {
+export function ProjectCard({ project, onArchive, onDelete, onUpdate }: ProjectCardProps) {
   const navigate = useNavigate();
-  const isDefault = project.name === 'General'; // Assuming 'General' is the default
-  const isActive = !project.is_archived; // Simplified status logic
+  const { t, i18n } = useTranslation();
+  const [showSettings, setShowSettings] = useState(false);
 
-  const handleNewChat = (e: React.MouseEvent) => {
-    e.stopPropagation();
+  const isDefault = project.name === 'General'; // Simplified check
+
+  const handleCardClick = () => {
     navigate(`/chat?project=${project.id}`);
   };
 
-  const handleViewHistory = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    navigate(`/history?project=${project.id}`); // This requires history page to handle query param
-  };
-
-  const handleViewMemory = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (onViewMemory) {
-      onViewMemory(project);
-    }
-  };
-
   return (
-    <Card
-      className={`relative cursor-pointer transition-all hover:border-primary/50 group ${isSelected ? 'border-primary ring-1 ring-primary' : ''}`}
-      onClick={() => onSelect(project)}
-    >
-      <CardHeader className="pb-3">
-        <div className="flex items-start justify-between">
-          <div className="flex items-center gap-3">
-            <div
-              className="flex h-10 w-10 items-center justify-center rounded-lg text-lg relative"
-              style={{ backgroundColor: `${project.color}20`, color: project.color || '#6366f1' }}
-            >
-              {isDefault ? <Rocket className="h-5 w-5" /> : (project.icon || '💬')}
-            </div>
-            <div>
-              <CardTitle className="text-base font-semibold leading-none mb-1 flex items-center gap-2">
+    <>
+      <Card
+        className="group hover:shadow-md transition-shadow cursor-pointer relative"
+        onClick={handleCardClick}
+      >
+        <CardHeader className="pb-3">
+          <div className="flex justify-between items-start">
+            <div className="space-y-1">
+              <CardTitle className="text-lg flex items-center gap-2">
                 {project.name}
-                {project.is_archived ? (
-                  <Badge variant="outline" className="text-[10px] h-5 px-1.5 text-muted-foreground">
-                    Archived
-                  </Badge>
-                ) : (
-                  <Badge variant="default" className="text-[10px] h-5 px-1.5 bg-green-500/10 text-green-600 hover:bg-green-500/20 border-green-200">
-                    Active
-                  </Badge>
-                )}
+                {isDefault && <Rocket className="h-4 w-4 text-primary" />}
               </CardTitle>
-              <p className="text-sm text-muted-foreground line-clamp-1">
-                {project.description || 'No description'}
-              </p>
+              <CardDescription className="line-clamp-2 min-h-[40px]">
+                {project.description || t('projects.noDescription')}
+              </CardDescription>
             </div>
-          </div>
-        </div>
-      </CardHeader>
-
-      <CardContent className="pb-3">
-        <div className="flex items-center gap-4 text-xs text-muted-foreground">
-          <div className="flex items-center gap-1">
-            <MessageSquare className="h-3.5 w-3.5" />
-            <span>0 chats</span>
-          </div>
-          <div className="flex items-center gap-1">
-            <Calendar className="h-3.5 w-3.5" />
-            <span>{formatDistanceToNow(new Date(project.updated_at), { addSuffix: true })}</span>
-          </div>
-        </div>
-
-        <div className="mt-3 flex gap-2">
-          {project.dialect_preset && (
-            <Badge variant="secondary" className="text-xs font-normal">
-              {project.dialect_preset}
-            </Badge>
-          )}
-          {project.default_mode && (
-            <Badge variant="outline" className="text-xs font-normal">
-              {project.default_mode}
-            </Badge>
-          )}
-        </div>
-      </CardContent>
-
-      <CardFooter className="pt-0 h-10">
-        {/* Quick Actions - Visible on Hover */}
-        <div className="flex w-full justify-between items-center opacity-0 group-hover:opacity-100 transition-opacity" onClick={(e) => e.stopPropagation()}>
-           <div className="flex gap-1">
-             <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button variant="ghost" size="icon" className="h-8 w-8 hover:text-primary" onClick={handleNewChat}>
-                    <PlusCircle className="h-4 w-4" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>New Chat</TooltipContent>
-             </Tooltip>
-             <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button variant="ghost" size="icon" className="h-8 w-8 hover:text-primary" onClick={handleViewHistory}>
-                    <HistoryIcon className="h-4 w-4" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>View History</TooltipContent>
-             </Tooltip>
-             <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button variant="ghost" size="icon" className="h-8 w-8 hover:text-primary" onClick={handleViewMemory}>
-                    <Brain className="h-4 w-4" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>Memory Summary</TooltipContent>
-             </Tooltip>
-           </div>
-
-           <div className="flex gap-1">
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8"
-                  onClick={() => onEdit(project)}
-                  aria-label={`Edit ${project.name}`}
-                >
-                  <Edit className="h-4 w-4 text-muted-foreground" />
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-8 w-8 -mr-2" onClick={(e) => e.stopPropagation()}>
+                  <MoreVertical className="h-4 w-4" />
+                  <span className="sr-only">Open menu</span>
                 </Button>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>Edit project</p>
-              </TooltipContent>
-            </Tooltip>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); navigate(`/chat?project=${project.id}`); }}>
+                  <MessageSquare className="mr-2 h-4 w-4" />
+                  {t('projects.openChat')}
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); navigate(`/history?project=${project.id}`); }}>
+                  <Calendar className="mr-2 h-4 w-4" />
+                  {t('projects.viewHistory')}
+                </DropdownMenuItem>
 
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8"
-                  onClick={() => onDelete(project)}
-                  aria-label={project.is_archived ? `Restore ${project.name}` : `Archive ${project.name}`}
-                >
-                  <Archive className="h-4 w-4 text-muted-foreground" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>{project.is_archived ? 'Restore' : 'Archive'}</p>
-              </TooltipContent>
-            </Tooltip>
-           </div>
-        </div>
-      </CardFooter>
-    </Card>
+                <DropdownMenuSeparator />
+
+                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); setShowSettings(true); }}>
+                  <Settings className="mr-2 h-4 w-4" />
+                  {t('common.settings')}
+                </DropdownMenuItem>
+
+                {!isDefault && (
+                  <>
+                    <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onArchive(project.id); }}>
+                      <Archive className="mr-2 h-4 w-4" />
+                      {t('common.archive')}
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      className="text-destructive focus:text-destructive"
+                      onClick={(e) => { e.stopPropagation(); onDelete(project.id); }}
+                    >
+                      <Trash2 className="mr-2 h-4 w-4" />
+                      {t('common.delete')}
+                    </DropdownMenuItem>
+                  </>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        </CardHeader>
+        <CardContent className="pb-3">
+          <div className="flex gap-2">
+            <Badge variant={project.status === 'active' ? 'default' : 'secondary'}>
+              {project.status === 'active' ? t('projects.active') : t('projects.archived')}
+            </Badge>
+          </div>
+        </CardContent>
+        <CardFooter className="text-xs text-muted-foreground pt-0">
+          <span className="flex items-center gap-1">
+            <Calendar className="h-3 w-3" />
+            {t('projects.updated')} {formatDistanceToNow(new Date(project.updated_at), {
+              addSuffix: true,
+              locale: i18n.language === 'ar' ? arSA : enUS
+            })}
+          </span>
+        </CardFooter>
+      </Card>
+
+      <ProjectSettingsDialog
+        project={project}
+        open={showSettings}
+        onOpenChange={setShowSettings}
+        onUpdate={onUpdate}
+      />
+    </>
   );
 }

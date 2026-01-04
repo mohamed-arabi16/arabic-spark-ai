@@ -8,9 +8,10 @@ import { ProjectSettings } from '@/components/projects/ProjectSettings';
 import { ProjectMemorySummary } from '@/components/projects/ProjectMemorySummary';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Plus, Search, Loader2 } from 'lucide-react';
+import { Plus, Search, Loader2, FolderPlus } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { EmptyState } from '@/components/common/EmptyState';
 
 export default function Projects() {
   const { t } = useTranslation();
@@ -55,14 +56,6 @@ export default function Projects() {
 
   const handleArchive = async (project: Project) => {
     if (confirm(`Are you sure you want to ${project.is_archived ? 'restore' : 'archive'} "${project.name}"?`)) {
-      // In useProjects, deleteProject actually archives. To restore, we might need a dedicated function if supported,
-      // but usually 'deleteProject' toggles or sets is_archived.
-      // Checking useProjects implementation (from memory, not file content): it likely calls supabase delete or update.
-      // If deleteProject removes it, we can't restore.
-      // However, the previous code called deleteProject on archive.
-      // Let's assume deleteProject is soft delete (archive).
-      // To restore, we would need an 'unarchive' or updateProject({is_archived: false}).
-      // Since I don't see unarchive in the hook usage, I will use updateProject to toggle.
       await updateProject(project.id, { is_archived: !project.is_archived });
     }
   };
@@ -133,15 +126,13 @@ export default function Projects() {
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
               </div>
             ) : filteredProjects.length === 0 ? (
-              <div className="text-center py-20 border rounded-lg border-dashed">
-                <h3 className="text-lg font-medium">{t('projects.noProjects')}</h3>
-                <p className="text-muted-foreground mb-4">
-                  {t('projects.createFirstProject')}
-                </p>
-                <Button onClick={handleCreate} variant="outline">
-                  <Plus className="me-2 h-4 w-4" /> {t('projects.newProject')}
-                </Button>
-              </div>
+              <EmptyState
+                icon={FolderPlus}
+                title={t('projects.noProjects')}
+                description={t('projects.createFirstProject')}
+                actionLabel={t('projects.newProject')}
+                onAction={handleCreate}
+              />
             ) : (
               <>
                 {/* Active Projects */}
@@ -157,7 +148,9 @@ export default function Projects() {
                                 key={project.id}
                                 project={project}
                                 onEdit={handleEdit}
-                                onDelete={handleArchive}
+                                onArchive={handleArchive}
+                                onDelete={handleHardDelete}
+                                onUpdate={fetchProjects}
                                 onSelect={handleSelect}
                                 onViewMemory={handleViewMemory}
                                 isSelected={currentProject?.id === project.id}
@@ -182,7 +175,9 @@ export default function Projects() {
                                 key={project.id}
                                 project={project}
                                 onEdit={handleEdit}
-                                onDelete={handleArchive}
+                                onArchive={handleArchive}
+                                onDelete={handleHardDelete}
+                                onUpdate={fetchProjects}
                                 onSelect={handleSelect}
                                 onViewMemory={handleViewMemory}
                                 isSelected={currentProject?.id === project.id}
@@ -201,12 +196,11 @@ export default function Projects() {
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
               </div>
             ) : projects.slice(0, 5).length === 0 ? (
-               <div className="text-center py-20 border rounded-lg border-dashed">
-                <h3 className="text-lg font-medium">{t('projects.noRecent')}</h3>
-                <p className="text-muted-foreground mb-4">
-                  {t('projects.recentDescription')}
-                </p>
-              </div>
+               <EmptyState
+                icon={FolderPlus}
+                title={t('projects.noRecent')}
+                description={t('projects.recentDescription')}
+              />
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {projects.slice(0, 5).map((project) => (
@@ -214,7 +208,9 @@ export default function Projects() {
                     key={project.id}
                     project={project}
                     onEdit={handleEdit}
-                    onDelete={handleArchive}
+                    onArchive={handleArchive}
+                    onDelete={handleHardDelete}
+                    onUpdate={fetchProjects}
                     onSelect={handleSelect}
                     onViewMemory={handleViewMemory}
                     isSelected={currentProject?.id === project.id}

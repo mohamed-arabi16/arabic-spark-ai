@@ -4,8 +4,9 @@ import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { ModeSelector, ChatMode } from './ModeSelector';
-import { Send, Paperclip, Mic, Square, Loader2 } from 'lucide-react';
+import { Send, Paperclip, Mic, Square, Loader2, Info } from 'lucide-react';
 import { useVoiceInput } from '@/hooks/useVoiceInput';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface ChatInputProps {
   onSend: (message: string, mode: ChatMode) => void;
@@ -15,12 +16,27 @@ interface ChatInputProps {
   setMessage: (message: string) => void;
   mode: ChatMode;
   setMode: (mode: ChatMode) => void;
+  activeModel?: string;
 }
 
-export function ChatInput({ onSend, isLoading, onStop, message, setMessage, mode, setMode }: ChatInputProps) {
+export function ChatInput({ onSend, isLoading, onStop, message, setMessage, mode, setMode, activeModel }: ChatInputProps) {
   const { t } = useTranslation();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [partialTranscript, setPartialTranscript] = useState('');
+  const [modelName, setModelName] = useState('GPT-5.2');
+
+  useEffect(() => {
+    // Priority: Prop (from project/global) > localStorage > Default
+    let model = activeModel;
+    if (!model) {
+      model = localStorage.getItem('app_default_model') || 'gpt-5.2';
+    }
+
+    const display = model === 'gpt-5.2' ? 'GPT-5.2' :
+                    model === 'gpt-4' ? 'GPT-4' :
+                    model === 'claude-3-opus' ? 'Claude 3' : model;
+    setModelName(display);
+  }, [activeModel]);
 
   const { isRecording, isConnecting, toggleRecording } = useVoiceInput({
     onTranscript: (text) => {
@@ -57,12 +73,27 @@ export function ChatInput({ onSend, isLoading, onStop, message, setMessage, mode
   return (
     <div className="border-t border-border bg-background p-3 md:p-4 safe-area-bottom">
       <div className="max-w-4xl mx-auto space-y-3">
-        {/* Mode selector - hide on very small screens when recording */}
+        {/* Mode selector & Model Info */}
         <div className={cn(
-          "flex items-center justify-center transition-opacity",
+          "flex items-center justify-between px-1",
           isRecording && "opacity-50"
         )}>
-          <ModeSelector mode={mode} onModeChange={setMode} />
+           <ModeSelector mode={mode} onModeChange={setMode} />
+
+           <TooltipProvider>
+             <Tooltip>
+               <TooltipTrigger asChild>
+                 <div className="flex items-center gap-1 text-xs text-muted-foreground cursor-help bg-secondary/50 px-2 py-1 rounded-full">
+                   <span>{t('settings.model')}: {modelName}</span>
+                   <Info className="h-3 w-3" />
+                 </div>
+               </TooltipTrigger>
+               <TooltipContent>
+                 <p>{t('settings.modelTradeoff')}</p>
+                 <p className="text-xs opacity-70 mt-1">{t('settings.defaultModelDesc')}</p>
+               </TooltipContent>
+             </Tooltip>
+           </TooltipProvider>
         </div>
 
         {/* Input area */}

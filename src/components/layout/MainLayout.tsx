@@ -5,6 +5,7 @@ import { Header } from './Header';
 import { MobileNav } from '@/components/mobile/MobileNav';
 import { MobileHeader } from '@/components/mobile/MobileHeader';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
+import { OfflineBanner } from './OfflineBanner';
 
 interface MainLayoutProps {
   children: ReactNode;
@@ -24,6 +25,7 @@ export function MainLayout({ children, title, hideMobileNav }: MainLayoutProps) 
   if (isMobile) {
     return (
       <div className="flex flex-col min-h-screen bg-background">
+        <OfflineBanner />
         <MobileHeader title={title} />
         <main className="flex-1 flex flex-col overflow-hidden pb-20">
           {children}
@@ -40,6 +42,7 @@ export function MainLayout({ children, title, hideMobileNav }: MainLayoutProps) 
         onToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
       />
       <main className="flex-1 flex flex-col overflow-hidden">
+        <OfflineBanner />
         <Header />
         {children}
       </main>
