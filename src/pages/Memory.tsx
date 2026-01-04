@@ -18,7 +18,7 @@ export default function Memory() {
   const [selectedProject, setSelectedProject] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
 
-  const { memories, pendingMemories, fetchMemories } = useMemory(
+  const { memories, proposedMemories, fetchMemories, approveMemory, rejectMemory, deleteMemory, updateMemory } = useMemory(
     selectedProject === 'all' ? undefined : selectedProject
   );
 
@@ -69,8 +69,8 @@ export default function Memory() {
           </div>
         </div>
 
-        <div className="flex-1 overflow-hidden">
-           {memories.length === 0 && pendingMemories.length === 0 && !searchQuery ? (
+        <div className="flex-1 overflow-hidden p-6">
+           {memories.length === 0 && proposedMemories.length === 0 && !searchQuery ? (
              <EmptyState
                icon={Brain}
                title={t('memory.noMemories')}
@@ -78,8 +78,13 @@ export default function Memory() {
              />
            ) : (
              <MemoryList
-               projectId={selectedProject === 'all' ? undefined : selectedProject}
-               searchQuery={searchQuery}
+               memories={memories.filter(m => 
+                 !searchQuery || m.content.toLowerCase().includes(searchQuery.toLowerCase())
+               )}
+               onApprove={approveMemory}
+               onReject={rejectMemory}
+               onDelete={deleteMemory}
+               onUpdate={async (id, content) => { await updateMemory(id, { content }); }}
              />
            )}
         </div>

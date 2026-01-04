@@ -184,20 +184,12 @@ export default function Chat() {
       let assistantContent = '';
       let streamDone = false;
 
-      // Determine model name for display
-      let modelName = '';
+      // Determine model name for display based on mode
+      const modelName = chatMode === 'deep' ? 'gpt-5.2 (deep)' : 
+                       chatMode === 'standard' ? 'gpt-5.2 (standard)' : 
+                       chatMode === 'research' ? 'gpt-5.2 (research)' : 'gpt-5.2 (fast)';
 
-      // Check project settings for model override
-      const projectSettings = project?.settings as any;
-      if (projectSettings?.model) {
-         modelName = projectSettings.model;
-      } else {
-         // Fallback to mode-based or default
-         modelName = chatMode === 'pro' ? 'gpt-5.2 (high)' :
-                        chatMode === 'deep' ? 'gpt-5.2 (medium)' : 
-                        chatMode === 'standard' ? 'gpt-5.2 (low)' : 
-                        chatMode === 'research' ? 'gpt-5.2 (research)' : 'gpt-5.2 (minimal)';
-      }
+      const assistantMessageId = crypto.randomUUID();
       
       setMessages((prev) => [
         ...prev,
@@ -209,8 +201,6 @@ export default function Chat() {
           model: modelName,
         } as Message,
       ]);
-
-      const assistantMessageId = crypto.randomUUID();
 
       while (!streamDone) {
         const { done, value } = await reader.read();
@@ -360,10 +350,6 @@ export default function Chat() {
 
   // Determine current active model for input display
   const getActiveModel = () => {
-     const projectSettings = project?.settings as any;
-     if (projectSettings?.model) {
-        return projectSettings.model;
-     }
      const savedModel = localStorage.getItem('app_default_model');
      return savedModel || 'gpt-5.2';
   };

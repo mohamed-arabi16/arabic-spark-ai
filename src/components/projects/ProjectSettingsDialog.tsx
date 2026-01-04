@@ -21,25 +21,21 @@ export function ProjectSettingsDialog({ project, open, onOpenChange, onUpdate }:
   const { t } = useTranslation();
   const [loading, setLoading] = useState(false);
 
-  // Parse existing settings or use defaults
-  const settings = project.settings as any || {};
-  const [model, setModel] = useState(settings.model || 'gpt-5.2');
-  const [memoryEnabled, setMemoryEnabled] = useState(settings.memory_enabled !== false);
-  const [systemInstructions, setSystemInstructions] = useState(settings.system_instructions || '');
+  // Use existing columns directly
+  const [defaultMode, setDefaultMode] = useState<string>(project.default_mode || 'fast');
+  const [dialectPreset, setDialectPreset] = useState<string>(project.dialect_preset || 'msa');
+  const [systemInstructions, setSystemInstructions] = useState(project.system_instructions || '');
 
   const handleSave = async () => {
     setLoading(true);
     try {
-      const newSettings = {
-        ...settings,
-        model,
-        memory_enabled: memoryEnabled,
-        system_instructions: systemInstructions
-      };
-
       const { error } = await supabase
         .from('projects')
-        .update({ settings: newSettings })
+        .update({
+          default_mode: defaultMode as any,
+          dialect_preset: dialectPreset as any,
+          system_instructions: systemInstructions,
+        })
         .eq('id', project.id);
 
       if (error) throw error;
@@ -67,30 +63,34 @@ export function ProjectSettingsDialog({ project, open, onOpenChange, onUpdate }:
 
         <div className="grid gap-4 py-4">
           <div className="grid gap-2">
-            <Label>{t('settings.model')}</Label>
-            <Select value={model} onValueChange={setModel}>
+            <Label>{t('settings.defaultMode')}</Label>
+            <Select value={defaultMode} onValueChange={setDefaultMode}>
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="gpt-5.2">GPT-5.2 (Standard)</SelectItem>
-                <SelectItem value="gpt-4">GPT-4 (Legacy)</SelectItem>
-                <SelectItem value="claude-3-opus">Claude 3 Opus</SelectItem>
+                <SelectItem value="fast">Fast</SelectItem>
+                <SelectItem value="standard">Standard</SelectItem>
+                <SelectItem value="deep">Deep</SelectItem>
+                <SelectItem value="research">Research</SelectItem>
               </SelectContent>
             </Select>
           </div>
 
-          <div className="flex items-center justify-between">
-            <div className="space-y-0.5">
-              <Label>{t('settings.enableMemory')}</Label>
-              <p className="text-sm text-muted-foreground">
-                {t('settings.enableMemoryDesc')}
-              </p>
-            </div>
-            <Switch
-              checked={memoryEnabled}
-              onCheckedChange={setMemoryEnabled}
-            />
+          <div className="grid gap-2">
+            <Label>{t('settings.dialect')}</Label>
+            <Select value={dialectPreset} onValueChange={setDialectPreset}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="msa">Modern Standard Arabic (MSA)</SelectItem>
+                <SelectItem value="egyptian">Egyptian</SelectItem>
+                <SelectItem value="gulf">Gulf</SelectItem>
+                <SelectItem value="levantine">Levantine</SelectItem>
+                <SelectItem value="maghrebi">Maghrebi</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
 
           <div className="grid gap-2">
