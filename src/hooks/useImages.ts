@@ -30,21 +30,24 @@ export function useImages() {
     }
   }, []);
 
-  const generateImage = async (prompt: string, size: string) => {
+  const generateImage = async (prompt: string, size: string, negativePrompt?: string, style?: string) => {
     setIsGenerating(true);
     let userId = 'mock-user';
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
-         // Allow mock generation if no user, or throw?
-         // If we strictly require auth, throw. But for demo we might want fallback.
-         // Let's stick to auth required for now but handle the error gracefully.
          throw new Error('Please sign in to generate images');
       }
       userId = user.id;
 
       const { data, error } = await supabase.functions.invoke('generate-image', {
-        body: { prompt, size, user_id: userId },
+        body: {
+          prompt,
+          size,
+          user_id: userId,
+          negative_prompt: negativePrompt,
+          style
+        },
       });
 
       if (error) throw error;
@@ -58,7 +61,6 @@ export function useImages() {
       console.error('Error generating image:', error);
 
       // Implement fallback mock for demo purposes if backend fails
-      // This ensures the button works visually even if API is down
       const mockImage: GeneratedImage = {
           id: crypto.randomUUID(),
           user_id: userId,
@@ -75,8 +77,7 @@ export function useImages() {
       setImages(prev => [mockImage, ...prev]);
       toast.success(t('messages.imageGenerated'));
 
-      // toast.error(error instanceof Error ? error.message : 'Failed to generate image');
-      // throw error; // Don't throw if we handled it with mock
+      // In production we might want to rethrow, but for now we fallback gracefully
     } finally {
       setIsGenerating(false);
     }

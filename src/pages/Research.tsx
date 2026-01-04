@@ -13,6 +13,9 @@ import { useTranslation } from 'react-i18next';
 import { ar, enUS } from 'date-fns/locale';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import { ResearchProgress } from '@/components/research/ResearchProgress';
+import { ResearchResult } from '@/components/research/ResearchResult';
+
 interface ResearchItem {
   id: string;
   topic: string;
@@ -28,6 +31,7 @@ export default function Research() {
   const [isResearching, setIsResearching] = useState(false);
   const [researchHistory, setResearchHistory] = useState<ResearchItem[]>([]);
   const [currentResult, setCurrentResult] = useState<string>('');
+  const [activeTopic, setActiveTopic] = useState('');
   const [isLoadingHistory, setIsLoadingHistory] = useState(true);
 
   // Load research history from database
@@ -85,6 +89,7 @@ export default function Research() {
 
     setIsResearching(true);
     setCurrentResult('');
+    setActiveTopic(topic);
 
     try {
       const { data: { session } } = await supabase.auth.getSession();
@@ -164,7 +169,7 @@ export default function Research() {
       // Add to local history
       const newResearch: ResearchItem = {
         id: conversationId || crypto.randomUUID(),
-        topic,
+        topic: activeTopic || topic,
         date: new Date(),
         summary: accumulatedText || t('research.noResults'),
         conversationId: conversationId || '',
@@ -172,7 +177,6 @@ export default function Research() {
 
       setResearchHistory(prev => [newResearch, ...prev]);
       setTopic('');
-      setCurrentResult('');
       toast.success(t('research.successMessage'));
 
     } catch (error) {
@@ -229,25 +233,12 @@ export default function Research() {
               </Button>
             </div>
 
+            {/* Progress Indicator */}
+            <ResearchProgress isResearching={isResearching} />
+
             {/* Live streaming result */}
             {currentResult && (
-              <Card className="bg-muted/30 border-primary/20">
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm flex items-center gap-2">
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    {t('research.researchingTopic', { topic })}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <ScrollArea className="h-[300px]">
-                    <div className="prose prose-sm dark:prose-invert max-w-none text-start prose-p:leading-relaxed prose-headings:text-foreground prose-a:text-primary" dir="auto">
-                      <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                        {currentResult}
-                      </ReactMarkdown>
-                    </div>
-                  </ScrollArea>
-                </CardContent>
-              </Card>
+              <ResearchResult content={currentResult} topic={activeTopic} />
             )}
           </CardContent>
         </Card>
@@ -274,7 +265,7 @@ export default function Research() {
           ) : (
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
               {researchHistory.map((item) => (
-                <Card key={item.id} className="hover:bg-accent hover:border-primary/30 transition-colors cursor-pointer">
+                <Card key={item.id} className="hover:bg-accent hover:border-primary/30 transition-colors cursor-pointer group">
                   <CardHeader className="pb-2">
                     <CardTitle className="text-base line-clamp-2">{item.topic}</CardTitle>
                     <CardDescription className="flex items-center gap-1">
@@ -283,24 +274,34 @@ export default function Research() {
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <ScrollArea className="h-[150px]">
+                    <ScrollArea className="h-[150px] mb-2">
                       <div className="text-sm text-muted-foreground text-start prose prose-sm dark:prose-invert max-w-none prose-p:m-0 prose-p:leading-relaxed" dir="auto">
                         <ReactMarkdown remarkPlugins={[remarkGfm]}>
                           {item.summary.substring(0, 500) + (item.summary.length > 500 ? '...' : '')}
                         </ReactMarkdown>
                       </div>
                     </ScrollArea>
-                    {item.conversationId && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="mt-2 w-full"
-                        onClick={() => window.location.href = `/history`}
-                      >
-                        <ExternalLink className="h-3 w-3 me-1" />
-                        {t('research.viewInHistory')}
+                    <div className="flex gap-2">
+                       {item.conversationId && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="flex-1"
+                          onClick={() => window.location.href = `/history`}
+                        >
+                          <ExternalLink className="h-3 w-3 me-1" />
+                          {t('research.viewInHistory')}
+                        </Button>
+                      )}
+                      <Button variant="secondary" size="sm" className="flex-1 opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => {
+                        // Re-open in main view
+                        setCurrentResult(item.summary);
+                        setActiveTopic(item.topic);
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                      }}>
+                         {t('common.open')}
                       </Button>
-                    )}
+                    </div>
                   </CardContent>
                 </Card>
               ))}
