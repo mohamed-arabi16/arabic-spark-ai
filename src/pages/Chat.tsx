@@ -20,6 +20,7 @@ import { useTranslation } from 'react-i18next';
 import { LoadingIndicator } from '@/components/ui/LoadingIndicator';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useAuth';
+import { MemoryCaptureToast } from '@/components/memory/MemoryCaptureToast';
 
 const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat`;
 
@@ -69,6 +70,20 @@ export default function Chat() {
   const [dialect, setDialect] = useState('msa');
   const [isError, setIsError] = useState(false);
   const [model, setModel] = useState('google/gemini-2.5-flash');
+  const [latestProposedMemory, setLatestProposedMemory] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (proposedMemories.length > 0) {
+      // Find the most recent proposed memory
+      // Since fetchMemories sorts by created_at desc, it should be the first one
+      const newest = proposedMemories[0];
+      // Only show if we haven't dismissed it (tracked via state or simple logic)
+      // For now, simple logic: show the newest one if it exists
+      if (newest && newest.content !== latestProposedMemory) {
+        setLatestProposedMemory(newest.content);
+      }
+    }
+  }, [proposedMemories, latestProposedMemory]);
 
   useEffect(() => {
     // Initialize dialect from project or localStorage
@@ -498,6 +513,31 @@ export default function Chat() {
               {t('common.retry') || 'Retry'}
             </Button>
           </div>
+        )}
+
+        {latestProposedMemory && (
+          <MemoryCaptureToast
+            content={latestProposedMemory}
+            onApprove={async (content) => {
+              const mem = proposedMemories.find(m => m.content === content);
+              if (mem) await approveMemory(mem.id);
+              setLatestProposedMemory(null);
+            }}
+            onEdit={async (content) => {
+              const mem = proposedMemories.find(m => m.content === latestProposedMemory);
+              if (mem) {
+                await updateMemory(mem.id, { content, status: 'approved' });
+              }
+              setLatestProposedMemory(null);
+            }}
+            onDismiss={() => {
+              const mem = proposedMemories.find(m => m.content === latestProposedMemory);
+              // Just hide the toast, don't reject yet? Or maybe reject?
+              // The card says "Dismiss", so maybe we just close it.
+              setLatestProposedMemory(null);
+            }}
+            onClose={() => setLatestProposedMemory(null)}
+          />
         )}
 
         {/* Input area */}

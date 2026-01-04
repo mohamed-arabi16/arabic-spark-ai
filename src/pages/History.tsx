@@ -1,10 +1,13 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { useNavigate } from 'react-router-dom';
 import { format, isToday, isYesterday, isThisWeek, parseISO } from 'date-fns';
 import { MainLayout } from '@/components/layout/MainLayout';
+import { normalizeArabic } from '@/lib/utils';
 import { useConversations, ConversationWithSnippet } from '@/hooks/useConversations';
 import { useProjects } from '@/hooks/useProjects';
+import { useMemory } from '@/hooks/useMemory';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -19,6 +22,7 @@ import { EmptyState } from '@/components/common/EmptyState';
 
 export default function History() {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const projectParam = searchParams.get('project');
   
@@ -31,6 +35,17 @@ export default function History() {
   } = useConversations();
 
   const { projects } = useProjects();
+  const {
+    memories,
+    proposedMemories,
+    fetchMemories,
+    fetchApprovedMemories,
+    addMemory,
+    updateMemory,
+    deleteMemory,
+    approveMemory,
+    rejectMemory
+  } = useMemory();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedProject, setSelectedProject] = useState<string>(projectParam || 'all');
@@ -40,8 +55,16 @@ export default function History() {
     fetchConversations({ projectId: selectedProject === 'all' ? undefined : selectedProject });
   }, [fetchConversations, selectedProject]);
 
+  useEffect(() => {
+    fetchMemories();
+  }, [fetchMemories]);
+
   const filteredConversations = conversations.filter(conv => {
-    const matchesSearch = (conv.title || '').toLowerCase().includes(searchQuery.toLowerCase());
+    const normQuery = normalizeArabic(searchQuery);
+    const normTitle = normalizeArabic(conv.title || '');
+    const normSnippet = normalizeArabic(conv.snippet || '');
+
+    const matchesSearch = normTitle.includes(normQuery) || normSnippet.includes(normQuery);
     const matchesType = filterType === 'all' || conv.mode === filterType;
     return matchesSearch && matchesType;
   });
@@ -158,7 +181,7 @@ export default function History() {
                     title={t('history.noConversations')}
                     description="Your chat history will appear here once you start a conversation."
                     actionLabel="Start Chat"
-                    onAction={() => window.location.href = '/chat'}
+                    onAction={() => navigate('/chat')}
                   />
                 ) : (
                   Object.entries(groupedConversations).map(([dateGroup, items]) => (
@@ -193,7 +216,7 @@ export default function History() {
                                   </CardDescription>
                                 </div>
                                 <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                  <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground" onClick={() => window.location.href = `/chat?conversationId=${conv.id}`}>
+                                  <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground" onClick={() => navigate(`/chat?conversationId=${conv.id}`)}>
                                     <ArrowRight className="h-4 w-4" />
                                   </Button>
                                   <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:bg-destructive/10" onClick={() => deleteConversation(conv.id)}>
@@ -219,7 +242,18 @@ export default function History() {
 
           <TabsContent value="memory" className="flex-1 overflow-hidden m-0">
              <ScrollArea className="h-full p-6">
-                <MemoryList memories={[]} />
+                <MemoryList
+                  memories={[...memories, ...proposedMemories]}
+                  onUpdate={updateMemory}
+                  onDelete={deleteMemory}
+                  onApprove={approveMemory}
+                  onReject={rejectMemory}
+                  getProjectName={(id) => {
+                    if (!id) return 'Global';
+                    const p = projects.find(p => p.id === id);
+                    return p ? p.name : 'Unknown Project';
+                  }}
+                />
              </ScrollArea>
           </TabsContent>
         </Tabs>
