@@ -1,6 +1,7 @@
 import { useState, ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AppSidebar } from './AppSidebar';
+import { Header } from './Header';
 import { MobileNav } from '@/components/mobile/MobileNav';
 import { MobileHeader } from '@/components/mobile/MobileHeader';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
@@ -39,6 +40,7 @@ export function MainLayout({ children, title, hideMobileNav }: MainLayoutProps) 
         onToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
       />
       <main className="flex-1 flex flex-col overflow-hidden">
+        <Header />
         {children}
       </main>
     </div>
