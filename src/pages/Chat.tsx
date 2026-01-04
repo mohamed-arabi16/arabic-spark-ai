@@ -189,9 +189,15 @@ export default function Chat() {
       let streamDone = false;
 
       // Determine model name for display based on mode
-      const modelName = chatMode === 'deep' ? 'gpt-5.2 (deep)' : 
-                       chatMode === 'standard' ? 'gpt-5.2 (standard)' : 
-                       chatMode === 'research' ? 'gpt-5.2 (research)' : 'gpt-5.2 (fast)';
+      const MODE_TO_MODEL_NAME: Record<ChatMode, string> = {
+        fast: 'gpt-5.2 (fast)',
+        standard: 'gpt-5.2 (standard)',
+        pro: 'gpt-5.2 (pro)',
+        deep: 'gpt-5.2 (deep)',
+        research: 'gpt-5.2 (research)',
+        image: 'gpt-image-1',
+      };
+      const modelName = MODE_TO_MODEL_NAME[chatMode] || 'gpt-5.2 (fast)';
 
       const assistantMessageId = crypto.randomUUID();
       
