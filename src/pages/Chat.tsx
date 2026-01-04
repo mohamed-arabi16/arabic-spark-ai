@@ -19,11 +19,13 @@ import { Loader2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { LoadingIndicator } from '@/components/ui/LoadingIndicator';
 import { Button } from '@/components/ui/button';
+import { useAuth } from '@/hooks/useAuth';
 
 const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat`;
 
 export default function Chat() {
   const { t } = useTranslation();
+  const { user } = useAuth();
   const [searchParams] = useSearchParams();
   const conversationIdParam = searchParams.get('conversationId');
   const projectIdParam = searchParams.get('project');
@@ -66,12 +68,17 @@ export default function Chat() {
   const [mode, setMode] = useState<ChatMode>('fast');
   const [dialect, setDialect] = useState('msa');
   const [isError, setIsError] = useState(false);
+  const [model, setModel] = useState('google/gemini-2.5-flash');
 
   useEffect(() => {
     // Initialize dialect from project or localStorage
     const savedDialect = project?.dialect_preset || localStorage.getItem('app_dialect') || 'msa';
     setDialect(savedDialect);
-  }, [project]);
+
+    // Initialize model
+    const savedModel = localStorage.getItem('app_default_model') || user?.user_metadata?.default_model || 'google/gemini-2.5-flash';
+    setModel(savedModel);
+  }, [project, user]);
 
   // Load conversation from DB if conversationId is provided
   useEffect(() => {
@@ -184,6 +191,7 @@ export default function Chat() {
           system_instructions: project?.system_instructions,
           memory_context: memoryContext,
           dialect: selectedDialect,
+          model: model,
         }),
         signal: abortControllerRef.current.signal,
       });
