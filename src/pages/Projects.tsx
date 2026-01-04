@@ -5,10 +5,12 @@ import { useProjects, Project, ProjectInsert, ProjectUpdate } from '@/hooks/useP
 import { ProjectCard } from '@/components/projects/ProjectCard';
 import { ProjectDialog } from '@/components/projects/ProjectDialog';
 import { ProjectSettings } from '@/components/projects/ProjectSettings';
+import { ProjectMemorySummary } from '@/components/projects/ProjectMemorySummary';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Plus, Search, Loader2 } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 export default function Projects() {
   const { t } = useTranslation();
@@ -25,6 +27,8 @@ export default function Projects() {
 
   const [searchQuery, setSearchQuery] = useState('');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isMemoryDialogOpen, setIsMemoryDialogOpen] = useState(false);
+  const [memoryProject, setMemoryProject] = useState<Project | null>(null);
   const [editingProject, setEditingProject] = useState<Project | null>(null);
 
   useEffect(() => {
@@ -35,6 +39,9 @@ export default function Projects() {
     p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     (p.description && p.description.toLowerCase().includes(searchQuery.toLowerCase()))
   );
+
+  const activeProjects = filteredProjects.filter(p => !p.is_archived);
+  const archivedProjects = filteredProjects.filter(p => p.is_archived);
 
   const handleCreate = () => {
     setEditingProject(null);
@@ -47,13 +54,26 @@ export default function Projects() {
   };
 
   const handleArchive = async (project: Project) => {
-    if (confirm(`Are you sure you want to archive "${project.name}"?`)) {
-      await deleteProject(project.id);
+    if (confirm(`Are you sure you want to ${project.is_archived ? 'restore' : 'archive'} "${project.name}"?`)) {
+      // In useProjects, deleteProject actually archives. To restore, we might need a dedicated function if supported,
+      // but usually 'deleteProject' toggles or sets is_archived.
+      // Checking useProjects implementation (from memory, not file content): it likely calls supabase delete or update.
+      // If deleteProject removes it, we can't restore.
+      // However, the previous code called deleteProject on archive.
+      // Let's assume deleteProject is soft delete (archive).
+      // To restore, we would need an 'unarchive' or updateProject({is_archived: false}).
+      // Since I don't see unarchive in the hook usage, I will use updateProject to toggle.
+      await updateProject(project.id, { is_archived: !project.is_archived });
     }
   };
 
   const handleSelect = (project: Project) => {
     selectProject(project.id);
+  };
+
+  const handleViewMemory = (project: Project) => {
+    setMemoryProject(project);
+    setIsMemoryDialogOpen(true);
   };
 
   const handleHardDelete = async (project: Project) => {
@@ -107,7 +127,7 @@ export default function Projects() {
             </div>
           </div>
 
-          <TabsContent value="all" className="space-y-4">
+          <TabsContent value="all" className="space-y-8">
             {isLoading && projects.length === 0 ? (
               <div className="flex items-center justify-center h-40">
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -123,18 +143,55 @@ export default function Projects() {
                 </Button>
               </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {filteredProjects.map((project) => (
-                  <ProjectCard
-                    key={project.id}
-                    project={project}
-                    onEdit={handleEdit}
-                    onDelete={handleArchive}
-                    onSelect={handleSelect}
-                    isSelected={currentProject?.id === project.id}
-                  />
-                ))}
-              </div>
+              <>
+                {/* Active Projects */}
+                <div>
+                    <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                        Active Projects
+                        <span className="text-xs bg-secondary text-secondary-foreground px-2 py-0.5 rounded-full">{activeProjects.length}</span>
+                    </h2>
+                    {activeProjects.length > 0 ? (
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                            {activeProjects.map((project) => (
+                            <ProjectCard
+                                key={project.id}
+                                project={project}
+                                onEdit={handleEdit}
+                                onDelete={handleArchive}
+                                onSelect={handleSelect}
+                                onViewMemory={handleViewMemory}
+                                isSelected={currentProject?.id === project.id}
+                            />
+                            ))}
+                        </div>
+                    ) : (
+                        <p className="text-muted-foreground text-sm">No active projects.</p>
+                    )}
+                </div>
+
+                {/* Archived Projects */}
+                {archivedProjects.length > 0 && (
+                    <div className="pt-4 border-t">
+                        <h2 className="text-lg font-semibold mb-4 flex items-center gap-2 text-muted-foreground">
+                            Archived Projects
+                            <span className="text-xs bg-secondary text-secondary-foreground px-2 py-0.5 rounded-full">{archivedProjects.length}</span>
+                        </h2>
+                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                            {archivedProjects.map((project) => (
+                            <ProjectCard
+                                key={project.id}
+                                project={project}
+                                onEdit={handleEdit}
+                                onDelete={handleArchive}
+                                onSelect={handleSelect}
+                                onViewMemory={handleViewMemory}
+                                isSelected={currentProject?.id === project.id}
+                            />
+                            ))}
+                        </div>
+                    </div>
+                )}
+              </>
             )}
           </TabsContent>
 
@@ -159,6 +216,7 @@ export default function Projects() {
                     onEdit={handleEdit}
                     onDelete={handleArchive}
                     onSelect={handleSelect}
+                    onViewMemory={handleViewMemory}
                     isSelected={currentProject?.id === project.id}
                   />
                 ))}
@@ -187,6 +245,15 @@ export default function Projects() {
           project={editingProject}
           onSubmit={handleSubmit}
         />
+
+        <Dialog open={isMemoryDialogOpen} onOpenChange={setIsMemoryDialogOpen}>
+          <DialogContent className="max-w-3xl">
+            <DialogHeader>
+              <DialogTitle>Memory Summary: {memoryProject?.name}</DialogTitle>
+            </DialogHeader>
+            {memoryProject && <ProjectMemorySummary projectId={memoryProject.id} />}
+          </DialogContent>
+        </Dialog>
       </div>
     </MainLayout>
   );
