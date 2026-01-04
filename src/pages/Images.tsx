@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { ImageGenerationPanel } from '@/components/images/ImageGenerationPanel';
 import { ImageGallery } from '@/components/images/ImageGallery';
+import { ImageGenerationProgress } from '@/components/images/ImageGenerationProgress';
 import { useImages } from '@/hooks/useImages';
 import { Loader2 } from 'lucide-react';
 
@@ -35,7 +36,9 @@ export default function Images() {
             <ImageGenerationPanel onGenerate={generateImage} isGenerating={isGenerating} />
           </div>
 
-          <div className="lg:col-span-2">
+          <div className="lg:col-span-2 space-y-6">
+            <ImageGenerationProgress isGenerating={isGenerating} />
+
             {isLoading && images.length === 0 ? (
                <div className="flex items-center justify-center h-40">
                  <Loader2 className="h-8 w-8 animate-spin text-primary" />

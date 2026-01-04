@@ -14,7 +14,7 @@ serve(async (req) => {
   }
 
   try {
-    const { prompt, size = '1024x1024', conversation_id } = await req.json()
+    const { prompt, size = '1024x1024', conversation_id, negative_prompt, style } = await req.json()
 
     if (!prompt) {
       throw new Error('Prompt is required')
@@ -45,6 +45,17 @@ serve(async (req) => {
 
     console.log(`Generating image for prompt: "${prompt.substring(0, 50)}..."`);
 
+    // Construct the enhanced prompt
+    let enhancedPrompt = `Generate an image: ${prompt}. Make it high quality and visually appealing.`;
+
+    if (style && style !== 'none') {
+      enhancedPrompt += ` Style: ${style}.`;
+    }
+
+    if (negative_prompt) {
+      enhancedPrompt += ` Negative prompt (avoid these): ${negative_prompt}.`;
+    }
+
     // Use Lovable AI's Nano Banana model for image generation
     const response = await fetch(LOVABLE_AI_URL, {
       method: 'POST',
@@ -57,7 +68,7 @@ serve(async (req) => {
         messages: [
           {
             role: 'user',
-            content: `Generate an image: ${prompt}. Make it high quality and visually appealing.`
+            content: enhancedPrompt
           }
         ],
         modalities: ['image', 'text'],
@@ -156,7 +167,8 @@ serve(async (req) => {
       .insert({
         user_id: user.id,
         conversation_id: conversation_id || null,
-        prompt,
+        prompt: prompt, // We save the original prompt, or should we save enhanced?
+        // Let's save the original prompt to keep it clean for the user in history
         image_url: imageUrl,
         size,
         model_used: 'gemini-2.5-flash-image',
