@@ -21,6 +21,7 @@ import { LoadingIndicator } from '@/components/ui/LoadingIndicator';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useAuth';
 import { MemoryCaptureToast } from '@/components/memory/MemoryCaptureToast';
+import { fetchWithRetry } from '@/lib/api-utils';
 
 const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat`;
 
@@ -192,7 +193,7 @@ export default function Chat() {
         throw new Error('No active session');
       }
 
-      const resp = await fetch(CHAT_URL, {
+      const resp = await fetchWithRetry(CHAT_URL, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -209,11 +210,19 @@ export default function Chat() {
           model: model,
         }),
         signal: abortControllerRef.current.signal,
+        timeout: 30000, // 30s timeout
+        retries: 2,
       });
 
       if (!resp.ok) {
-        const error = await resp.json();
-        throw new Error(error.error || 'Failed to get response');
+        let errorMsg = 'Failed to get response';
+        try {
+           const error = await resp.json();
+           errorMsg = error.error || errorMsg;
+        } catch {
+           errorMsg = `HTTP Error ${resp.status}`;
+        }
+        throw new Error(errorMsg);
       }
 
       if (!resp.body) {
@@ -432,6 +441,11 @@ export default function Chat() {
     setMessage(suggestion);
   };
 
+  const handleCorrectDialect = (content: string) => {
+    const correctionPrompt = `Please rewrite the last response in strict ${dialect} dialect. Make sure to use characteristic expressions and vocabulary of this dialect.`;
+    handleSend(correctionPrompt, mode, dialect);
+  };
+
   const handleStop = () => {
     if (abortControllerRef.current) {
       abortControllerRef.current.abort();
@@ -496,6 +510,7 @@ export default function Chat() {
                     index === messages.length - 1 &&
                     message.role === 'assistant'
                   }
+                  onCorrectDialect={handleCorrectDialect}
                 />
               ))}
               {isLoading && !messages[messages.length-1]?.role.includes('assistant') && (

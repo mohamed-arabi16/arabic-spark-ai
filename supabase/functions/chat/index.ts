@@ -29,11 +29,35 @@ const COST_PER_1M: Record<string, { input: number; output: number } | { per_imag
 
 // Dialect-specific system prompt instructions
 const DIALECT_INSTRUCTIONS: Record<string, string> = {
-  msa: `When responding in Arabic, use Modern Standard Arabic (الفصحى). Be formal and use proper classical Arabic grammar. Avoid colloquialisms.`,
-  egyptian: `When responding in Arabic, use Egyptian Arabic dialect (مصري). Use common Egyptian expressions like "إيه، كده، ازيك، عايز". Be conversational and warm.`,
-  gulf: `When responding in Arabic, use Gulf Arabic dialect (خليجي). Use expressions common in UAE, Saudi, Qatar like "شلونك، وش، هالحين، أبي". Be friendly and direct.`,
-  levantine: `When responding in Arabic, use Levantine Arabic dialect (شامي). Use Syrian/Lebanese/Palestinian expressions like "كيفك، هلق، شو، بدي". Be warm and expressive.`,
-  maghrebi: `When responding in Arabic, use Maghrebi Arabic dialect (مغاربي). Use Moroccan/Algerian/Tunisian expressions. Be direct and practical.`,
+  msa: `When responding in Arabic, use Modern Standard Arabic (الفصحى). Be formal and use proper classical Arabic grammar. Avoid colloquialisms.
+Examples:
+- "How are you?": "كيف حالك؟"
+- "I want this": "أريد هذا"
+- "What happened?": "ماذا حدث؟"`,
+  egyptian: `When responding in Arabic, use Egyptian Arabic dialect (مصري). Use common Egyptian expressions like "إيه، كده، ازيك، عايز". Be conversational and warm.
+Examples:
+- "How are you?": "ازيك؟ عامل ايه؟"
+- "I want this": "أنا عايز ده"
+- "What happened?": "ايه اللي حصل؟"
+- "Why?": "ليه؟"
+- "Like this": "كده"`,
+  gulf: `When responding in Arabic, use Gulf Arabic dialect (خليجي). Use expressions common in UAE, Saudi, Qatar like "شلونك، وش، هالحين، أبي". Be friendly and direct.
+Examples:
+- "How are you?": "شلونك؟ عساك طيب"
+- "I want this": "أبي هذا"
+- "What happened?": "وش صار؟"
+- "Now": "الحين"`,
+  levantine: `When responding in Arabic, use Levantine Arabic dialect (شامي). Use Syrian/Lebanese/Palestinian expressions like "كيفك، هلق، شو، بدي". Be warm and expressive.
+Examples:
+- "How are you?": "كيفك؟"
+- "I want this": "بدي هاد"
+- "What happened?": "شو صار؟"
+- "Now": "هلق"`,
+  maghrebi: `When responding in Arabic, use Maghrebi Arabic dialect (مغاربي). Use Moroccan/Algerian/Tunisian expressions. Be direct and practical.
+Examples:
+- "How are you?": "واش راك؟ لاباس؟"
+- "I want this": "بغيت هذا"
+- "What?": "واش؟"`,
 };
 
 interface Message {

@@ -15,9 +15,11 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Zap, Sparkles, Brain, Search, Image, Crown, ChevronDown } from 'lucide-react';
+import { Zap, Sparkles, Brain, Search, Image, Crown, ChevronDown, HelpCircle } from 'lucide-react';
 import { ChatMode } from './ModeSelector';
+import { ModelHelpPanel } from './ModelHelpPanel';
 
 interface ModelPickerProps {
   mode: ChatMode;
@@ -46,34 +48,48 @@ const dialects = [
 
 export function ModelPicker({ mode, onModeChange, dialect, onDialectChange, className }: ModelPickerProps) {
   const { t } = useTranslation();
+  const [isHelpOpen, setIsHelpOpen] = useState(false);
   const activeMode = modes.find((m) => m.id === mode) || modes[0];
   const activeDialect = dialects.find((d) => d.id === dialect) || dialects[0];
 
   return (
     <div className={cn("flex items-center gap-2", className)}>
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button variant="outline" size="sm" className="h-8 gap-2 bg-background/50 backdrop-blur-sm border-dashed">
-            <activeMode.icon className={cn("h-4 w-4", activeMode.color)} />
-            <span className="text-xs font-medium">{activeMode.label}</span>
-            <ChevronDown className="h-3 w-3 opacity-50" />
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="start" className="w-[200px]">
-          <DropdownMenuLabel className="text-xs text-muted-foreground">{t('settings.model')}</DropdownMenuLabel>
-          {modes.map((m) => (
-            <DropdownMenuItem
-              key={m.id}
-              onClick={() => onModeChange(m.id)}
-              className="gap-2 cursor-pointer"
-            >
-              <m.icon className={cn("h-4 w-4", m.color)} />
-              <span className="flex-1">{m.label}</span>
-              {mode === m.id && <div className="h-1.5 w-1.5 rounded-full bg-primary" />}
-            </DropdownMenuItem>
-          ))}
-        </DropdownMenuContent>
-      </DropdownMenu>
+      <ModelHelpPanel open={isHelpOpen} onOpenChange={setIsHelpOpen} />
+
+      <div className="flex items-center">
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" size="sm" className="h-8 gap-2 bg-background/50 backdrop-blur-sm border-dashed rounded-e-none border-e-0">
+              <activeMode.icon className={cn("h-4 w-4", activeMode.color)} />
+              <span className="text-xs font-medium">{activeMode.label}</span>
+              <ChevronDown className="h-3 w-3 opacity-50" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start" className="w-[200px]">
+            <DropdownMenuLabel className="text-xs text-muted-foreground">{t('settings.model')}</DropdownMenuLabel>
+            {modes.map((m) => (
+              <DropdownMenuItem
+                key={m.id}
+                onClick={() => onModeChange(m.id)}
+                className="gap-2 cursor-pointer"
+              >
+                <m.icon className={cn("h-4 w-4", m.color)} />
+                <span className="flex-1">{m.label}</span>
+                {mode === m.id && <div className="h-1.5 w-1.5 rounded-full bg-primary" />}
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
+        <Button
+          variant="outline"
+          size="icon"
+          className="h-8 w-8 rounded-s-none border-dashed bg-background/50 backdrop-blur-sm px-0"
+          onClick={() => setIsHelpOpen(true)}
+          title="What changes?"
+        >
+          <HelpCircle className="h-3 w-3 text-muted-foreground" />
+        </Button>
+      </div>
 
       <DropdownMenu>
         <DropdownMenuTrigger asChild>

@@ -1,6 +1,6 @@
 import { cn } from '@/lib/utils';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Sparkles, User, Copy, RefreshCw, ThumbsUp, ThumbsDown } from 'lucide-react';
+import { Sparkles, User, Copy, RefreshCw, ThumbsUp, ThumbsDown, Languages } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import ReactMarkdown from 'react-markdown';
@@ -21,9 +21,10 @@ export interface Message {
 interface ChatMessageProps {
   message: Message;
   isStreaming?: boolean;
+  onCorrectDialect?: (content: string) => void;
 }
 
-export function ChatMessage({ message, isStreaming }: ChatMessageProps) {
+export function ChatMessage({ message, isStreaming, onCorrectDialect }: ChatMessageProps) {
   const { t, i18n } = useTranslation();
   const isUser = message.role === 'user';
 
@@ -117,12 +118,23 @@ export function ChatMessage({ message, isStreaming }: ChatMessageProps) {
         {/* Actions (visible on hover for assistant messages) */}
         {!isUser && !isStreaming && (
           <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-            <Button variant="ghost" size="icon" className="h-7 w-7 hover:bg-accent" onClick={copyToClipboard}>
+            <Button variant="ghost" size="icon" className="h-7 w-7 hover:bg-accent" onClick={copyToClipboard} title={t('common.copy') || "Copy"}>
               <Copy className="h-3.5 w-3.5" />
             </Button>
-            <Button variant="ghost" size="icon" className="h-7 w-7 hover:bg-accent">
+            <Button variant="ghost" size="icon" className="h-7 w-7 hover:bg-accent" title="Regenerate">
               <RefreshCw className="h-3.5 w-3.5" />
             </Button>
+            {onCorrectDialect && (
+               <Button
+                 variant="ghost"
+                 size="icon"
+                 className="h-7 w-7 hover:bg-accent"
+                 onClick={() => onCorrectDialect(message.content)}
+                 title={t('chat.correctDialect') || "Correct Dialect"}
+               >
+                <Languages className="h-3.5 w-3.5" />
+              </Button>
+            )}
             <Button variant="ghost" size="icon" className="h-7 w-7 hover:bg-accent">
               <ThumbsUp className="h-3.5 w-3.5" />
             </Button>

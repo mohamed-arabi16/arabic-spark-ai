@@ -85,11 +85,11 @@
     --primary: 200 80% 50%; /* Brighter Teal for Dark Mode */
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 222 25% 18%;
+    --secondary: 222 25% 22%; /* Lighter for better contrast */
     --secondary-foreground: 220 20% 95%;
 
     --muted: 222 25% 18%;
-    --muted-foreground: 220 15% 55%;
+    --muted-foreground: 220 15% 70%; /* Lighter text for better readability */
 
     --accent: 200 80% 50%;
     --accent-foreground: 0 0% 100%;
