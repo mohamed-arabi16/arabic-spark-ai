@@ -238,6 +238,29 @@ Key behaviors:
               const totalCost = inputCost + outputCost;
               
               console.log(`Usage - Input: ${inputTokens}, Output: ${outputTokens}, Cost: $${totalCost.toFixed(6)}`);
+
+              // Record individual usage event
+              try {
+                await supabase.from('usage_events').insert({
+                  user_id: user.id,
+                  project_id: project_id || null,
+                  request_type: 'chat',
+                  model_id: TEXT_MODEL,
+                  prompt_tokens: inputTokens,
+                  completion_tokens: outputTokens,
+                  total_tokens: totalTokens,
+                  cost: totalCost,
+                  meta: {
+                    conversation_id,
+                    mode,
+                    dialect,
+                    reasoning_effort: reasoningEffort
+                  }
+                });
+                console.log('Usage event recorded');
+              } catch (eventError) {
+                console.error('Failed to record usage event:', eventError);
+              }
               
               // Upsert daily usage stats
               const today = new Date().toISOString().split('T')[0];
