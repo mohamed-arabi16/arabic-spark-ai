@@ -15,25 +15,15 @@ import { MemoryManager } from '@/components/memory/MemoryManager';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { supabase } from '@/integrations/supabase/client';
 import { CostMeter } from '@/components/chat/CostMeter';
-import { Loader2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { LoadingIndicator } from '@/components/ui/LoadingIndicator';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useAuth';
 import { MemoryCaptureToast } from '@/components/memory/MemoryCaptureToast';
 import { fetchWithRetry } from '@/lib/api-utils';
+import { useModelSettings } from '@/hooks/useModelSettings';
 
 const AI_GATEWAY_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-gateway`;
-
-// Mode to display name mapping (actual model is determined by backend)
-const MODE_DISPLAY_NAMES: Record<string, string> = {
-  fast: 'GPT-5 Nano',
-  standard: 'GPT-5 Mini',
-  deep: 'GPT-5',
-  pro: 'GPT-5 Pro',
-  research: 'GPT-5 (Research)',
-  image: 'DALL-E 3',
-};
 
 export default function Chat() {
   const { t } = useTranslation();
@@ -80,9 +70,12 @@ export default function Chat() {
   const [mode, setMode] = useState<ChatMode>('fast');
   const [dialect, setDialect] = useState('msa');
   const [isError, setIsError] = useState(false);
-  const [model, setModel] = useState('google/gemini-2.5-flash');
+  const [currentModel, setCurrentModel] = useState<string | undefined>(undefined);
   const [latestProposedMemory, setLatestProposedMemory] = useState<string | null>(null);
-
+  
+  // Model settings from user preferences
+  const { settings: modelSettings, getVisibleChatModels, availableModels } = useModelSettings();
+  const visibleModels = getVisibleChatModels();
   useEffect(() => {
     if (proposedMemories.length > 0) {
       // Find the most recent proposed memory
@@ -101,10 +94,11 @@ export default function Chat() {
     const savedDialect = project?.dialect_preset || localStorage.getItem('app_dialect') || 'msa';
     setDialect(savedDialect);
 
-    // Initialize model
-    const savedModel = localStorage.getItem('app_default_model') || user?.user_metadata?.default_model || 'google/gemini-2.5-flash';
-    setModel(savedModel);
-  }, [project, user]);
+    // Initialize model from user settings
+    if (modelSettings.default_chat_model && !currentModel) {
+      setCurrentModel(modelSettings.default_chat_model);
+    }
+  }, [project, modelSettings.default_chat_model, currentModel]);
 
   // Load conversation from DB if conversationId is provided
   useEffect(() => {
@@ -218,9 +212,10 @@ export default function Chat() {
         method: 'POST',
         headers,
         body: JSON.stringify({
-          type: 'chat',
+          action: 'chat',
           messages: apiMessages,
           mode: chatMode,
+          model: currentModel, // Direct model selection
           project_id: projectId,
           conversation_id: convId,
           system_instructions: project?.system_instructions,
@@ -228,7 +223,7 @@ export default function Chat() {
           dialect: selectedDialect,
         }),
         signal: abortControllerRef.current.signal,
-        timeout: 60000, // 60s timeout for deep/pro modes
+        timeout: 60000,
         retries: 2,
       });
 
@@ -269,8 +264,10 @@ export default function Chat() {
       let streamDone = false;
       let usageData: any = null;
 
-      // Display name based on mode - actual model is determined by backend
-      const modelName = MODE_DISPLAY_NAMES[chatMode] || 'Gemini Flash';
+      // Get model display name from response headers or settings
+      const modelUsed = resp.headers.get('X-Model-Used');
+      const modelInfo = availableModels?.chatModels?.find(m => m.id === modelUsed);
+      const modelName = modelInfo?.name || modelUsed || currentModel || 'AI';
 
       const assistantMessageId = crypto.randomUUID();
       
@@ -590,6 +587,9 @@ export default function Chat() {
           setMode={setMode}
           dialect={dialect}
           setDialect={setDialect}
+          currentModel={currentModel}
+          onModelChange={setCurrentModel}
+          visibleModels={visibleModels}
         />
       </div>
     </MainLayout>

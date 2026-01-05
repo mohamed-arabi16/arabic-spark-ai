@@ -8,6 +8,16 @@ import { ChatMode } from './ModeSelector';
 import { Send, Paperclip, Mic, Square, Loader2 } from 'lucide-react';
 import { useVoiceInput } from '@/hooks/useVoiceInput';
 
+interface ModelInfo {
+  id: string;
+  name: string;
+  nameAr: string;
+  description: string;
+  tier: string;
+  provider: string;
+  available: boolean;
+}
+
 interface ChatInputProps {
   onSend: (message: string, mode: ChatMode, dialect: string) => void;
   isLoading?: boolean;
@@ -18,6 +28,9 @@ interface ChatInputProps {
   setMode: (mode: ChatMode) => void;
   dialect: string;
   setDialect: (dialect: string) => void;
+  currentModel?: string;
+  onModelChange?: (modelId: string) => void;
+  visibleModels?: ModelInfo[];
 }
 
 export function ChatInput({
@@ -29,7 +42,10 @@ export function ChatInput({
   mode,
   setMode,
   dialect,
-  setDialect
+  setDialect,
+  currentModel,
+  onModelChange,
+  visibleModels = [],
 }: ChatInputProps) {
   const { t } = useTranslation();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -80,6 +96,9 @@ export function ChatInput({
              onModeChange={setMode}
              dialect={dialect}
              onDialectChange={setDialect}
+             currentModel={currentModel}
+             onModelChange={onModelChange}
+             visibleModels={visibleModels}
            />
         </div>
 
