@@ -191,12 +191,20 @@
     "untitled": "بدون عنوان"
   },
   "history": {
+    "title": "السجل",
     "description": "عرض وإدارة محادثاتك السابقة.",
+    "conversations": "المحادثات",
+    "memoryTimeline": "سجل الذاكرة",
+    "searchPlaceholder": "البحث في المحادثات...",
+    "allTypes": "كل الأنواع",
     "noConversations": "لم يتم العثور على محادثات. ابدأ محادثة جديدة!",
+    "emptyDescription": "سيظهر سجل محادثاتك هنا بعد بدء محادثة.",
+    "noPreview": "لا توجد معاينة",
     "today": "اليوم",
     "yesterday": "أمس",
     "thisWeek": "هذا الأسبوع",
-    "older": "أقدم"
+    "older": "أقدم",
+    "startChat": "ابدأ محادثة"
   },
   "dashboard": {
     "newProject": "مشروع جديد",
@@ -234,7 +242,17 @@
     "inputFooter": "التكلفة التقديرية: ~$0.00 · اضغط Enter للإرسال",
     "trialLimitReached": "انتهت التجربة المجانية! سجّل للاستمرار بالمحادثة.",
     "selectModel": "اختر النموذج",
-    "listening": "أستمع..."
+    "listening": "أستمع...",
+    "untitled": "محادثة بدون عنوان",
+    "copy": "نسخ",
+    "copied": "تم النسخ",
+    "saveAsMemory": "حفظ كذاكرة",
+    "savedAsMemory": "تم حفظ الرسالة كاقتراح ذاكرة",
+    "rephrase": "إعادة الصياغة",
+    "regenerate": "إعادة التوليد",
+    "thumbsUp": "استجابة جيدة",
+    "thumbsDown": "استجابة سيئة",
+    "correctDialect": "تصحيح اللهجة"
   },
   "voice": {
     "permissionDenied": "تم رفض إذن الميكروفون. يرجى السماح بالوصول في إعدادات المتصفح.",

@@ -1,12 +1,14 @@
 import { cn } from '@/lib/utils';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Sparkles, User, Copy, RefreshCw, ThumbsUp, ThumbsDown, Languages } from 'lucide-react';
+import { Sparkles, User, Copy, RefreshCw, ThumbsUp, ThumbsDown, Languages, Bookmark } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { useTranslation } from 'react-i18next';
 import { formatLocalizedNumber } from '@/lib/formatters';
+import { LTR } from '@/lib/bidi';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
 export interface Message {
   id: string;
@@ -22,15 +24,23 @@ interface ChatMessageProps {
   message: Message;
   isStreaming?: boolean;
   onCorrectDialect?: (content: string) => void;
+  onSaveAsMemory?: (content: string) => void;
 }
 
-export function ChatMessage({ message, isStreaming, onCorrectDialect }: ChatMessageProps) {
+export function ChatMessage({ message, isStreaming, onCorrectDialect, onSaveAsMemory }: ChatMessageProps) {
   const { t, i18n } = useTranslation();
   const isUser = message.role === 'user';
 
   const copyToClipboard = () => {
     navigator.clipboard.writeText(message.content);
-    toast.success(t('common.copied') || 'Copied to clipboard');
+    toast.success(t('chat.copied'));
+  };
+
+  const handleSaveAsMemory = () => {
+    if (onSaveAsMemory) {
+      onSaveAsMemory(message.content);
+    }
+    toast.success(t('chat.savedAsMemory'));
   };
 
   return (
@@ -59,7 +69,7 @@ export function ChatMessage({ message, isStreaming, onCorrectDialect }: ChatMess
           </span>
           {message.model && (
             <span className="text-xs text-muted-foreground bg-secondary/80 px-2 py-0.5 rounded-full border border-border/50">
-              {message.model}
+              <LTR>{message.model}</LTR>
             </span>
           )}
         </div>
@@ -75,7 +85,6 @@ export function ChatMessage({ message, isStreaming, onCorrectDialect }: ChatMess
               <ReactMarkdown
                 remarkPlugins={[remarkGfm]}
                 components={{
-                  // Custom link rendering for citations
                   a: ({ node, children, href, ...props }) => (
                     <a
                       href={href}
@@ -87,7 +96,6 @@ export function ChatMessage({ message, isStreaming, onCorrectDialect }: ChatMess
                       {children}
                     </a>
                   ),
-                  // Style code blocks
                   code: ({ node, className, children, ...props }) => {
                     const isInline = !className;
                     return isInline ? (
@@ -118,32 +126,72 @@ export function ChatMessage({ message, isStreaming, onCorrectDialect }: ChatMess
         {/* Actions (visible on hover for assistant messages) */}
         {!isUser && !isStreaming && (
           <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-            <Button variant="ghost" size="icon" className="h-7 w-7 hover:bg-accent" onClick={copyToClipboard} title={t('common.copy') || "Copy"}>
-              <Copy className="h-3.5 w-3.5" />
-            </Button>
-            <Button variant="ghost" size="icon" className="h-7 w-7 hover:bg-accent" title="Regenerate">
-              <RefreshCw className="h-3.5 w-3.5" />
-            </Button>
-            {onCorrectDialect && (
-               <Button
-                 variant="ghost"
-                 size="icon"
-                 className="h-7 w-7 hover:bg-accent"
-                 onClick={() => onCorrectDialect(message.content)}
-                 title={t('chat.correctDialect') || "Correct Dialect"}
-               >
-                <Languages className="h-3.5 w-3.5" />
-              </Button>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-7 w-7 hover:bg-accent" onClick={copyToClipboard}>
+                  <Copy className="h-3.5 w-3.5" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>{t('chat.copy')}</TooltipContent>
+            </Tooltip>
+
+            {onSaveAsMemory && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button variant="ghost" size="icon" className="h-7 w-7 hover:bg-accent" onClick={handleSaveAsMemory}>
+                    <Bookmark className="h-3.5 w-3.5" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>{t('chat.saveAsMemory')}</TooltipContent>
+              </Tooltip>
             )}
-            <Button variant="ghost" size="icon" className="h-7 w-7 hover:bg-accent">
-              <ThumbsUp className="h-3.5 w-3.5" />
-            </Button>
-            <Button variant="ghost" size="icon" className="h-7 w-7 hover:bg-accent">
-              <ThumbsDown className="h-3.5 w-3.5" />
-            </Button>
+
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-7 w-7 hover:bg-accent">
+                  <RefreshCw className="h-3.5 w-3.5" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>{t('chat.regenerate')}</TooltipContent>
+            </Tooltip>
+
+            {onCorrectDialect && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-7 w-7 hover:bg-accent"
+                    onClick={() => onCorrectDialect(message.content)}
+                  >
+                    <Languages className="h-3.5 w-3.5" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>{t('chat.correctDialect')}</TooltipContent>
+              </Tooltip>
+            )}
+
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-7 w-7 hover:bg-accent">
+                  <ThumbsUp className="h-3.5 w-3.5" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>{t('chat.thumbsUp')}</TooltipContent>
+            </Tooltip>
+
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-7 w-7 hover:bg-accent">
+                  <ThumbsDown className="h-3.5 w-3.5" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>{t('chat.thumbsDown')}</TooltipContent>
+            </Tooltip>
+
             {message.cost !== undefined && message.cost > 0 && (
               <span className="ms-2 text-xs text-muted-foreground">
-                ${formatLocalizedNumber(message.cost, i18n.language)}
+                <LTR>${formatLocalizedNumber(message.cost, i18n.language)}</LTR>
               </span>
             )}
           </div>

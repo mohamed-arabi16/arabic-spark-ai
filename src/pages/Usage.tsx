@@ -8,7 +8,7 @@ import { UsageBreakdown } from '@/components/usage/UsageBreakdown';
 import { QuotaDisplay } from '@/components/usage/QuotaDisplay';
 import { BudgetCard } from '@/components/usage/BudgetCard';
 import { ProjectUsageTable } from '@/components/usage/ProjectUsageTable';
-import { Loader2 } from 'lucide-react';
+import { SkeletonSummaryCards, SkeletonChart } from '@/components/ui/skeleton-list';
 
 export default function Usage() {
   const { t } = useTranslation();
@@ -29,8 +29,12 @@ export default function Usage() {
         </div>
 
         {isLoading && !summary ? (
-          <div className="flex items-center justify-center h-40">
-            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <div className="space-y-6">
+            <SkeletonSummaryCards count={4} />
+            <div className="grid grid-cols-1 lg:grid-cols-7 gap-6">
+              <SkeletonChart className="col-span-1 lg:col-span-4" />
+              <SkeletonChart className="col-span-1 lg:col-span-3" />
+            </div>
           </div>
         ) : (
           <div className="space-y-6">
