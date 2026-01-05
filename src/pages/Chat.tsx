@@ -5,6 +5,7 @@ import { ChatInput } from '@/components/chat/ChatInput';
 import { ChatMessage, Message } from '@/components/chat/ChatMessage';
 import { EmptyState } from '@/components/chat/EmptyState';
 import { ChatMode } from '@/components/chat/ModeSelector';
+import { SessionBudgetWarning } from '@/components/chat/SessionBudgetWarning';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { toast } from 'sonner';
 import { useProjects } from '@/hooks/useProjects';
@@ -71,10 +72,24 @@ export default function Chat() {
   const [dialect, setDialect] = useState('msa');
   const [isError, setIsError] = useState(false);
   const [currentModel, setCurrentModel] = useState<string | undefined>(undefined);
+  const [routingMode, setRoutingMode] = useState<'auto' | 'manual'>('auto');
   
   // Model settings from user preferences
   const { settings: modelSettings, getVisibleChatModels, availableModels } = useModelSettings();
   const visibleModels = getVisibleChatModels();
+
+  // Budget check
+  const checkBudget = () => {
+    const dailyBudget = parseFloat(localStorage.getItem('usage_budget') || '50');
+    // This is a simplified check - in production you'd fetch actual daily usage
+    if (sessionCost >= dailyBudget) {
+      return { allowed: false, reason: 'daily_exceeded' };
+    }
+    if (sessionCost >= dailyBudget * 0.9) {
+      return { allowed: true, warning: 'approaching_limit', percentage: ((sessionCost / dailyBudget) * 100).toFixed(0) };
+    }
+    return { allowed: true };
+  };
 
   // Show memory suggestions as minimal toasts when new proposed memories arrive
   useEffect(() => {
@@ -137,6 +152,17 @@ export default function Chat() {
 
   const handleSend = async (content: string, chatMode: ChatMode, selectedDialect: string) => {
     setIsError(false);
+    
+    // Budget check before sending
+    const budgetCheck = checkBudget();
+    if (!budgetCheck.allowed) {
+      toast.error(t('budget.budgetExceededDesc'));
+      return;
+    }
+    if (budgetCheck.warning === 'approaching_limit') {
+      toast.warning(t('budget.approachingBudget', { percentage: budgetCheck.percentage }));
+    }
+    
     // Update dialect in local storage if changed
     if (selectedDialect !== localStorage.getItem('app_dialect')) {
       localStorage.setItem('app_dialect', selectedDialect);
@@ -267,8 +293,26 @@ export default function Chat() {
 
       // Get model display name from response headers or settings
       const modelUsed = resp.headers.get('X-Model-Used');
+      const modelRequested = resp.headers.get('X-Model-Requested');
+      const fallbackUsed = resp.headers.get('X-Fallback-Used') === 'true';
+      const fallbackReason = resp.headers.get('X-Fallback-Reason');
+      
       const modelInfo = availableModels?.chatModels?.find(m => m.id === modelUsed);
       const modelName = modelInfo?.name || modelUsed || currentModel || 'AI';
+
+      // Show fallback notice if a different model was used
+      if (fallbackUsed && modelUsed && modelRequested && modelUsed !== modelRequested) {
+        const fallbackModelInfo = availableModels?.chatModels?.find(m => m.id === modelUsed);
+        const fallbackName = fallbackModelInfo?.name || modelUsed;
+        toast.info(t('errors.fallbackUsed', { provider: fallbackName }), {
+          action: {
+            label: t('errors.showDetails'),
+            onClick: () => {
+              toast.info(`Fallback reason: ${fallbackReason || 'Provider unavailable'}`);
+            }
+          }
+        });
+      }
 
       const assistantMessageId = crypto.randomUUID();
       
@@ -490,6 +534,7 @@ export default function Chat() {
       <div className={`flex-1 flex flex-col overflow-hidden relative mode-${mode}-bg`}>
         {/* Header extras */}
         <div className="absolute top-2 right-4 z-10 flex items-center gap-4">
+           <SessionBudgetWarning sessionCost={sessionCost} threshold={0.10} />
            <CostMeter sessionCost={sessionCost} />
            <Sheet open={isMemoryOpen} onOpenChange={setIsMemoryOpen}>
               <SheetTrigger asChild>
@@ -572,6 +617,8 @@ export default function Chat() {
           currentModel={currentModel}
           onModelChange={setCurrentModel}
           visibleModels={visibleModels}
+          routingMode={routingMode}
+          onRoutingModeChange={setRoutingMode}
         />
       </div>
     </MainLayout>

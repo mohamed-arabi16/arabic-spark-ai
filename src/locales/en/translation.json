@@ -397,7 +397,49 @@
     "projectUsageDesc": "Consumption breakdown by project",
     "noProjectData": "No project usage data available",
     "projectName": "Project Name",
-    "cost": "Cost"
+    "cost": "Cost",
+    "topConversations": "Top Conversations by Cost",
+    "topConversationsDesc": "Your most expensive conversations",
+    "noConversationsYet": "No conversation data yet",
+    "conversation": "Conversation"
+  },
+  "routing": {
+    "auto": "Auto",
+    "autoRecommended": "Auto (Recommended)",
+    "manual": "Manual",
+    "whyThisModel": "Why this model?",
+    "autoDesc": "Model selected based on task and settings",
+    "manualDesc": "You choose the model",
+    "switchToManual": "Switch to Manual",
+    "switchToAuto": "Switch to Auto"
+  },
+  "providers": {
+    "title": "AI Providers",
+    "description": "Manage your AI provider connections and limits",
+    "connected": "Connected",
+    "notConfigured": "Not Configured",
+    "enable": "Enable",
+    "enabled": "Provider enabled",
+    "disabled": "Provider disabled",
+    "testKey": "Test Key",
+    "testNotAvailable": "Key testing not available",
+    "testSuccess": "{{provider}} connection verified",
+    "testFailed": "Test failed: {{error}}",
+    "lastChecked": "Last checked",
+    "spendingLimit": "Spending limit",
+    "limitSaved": "Spending limit saved"
+  },
+  "budget": {
+    "perProject": "Project Budget",
+    "dailyLimit": "Daily Limit",
+    "sessionCost": "Session: ${{cost}}",
+    "sessionWarning": "Session cost: ${{cost}}",
+    "continueOrSwitch": "Continue or switch to a cheaper mode?",
+    "continue": "Continue",
+    "switchToCheaper": "Switch to cheaper",
+    "budgetExceededTitle": "Budget Exceeded",
+    "budgetExceededDesc": "You've reached your spending limit for today.",
+    "approachingBudget": "Approaching budget limit ({{percentage}}% used)"
   },
   "errors": {
     "loadProjects": "Failed to load projects",
@@ -414,7 +456,11 @@
     "deleteMemory": "Failed to delete memory",
     "loadImages": "Failed to load images",
     "generateImage": "Failed to generate image",
-    "deleteImage": "Failed to delete image"
+    "deleteImage": "Failed to delete image",
+    "providerUnavailable": "Provider unavailable. Trying alternative...",
+    "allProvidersFailed": "All providers failed. Please try again later.",
+    "fallbackUsed": "Used alternative provider: {{provider}}",
+    "showDetails": "Show details"
   },
   "messages": {
     "projectCreated": "Project created",
