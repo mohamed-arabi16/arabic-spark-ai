@@ -4,8 +4,8 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
+import { Separator } from '@/components/ui/separator';
 import { Tables } from '@/integrations/supabase/types';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -21,10 +21,16 @@ export function ProjectSettingsDialog({ project, open, onOpenChange, onUpdate }:
   const { t } = useTranslation();
   const [loading, setLoading] = useState(false);
 
-  // Use existing columns directly
+  // Core settings
   const [defaultMode, setDefaultMode] = useState<string>(project.default_mode || 'fast');
   const [dialectPreset, setDialectPreset] = useState<string>(project.dialect_preset || 'msa');
   const [systemInstructions, setSystemInstructions] = useState(project.system_instructions || '');
+  
+  // Extended Arabic settings - using type assertion for new columns
+  const projectAny = project as any;
+  const [formality, setFormality] = useState<string>(projectAny.dialect_formality || 'casual');
+  const [codeSwitchMode, setCodeSwitchMode] = useState<string>(projectAny.code_switch_mode || 'mixed');
+  const [numeralMode, setNumeralMode] = useState<string>(projectAny.numeral_mode || 'western');
 
   const handleSave = async () => {
     setLoading(true);
@@ -35,7 +41,10 @@ export function ProjectSettingsDialog({ project, open, onOpenChange, onUpdate }:
           default_mode: defaultMode as any,
           dialect_preset: dialectPreset as any,
           system_instructions: systemInstructions,
-        })
+          dialect_formality: formality,
+          code_switch_mode: codeSwitchMode,
+          numeral_mode: numeralMode,
+        } as any)
         .eq('id', project.id);
 
       if (error) throw error;
@@ -84,14 +93,60 @@ export function ProjectSettingsDialog({ project, open, onOpenChange, onUpdate }:
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="msa">Modern Standard Arabic (MSA)</SelectItem>
-                <SelectItem value="egyptian">Egyptian</SelectItem>
-                <SelectItem value="gulf">Gulf</SelectItem>
-                <SelectItem value="levantine">Levantine</SelectItem>
-                <SelectItem value="maghrebi">Maghrebi</SelectItem>
+                <SelectItem value="msa">Modern Standard Arabic (الفصحى)</SelectItem>
+                <SelectItem value="egyptian">Egyptian (مصري)</SelectItem>
+                <SelectItem value="gulf">Gulf (خليجي)</SelectItem>
+                <SelectItem value="levantine">Levantine (شامي)</SelectItem>
+                <SelectItem value="maghrebi">Maghrebi (مغاربي)</SelectItem>
               </SelectContent>
             </Select>
           </div>
+
+          <Separator className="my-2" />
+          <p className="text-sm font-medium text-muted-foreground">{t('arabic.dialectSettings')}</p>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="grid gap-2">
+              <Label>{t('arabic.formality')}</Label>
+              <Select value={formality} onValueChange={setFormality}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="formal">{t('arabic.formal')}</SelectItem>
+                  <SelectItem value="casual">{t('arabic.casual')}</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="grid gap-2">
+              <Label>{t('arabic.numeralMode')}</Label>
+              <Select value={numeralMode} onValueChange={setNumeralMode}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="western">{t('arabic.westernNumerals')}</SelectItem>
+                  <SelectItem value="arabic">{t('arabic.arabicNumerals')}</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <div className="grid gap-2">
+            <Label>{t('arabic.codeSwitch')}</Label>
+            <Select value={codeSwitchMode} onValueChange={setCodeSwitchMode}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="arabic_only">{t('arabic.arabicOnly')}</SelectItem>
+                <SelectItem value="mixed">{t('arabic.mixedAllowed')}</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <Separator className="my-2" />
 
           <div className="grid gap-2">
             <Label>{t('projects.dialog.instructionsLabel')}</Label>

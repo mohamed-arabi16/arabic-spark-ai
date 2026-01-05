@@ -285,6 +285,41 @@ export type Database = {
           },
         ]
       }
+      message_feedback: {
+        Row: {
+          comment: string | null
+          created_at: string | null
+          feedback_type: string
+          id: string
+          message_id: string | null
+          user_id: string
+        }
+        Insert: {
+          comment?: string | null
+          created_at?: string | null
+          feedback_type: string
+          id?: string
+          message_id?: string | null
+          user_id: string
+        }
+        Update: {
+          comment?: string | null
+          created_at?: string | null
+          feedback_type?: string
+          id?: string
+          message_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "message_feedback_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "messages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       messages: {
         Row: {
           content: string
@@ -335,9 +370,12 @@ export type Database = {
       profiles: {
         Row: {
           avatar_url: string | null
+          code_switch_mode: string | null
           created_at: string
           credit_balance: number | null
           credit_limit: number | null
+          default_formality: string | null
+          default_numeral_mode: string | null
           display_name: string | null
           global_memory_enabled: boolean | null
           id: string
@@ -351,9 +389,12 @@ export type Database = {
         }
         Insert: {
           avatar_url?: string | null
+          code_switch_mode?: string | null
           created_at?: string
           credit_balance?: number | null
           credit_limit?: number | null
+          default_formality?: string | null
+          default_numeral_mode?: string | null
           display_name?: string | null
           global_memory_enabled?: boolean | null
           id: string
@@ -367,9 +408,12 @@ export type Database = {
         }
         Update: {
           avatar_url?: string | null
+          code_switch_mode?: string | null
           created_at?: string
           credit_balance?: number | null
           credit_limit?: number | null
+          default_formality?: string | null
+          default_numeral_mode?: string | null
           display_name?: string | null
           global_memory_enabled?: boolean | null
           id?: string
@@ -385,43 +429,52 @@ export type Database = {
       }
       projects: {
         Row: {
+          code_switch_mode: string | null
           color: string | null
           created_at: string
           default_mode: Database["public"]["Enums"]["chat_mode"] | null
           description: string | null
+          dialect_formality: string | null
           dialect_preset: Database["public"]["Enums"]["dialect_preset"] | null
           icon: string | null
           id: string
           is_archived: boolean | null
           name: string
+          numeral_mode: string | null
           system_instructions: string | null
           updated_at: string
           user_id: string
         }
         Insert: {
+          code_switch_mode?: string | null
           color?: string | null
           created_at?: string
           default_mode?: Database["public"]["Enums"]["chat_mode"] | null
           description?: string | null
+          dialect_formality?: string | null
           dialect_preset?: Database["public"]["Enums"]["dialect_preset"] | null
           icon?: string | null
           id?: string
           is_archived?: boolean | null
           name: string
+          numeral_mode?: string | null
           system_instructions?: string | null
           updated_at?: string
           user_id: string
         }
         Update: {
+          code_switch_mode?: string | null
           color?: string | null
           created_at?: string
           default_mode?: Database["public"]["Enums"]["chat_mode"] | null
           description?: string | null
+          dialect_formality?: string | null
           dialect_preset?: Database["public"]["Enums"]["dialect_preset"] | null
           icon?: string | null
           id?: string
           is_archived?: boolean | null
           name?: string
+          numeral_mode?: string | null
           system_instructions?: string | null
           updated_at?: string
           user_id?: string

@@ -252,7 +252,9 @@
     "regenerate": "Regenerate",
     "thumbsUp": "Good response",
     "thumbsDown": "Poor response",
-    "correctDialect": "Correct Dialect"
+    "correctDialect": "Correct Dialect",
+    "feedbackPositive": "Thanks for your feedback!",
+    "feedbackNegative": "We'll try to improve"
   },
   "voice": {
     "permissionDenied": "Microphone permission denied. Please allow access in your browser settings.",
@@ -380,6 +382,47 @@
   "privacy": {
     "sensitiveDataBlocked": "Sensitive data was detected and not saved",
     "dataExported": "Your data has been exported"
+  },
+  "arabic": {
+    "dialectSettings": "Arabic Settings",
+    "formality": "Formality",
+    "formal": "Formal",
+    "casual": "Casual",
+    "codeSwitch": "Code Switching",
+    "arabicOnly": "Arabic only",
+    "mixedAllowed": "Mixed allowed",
+    "numeralMode": "Numeral Style",
+    "westernNumerals": "Western (0-9)",
+    "arabicNumerals": "Arabic (٠-٩)"
+  },
+  "metrics": {
+    "memoryTitle": "Memory Usage",
+    "memoryDesc": "How your memory suggestions are handled",
+    "feedbackTitle": "Response Quality",
+    "feedbackDesc": "Your feedback on AI responses",
+    "approvalRate": "Approval Rate",
+    "positiveRate": "Positive Feedback",
+    "approved": "Approved",
+    "pending": "Pending",
+    "rejected": "Rejected",
+    "positive": "Positive",
+    "negative": "Negative",
+    "noData": "No data available yet",
+    "noFeedback": "No feedback given yet"
+  },
+  "shortcuts": {
+    "title": "Keyboard Shortcuts",
+    "description": "Quick actions for power users",
+    "send": "Send message",
+    "newLine": "New line",
+    "toggleHelp": "Toggle shortcuts help",
+    "closeDialog": "Close dialog",
+    "commandPalette": "Command palette (coming soon)"
+  },
+  "accessibility": {
+    "loading": "Loading...",
+    "copyMessage": "Copy message",
+    "sendMessage": "Send message"
   },
   "usage": {
     "title": "Usage Dashboard",

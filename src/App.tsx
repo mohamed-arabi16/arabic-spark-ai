@@ -17,6 +17,7 @@ import Memory from "./pages/Memory";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 import { Loader2 } from "lucide-react";
+import { KeyboardShortcutsDialog, useKeyboardShortcuts } from "@/components/common/KeyboardShortcutsDialog";
 
 const queryClient = new QueryClient();
 
@@ -99,87 +100,92 @@ function LandingRoute() {
 }
 
 function AppRoutes() {
+  const { isShortcutsOpen, setIsShortcutsOpen } = useKeyboardShortcuts();
+  
   return (
-    <Routes>
-      <Route
-        path="/"
-        element={<LandingRoute />}
-      />
-      <Route
-        path="/chat"
-        element={
-          <TrialOrProtectedRoute>
-            <Chat />
-          </TrialOrProtectedRoute>
-        }
-      />
-      <Route
-        path="/projects"
-        element={
-          <ProtectedRoute>
-            <Projects />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/images"
-        element={
-          <ProtectedRoute>
-            <Images />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/usage"
-        element={
-          <ProtectedRoute>
-            <Usage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/settings"
-        element={
-          <ProtectedRoute>
-            <Settings />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/research"
-        element={
-          <ProtectedRoute>
-            <Research />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/history"
-        element={
-          <ProtectedRoute>
-            <History />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/memory"
-        element={
-          <ProtectedRoute>
-            <Memory />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/auth"
-        element={
-          <PublicRoute>
-            <Auth />
-          </PublicRoute>
-        }
-      />
-      {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-      <Route path="*" element={<NotFound />} />
-    </Routes>
+    <>
+      <KeyboardShortcutsDialog open={isShortcutsOpen} onOpenChange={setIsShortcutsOpen} />
+      <Routes>
+        <Route
+          path="/"
+          element={<LandingRoute />}
+        />
+        <Route
+          path="/chat"
+          element={
+            <TrialOrProtectedRoute>
+              <Chat />
+            </TrialOrProtectedRoute>
+          }
+        />
+        <Route
+          path="/projects"
+          element={
+            <ProtectedRoute>
+              <Projects />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/images"
+          element={
+            <ProtectedRoute>
+              <Images />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/usage"
+          element={
+            <ProtectedRoute>
+              <Usage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/settings"
+          element={
+            <ProtectedRoute>
+              <Settings />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/research"
+          element={
+            <ProtectedRoute>
+              <Research />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/history"
+          element={
+            <ProtectedRoute>
+              <History />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/memory"
+          element={
+            <ProtectedRoute>
+              <Memory />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/auth"
+          element={
+            <PublicRoute>
+              <Auth />
+            </PublicRoute>
+          }
+        />
+        {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+        <Route path="*" element={<NotFound />} />
+      </Routes>
+    </>
   );
 }
 

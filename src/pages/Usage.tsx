@@ -10,6 +10,8 @@ import { BudgetCard } from '@/components/usage/BudgetCard';
 import { ProjectUsageTable } from '@/components/usage/ProjectUsageTable';
 import { TopConversationsTable } from '@/components/usage/TopConversationsTable';
 import { SkeletonSummaryCards, SkeletonChart } from '@/components/ui/skeleton-list';
+import { MetricsSummary } from '@/components/usage/MetricsSummary';
+import { Separator } from '@/components/ui/separator';
 
 export default function Usage() {
   const { t } = useTranslation();
@@ -59,6 +61,14 @@ export default function Usage() {
               conversations={topConversations} 
               isLoading={isLoading} 
             />
+
+            <Separator />
+
+            {/* Memory & Feedback Metrics */}
+            <div>
+              <h2 className="text-lg font-semibold mb-4">{t('metrics.memoryTitle')}</h2>
+              <MetricsSummary />
+            </div>
           </div>
         )}
       </div>

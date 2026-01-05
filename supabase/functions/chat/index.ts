@@ -27,42 +27,68 @@ const COST_PER_1M: Record<string, { input: number; output: number } | { per_imag
   'gpt-image-1': { per_image: 0.04 },
 };
 
-// Dialect-specific system prompt instructions
-const DIALECT_INSTRUCTIONS: Record<string, string> = {
-  msa: `When responding in Arabic, use Modern Standard Arabic (الفصحى). Be formal and use proper classical Arabic grammar. Avoid colloquialisms.
+// Extended dialect instructions with formality and code-switch options
+function buildDialectInstructions(dialect: string, options: { formality?: string; codeSwitch?: string; numeralMode?: string } = {}): string {
+  const baseInstructions: Record<string, string> = {
+    msa: `When responding in Arabic, use Modern Standard Arabic (الفصحى). Be formal and use proper classical Arabic grammar. Avoid colloquialisms.
 Examples:
 - "How are you?": "كيف حالك؟"
 - "I want this": "أريد هذا"
 - "What happened?": "ماذا حدث؟"`,
-  egyptian: `When responding in Arabic, use Egyptian Arabic dialect (مصري). Use common Egyptian expressions like "إيه، كده، ازيك، عايز". Be conversational and warm.
+    egyptian: `When responding in Arabic, use Egyptian Arabic dialect (مصري). Use common Egyptian expressions like "إيه، كده، ازيك، عايز". Be conversational and warm.
 Examples:
 - "How are you?": "ازيك؟ عامل ايه؟"
 - "I want this": "أنا عايز ده"
-- "What happened?": "ايه اللي حصل؟"
-- "Why?": "ليه؟"
-- "Like this": "كده"`,
-  gulf: `When responding in Arabic, use Gulf Arabic dialect (خليجي). Use expressions common in UAE, Saudi, Qatar like "شلونك، وش، هالحين، أبي". Be friendly and direct.
+- "What happened?": "ايه اللي حصل؟"`,
+    gulf: `When responding in Arabic, use Gulf Arabic dialect (خليجي). Use expressions common in UAE, Saudi, Qatar like "شلونك، وش، هالحين، أبي". Be friendly and direct.
 Examples:
 - "How are you?": "شلونك؟ عساك طيب"
 - "I want this": "أبي هذا"
-- "What happened?": "وش صار؟"
-- "Now": "الحين"`,
-  levantine: `When responding in Arabic, use Levantine Arabic dialect (شامي). Use Syrian/Lebanese/Palestinian expressions like "كيفك، هلق، شو، بدي". Be warm and expressive.
+- "What happened?": "وش صار؟"`,
+    levantine: `When responding in Arabic, use Levantine Arabic dialect (شامي). Use Syrian/Lebanese/Palestinian expressions like "كيفك، هلق، شو، بدي". Be warm and expressive.
 Examples:
 - "How are you?": "كيفك؟"
 - "I want this": "بدي هاد"
-- "What happened?": "شو صار؟"
-- "Now": "هلق"`,
-  maghrebi: `When responding in Arabic, use Maghrebi Arabic dialect (مغاربي). Use Moroccan/Algerian/Tunisian expressions. Be direct and practical.
+- "What happened?": "شو صار؟"`,
+    maghrebi: `When responding in Arabic, use Maghrebi Arabic dialect (مغاربي). Use Moroccan/Algerian/Tunisian expressions. Be direct and practical.
 Examples:
 - "How are you?": "واش راك؟ لاباس؟"
-- "I want this": "بغيت هذا"
-- "What?": "واش؟"`,
-};
+- "I want this": "بغيت هذا"`,
+  };
+
+  let instructions = baseInstructions[dialect] || baseInstructions.msa;
+
+  // Add formality
+  if (options.formality === 'formal') {
+    instructions += `\nTONE: Formal and respectful. Use complete sentences and proper grammar.`;
+  } else {
+    instructions += `\nTONE: Casual and friendly. Use natural conversational style.`;
+  }
+
+  // Add code-switch preference
+  if (options.codeSwitch === 'arabic_only') {
+    instructions += `\nCODE-SWITCH: Respond in Arabic only. Avoid English unless technical terms absolutely require it.`;
+  } else {
+    instructions += `\nCODE-SWITCH: Mixed language allowed. Use technical terms in English when natural.`;
+  }
+
+  // Add numeral mode
+  if (options.numeralMode === 'arabic') {
+    instructions += `\nNUMERALS: Use Eastern Arabic numerals (٠١٢٣٤٥٦٧٨٩) for all numbers.`;
+  }
+
+  return instructions;
+}
 
 interface Message {
   role: 'user' | 'assistant' | 'system';
   content: string;
+}
+
+interface DialectOptions {
+  formality?: 'formal' | 'casual';
+  codeSwitch?: 'arabic_only' | 'mixed';
+  numeralMode?: 'western' | 'arabic';
 }
 
 interface ChatRequest {
@@ -74,6 +100,7 @@ interface ChatRequest {
   memory_context?: string;
   dialect?: string;
   model?: string;
+  dialect_options?: DialectOptions;
 }
 
 serve(async (req) => {
@@ -122,11 +149,34 @@ serve(async (req) => {
       system_instructions, 
       memory_context,
       dialect = 'msa',
-      model
+      model,
+      dialect_options = {}
     }: ChatRequest = await req.json();
     
     if (!messages || !Array.isArray(messages)) {
       throw new Error('Messages array is required');
+    }
+
+    // Merge project dialect options if available
+    let projectDialectOptions = { ...dialect_options };
+    if (project_id) {
+      try {
+        const { data: projectData } = await supabase
+          .from('projects')
+          .select('dialect_formality, code_switch_mode, numeral_mode')
+          .eq('id', project_id)
+          .single();
+        
+        if (projectData) {
+          projectDialectOptions = {
+            formality: projectData.dialect_formality || dialect_options.formality || 'casual',
+            codeSwitch: projectData.code_switch_mode || dialect_options.codeSwitch || 'mixed',
+            numeralMode: projectData.numeral_mode || dialect_options.numeralMode || 'western',
+          };
+        }
+      } catch (e) {
+        console.warn('Could not fetch project dialect options:', e);
+      }
     }
 
     const selectedModel = model || 'google/gemini-2.5-flash';
@@ -141,7 +191,7 @@ serve(async (req) => {
       maxCompletionTokens = 16384;
     }
 
-    console.log(`Chat request - Mode: ${mode}, Model: ${selectedModel}, Reasoning: ${reasoningEffort}, Dialect: ${dialect}, Messages: ${messages.length}`);
+    console.log(`Chat request - Mode: ${mode}, Model: ${selectedModel}, Dialect: ${dialect}, Options: ${JSON.stringify(projectDialectOptions)}, Messages: ${messages.length}`);
 
     // Fetch memory context if not provided (3-tier retrieval)
     let enrichedMemoryContext = memory_context || '';
@@ -227,8 +277,8 @@ Key behaviors:
 - Cite sources when making factual claims
 - Admit uncertainty when you don't know something`;
 
-    // Add dialect-specific instructions
-    const dialectInstruction = DIALECT_INSTRUCTIONS[dialect] || DIALECT_INSTRUCTIONS.msa;
+    // Add dialect-specific instructions using enhanced function
+    const dialectInstruction = buildDialectInstructions(dialect, projectDialectOptions);
     systemContent += `\n\nLANGUAGE STYLE:\n${dialectInstruction}`;
 
     // Append project specific instructions if present

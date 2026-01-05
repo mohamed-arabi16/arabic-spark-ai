@@ -54,11 +54,11 @@ const modes = [
 ];
 
 const dialects = [
-  { id: 'msa', label: 'MSA (Fusha)', labelAr: 'الفصحى' },
-  { id: 'egyptian', label: 'Egyptian', labelAr: 'مصري' },
-  { id: 'levantine', label: 'Levantine', labelAr: 'شامي' },
-  { id: 'gulf', label: 'Gulf', labelAr: 'خليجي' },
-  { id: 'maghrebi', label: 'Maghrebi', labelAr: 'مغاربي' },
+  { id: 'msa', label: 'MSA (Fusha)', labelAr: 'الفصحى', sample: 'كيف حالك؟' },
+  { id: 'egyptian', label: 'Egyptian', labelAr: 'مصري', sample: 'ازيك؟' },
+  { id: 'levantine', label: 'Levantine', labelAr: 'شامي', sample: 'كيفك؟' },
+  { id: 'gulf', label: 'Gulf', labelAr: 'خليجي', sample: 'شلونك؟' },
+  { id: 'maghrebi', label: 'Maghrebi', labelAr: 'مغاربي', sample: 'لاباس؟' },
 ];
 
 export function ModelPicker({ 
@@ -228,7 +228,7 @@ export function ModelPicker({
             <ChevronDown className="h-3 w-3 opacity-50" />
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align={isRTL ? "end" : "start"} className="w-[180px]">
+        <DropdownMenuContent align={isRTL ? "end" : "start"} className="w-[220px]">
           <DropdownMenuLabel className="text-xs text-muted-foreground">
             {t('settings.dialect') || 'Dialect'}
           </DropdownMenuLabel>
@@ -236,10 +236,13 @@ export function ModelPicker({
             <DropdownMenuItem
               key={d.id}
               onClick={() => onDialectChange(d.id)}
-              className="gap-2 cursor-pointer"
+              className="gap-2 cursor-pointer flex-col items-start"
             >
-              <span className="flex-1">{isRTL ? d.labelAr : d.label}</span>
-              {dialect === d.id && <div className="h-1.5 w-1.5 rounded-full bg-primary" />}
+              <div className="flex items-center justify-between w-full">
+                <span className="font-medium">{isRTL ? d.labelAr : d.label}</span>
+                {dialect === d.id && <div className="h-1.5 w-1.5 rounded-full bg-primary" />}
+              </div>
+              <span className="text-xs text-muted-foreground" dir="rtl">{d.sample}</span>
             </DropdownMenuItem>
           ))}
         </DropdownMenuContent>
