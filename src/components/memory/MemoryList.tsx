@@ -4,7 +4,6 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import {
   Brain,
   Trash2,
@@ -18,11 +17,13 @@ import {
   Heart,
   User,
   Settings,
-  Lightbulb
+  Lightbulb,
+  ExternalLink
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useState } from 'react';
 import { formatDate, LTR } from '@/lib/bidi';
+import { Link } from 'react-router-dom';
 
 const categoryIcons: Record<string, any> = {
   preference: Heart,
@@ -151,9 +152,25 @@ export function MemoryList({
                 <p className="text-sm">{memory.content}</p>
               )}
 
-              <p className="text-xs text-muted-foreground mt-2">
-                {t('memory.added')} <LTR>{formatDate(memory.created_at, i18n.language)}</LTR>
-              </p>
+              <div className="flex items-center gap-3 mt-2 text-xs text-muted-foreground">
+                <span>
+                  {t('memory.added')} <LTR>{formatDate(memory.created_at, i18n.language)}</LTR>
+                </span>
+                {memory.last_used_at && (
+                  <span>
+                    {t('memory.lastUsed')} <LTR>{formatDate(memory.last_used_at, i18n.language)}</LTR>
+                  </span>
+                )}
+                {memory.source_conversation_id && (
+                  <Link 
+                    to={`/chat?conversationId=${memory.source_conversation_id}`}
+                    className="flex items-center gap-1 text-primary hover:underline"
+                  >
+                    <ExternalLink className="h-3 w-3" />
+                    {t('memory.viewSource')}
+                  </Link>
+                )}
+              </div>
             </div>
 
             <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">

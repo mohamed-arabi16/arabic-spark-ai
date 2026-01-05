@@ -366,7 +366,20 @@
       "style": "أسلوب",
       "constraint": "قيد",
       "identity": "هوية"
-    }
+    },
+    "exportAll": "تصدير جميع البيانات",
+    "exportSuccess": "تم تصدير البيانات بنجاح",
+    "exportInProgress": "جارٍ تجهيز تصدير بياناتك...",
+    "deleteConfirm": "هل أنت متأكد من حذف هذه الذاكرة؟",
+    "lastUsed": "آخر استخدام",
+    "neverUsed": "لم تُستخدم",
+    "viewSource": "عرض المصدر",
+    "bulkApprove": "الموافقة على المحدد",
+    "bulkReject": "رفض المحدد"
+  },
+  "privacy": {
+    "sensitiveDataBlocked": "تم اكتشاف بيانات حساسة ولم يتم حفظها",
+    "dataExported": "تم تصدير بياناتك"
   },
   "usage": {
     "title": "لوحة تحكم الاستخدام",
@@ -454,6 +467,7 @@
     "saveMemory": "فشل حفظ الذاكرة",
     "updateMemory": "فشل تحديث الذاكرة",
     "deleteMemory": "فشل حذف الذاكرة",
+    "exportFailed": "فشل تصدير البيانات",
     "loadImages": "فشل تحميل الصور",
     "generateImage": "فشل توليد الصورة",
     "deleteImage": "فشل حذف الصورة",

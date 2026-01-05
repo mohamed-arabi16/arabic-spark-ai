@@ -11,6 +11,7 @@ export type Memory = Tables<'memory_objects'> & {
   status?: string;
   source_conversation_id?: string;
   source_message_ids?: string[];
+  last_used_at?: string;
 };
 
 export type MemoryInsert = TablesInsert<'memory_objects'>;
@@ -23,6 +24,7 @@ export function useMemory(projectId?: string) {
   const [memories, setMemories] = useState<Memory[]>([]);
   const [proposedMemories, setProposedMemories] = useState<Memory[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
 
   const fetchMemories = useCallback(async (status?: MemoryStatus) => {
     setIsLoading(true);
@@ -73,7 +75,7 @@ export function useMemory(projectId?: string) {
         .select('*')
         .eq('is_active', true)
         .or('status.eq.approved,status.is.null')
-        .order('created_at', { ascending: false });
+        .order('confidence', { ascending: false });
 
       if (projectId) {
         query = query.or(`project_id.eq.${projectId},is_global.eq.true`);
@@ -90,6 +92,31 @@ export function useMemory(projectId?: string) {
       return [];
     }
   }, [projectId]);
+
+  // Create audit log entry
+  const createAuditEntry = async (
+    memoryId: string | null, 
+    action: string, 
+    oldContent?: string, 
+    newContent?: string,
+    metadata?: Record<string, any>
+  ) => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      await supabase.from('memory_audit_log').insert({
+        user_id: user.id,
+        memory_id: memoryId,
+        action,
+        old_content: oldContent,
+        new_content: newContent,
+        metadata: metadata || {}
+      } as any);
+    } catch (error) {
+      console.error('Failed to create audit entry:', error);
+    }
+  };
 
   const addMemory = async (
     content: string, 
@@ -110,7 +137,7 @@ export function useMemory(projectId?: string) {
           category,
           is_global: isGlobal,
           is_active: true,
-          // Note: status is handled by DB default and RLS
+          status,
         } as any)
         .select()
         .single();
@@ -118,6 +145,10 @@ export function useMemory(projectId?: string) {
       if (error) throw error;
 
       const memory = data as Memory;
+      
+      // Create audit entry
+      await createAuditEntry(memory.id, 'created', undefined, content, { category, is_global: isGlobal });
+
       if (status === 'approved' || !status) {
         setMemories(prev => [memory, ...prev]);
       } else {
@@ -134,6 +165,9 @@ export function useMemory(projectId?: string) {
 
   const updateMemory = async (id: string, updates: Partial<Memory>) => {
     try {
+      // Get old content for audit
+      const oldMemory = memories.find(m => m.id === id) || proposedMemories.find(m => m.id === id);
+
       const { data, error } = await supabase
         .from('memory_objects')
         .update(updates as any)
@@ -144,6 +178,15 @@ export function useMemory(projectId?: string) {
       if (error) throw error;
 
       const memory = data as Memory;
+      
+      // Create audit entry
+      await createAuditEntry(
+        id, 
+        'updated', 
+        oldMemory?.content, 
+        updates.content || oldMemory?.content,
+        { updates: Object.keys(updates) }
+      );
       
       // Update the correct list based on status
       if ((updates as any).status === 'approved') {
@@ -166,7 +209,9 @@ export function useMemory(projectId?: string) {
 
   const approveMemory = async (id: string) => {
     try {
+      const memory = proposedMemories.find(m => m.id === id);
       await updateMemory(id, { status: 'approved' } as any);
+      await createAuditEntry(id, 'approved', undefined, memory?.content);
       toast.success(t('messages.memoryApproved'));
     } catch (error) {
       // Error already handled
@@ -175,7 +220,9 @@ export function useMemory(projectId?: string) {
 
   const rejectMemory = async (id: string) => {
     try {
+      const memory = proposedMemories.find(m => m.id === id);
       await updateMemory(id, { status: 'rejected', is_active: false } as any);
+      await createAuditEntry(id, 'rejected', memory?.content, undefined);
       toast.success(t('messages.memoryRejected'));
     } catch (error) {
       // Error already handled
@@ -184,12 +231,21 @@ export function useMemory(projectId?: string) {
 
   const deleteMemory = async (id: string) => {
     try {
+      // Get the memory content first for audit
+      const memory = memories.find(m => m.id === id) || proposedMemories.find(m => m.id === id);
+
       const { error } = await supabase
         .from('memory_objects')
         .delete()
         .eq('id', id);
 
       if (error) throw error;
+
+      // Create audit entry with old content
+      await createAuditEntry(id, 'deleted', memory?.content, undefined, { 
+        category: memory?.category,
+        was_global: memory?.is_global 
+      });
 
       setMemories(prev => prev.filter(m => m.id !== id));
       setProposedMemories(prev => prev.filter(m => m.id !== id));
@@ -198,6 +254,48 @@ export function useMemory(projectId?: string) {
       console.error('Error deleting memory:', error);
       toast.error(t('errors.deleteMemory'));
       throw error;
+    }
+  };
+
+  // Export user data
+  const exportData = async (options?: { 
+    include_memories?: boolean; 
+    include_conversations?: boolean; 
+    include_messages?: boolean;
+  }) => {
+    setIsExporting(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error('Not authenticated');
+
+      const response = await supabase.functions.invoke('export-data', {
+        body: {
+          include_memories: options?.include_memories ?? true,
+          include_conversations: options?.include_conversations ?? true,
+          include_messages: options?.include_messages ?? true,
+        }
+      });
+
+      if (response.error) throw response.error;
+
+      // Download the JSON file
+      const blob = new Blob([JSON.stringify(response.data, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `bayt-al-lisan-export-${new Date().toISOString().split('T')[0]}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+
+      toast.success(t('memory.exportSuccess'));
+    } catch (error) {
+      console.error('Error exporting data:', error);
+      toast.error(t('errors.exportFailed'));
+      throw error;
+    } finally {
+      setIsExporting(false);
     }
   };
 
@@ -224,6 +322,7 @@ export function useMemory(projectId?: string) {
     memories,
     proposedMemories,
     isLoading,
+    isExporting,
     fetchMemories,
     fetchApprovedMemories,
     addMemory,
@@ -231,6 +330,7 @@ export function useMemory(projectId?: string) {
     approveMemory,
     rejectMemory,
     deleteMemory,
+    exportData,
     getMemoryContext,
   };
 }

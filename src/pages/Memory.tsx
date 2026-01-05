@@ -6,7 +6,7 @@ import { useMemory } from '@/hooks/useMemory';
 import { useProjects } from '@/hooks/useProjects';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
-import { Brain, Filter, Search, Trash2, Check, X } from 'lucide-react';
+import { Brain, Search, Download, Loader2 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -17,14 +17,63 @@ export default function Memory() {
   const { projects } = useProjects();
   const [selectedProject, setSelectedProject] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
 
-  const { memories, proposedMemories, fetchMemories, approveMemory, rejectMemory, deleteMemory, updateMemory } = useMemory(
+  const { 
+    memories, 
+    proposedMemories, 
+    fetchMemories, 
+    approveMemory, 
+    rejectMemory, 
+    deleteMemory, 
+    updateMemory,
+    exportData,
+    isExporting
+  } = useMemory(
     selectedProject === 'all' ? undefined : selectedProject
   );
 
   useEffect(() => {
     fetchMemories();
   }, [fetchMemories, selectedProject]);
+
+  const handleSelectionChange = (id: string, checked: boolean) => {
+    const newSet = new Set(selectedItems);
+    if (checked) {
+      newSet.add(id);
+    } else {
+      newSet.delete(id);
+    }
+    setSelectedItems(newSet);
+  };
+
+  const handleBulkApprove = async () => {
+    for (const id of selectedItems) {
+      await approveMemory(id);
+    }
+    setSelectedItems(new Set());
+  };
+
+  const handleBulkReject = async () => {
+    for (const id of selectedItems) {
+      await rejectMemory(id);
+    }
+    setSelectedItems(new Set());
+  };
+
+  const getProjectName = (projectId: string | null | undefined) => {
+    if (!projectId) return t('memory.global');
+    const project = projects.find(p => p.id === projectId);
+    return project?.name || t('memory.projectSpecific');
+  };
+
+  const filteredMemories = memories.filter(m => 
+    !searchQuery || m.content.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const filteredProposed = proposedMemories.filter(m =>
+    !searchQuery || m.content.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   return (
     <MainLayout>
@@ -42,7 +91,19 @@ export default function Memory() {
             </div>
 
             <div className="flex items-center gap-2 w-full md:w-auto">
-               <Select value={selectedProject} onValueChange={setSelectedProject}>
+              <Button
+                variant="outline"
+                onClick={() => exportData()}
+                disabled={isExporting}
+              >
+                {isExporting ? (
+                  <Loader2 className="h-4 w-4 me-2 animate-spin" />
+                ) : (
+                  <Download className="h-4 w-4 me-2" />
+                )}
+                {t('memory.exportAll')}
+              </Button>
+              <Select value={selectedProject} onValueChange={setSelectedProject}>
                 <SelectTrigger className="w-[200px]">
                   <SelectValue placeholder={t('memory.allProjects')} />
                 </SelectTrigger>
@@ -69,24 +130,73 @@ export default function Memory() {
           </div>
         </div>
 
-        <div className="flex-1 overflow-hidden p-6">
-           {memories.length === 0 && proposedMemories.length === 0 && !searchQuery ? (
-             <EmptyState
-               icon={Brain}
-               title={t('memory.noMemories')}
-               description={t('memory.autoCreatedDesc')}
-             />
-           ) : (
-             <MemoryList
-               memories={memories.filter(m => 
-                 !searchQuery || m.content.toLowerCase().includes(searchQuery.toLowerCase())
-               )}
-               onApprove={approveMemory}
-               onReject={rejectMemory}
-               onDelete={deleteMemory}
-               onUpdate={async (id, content) => { await updateMemory(id, { content }); }}
-             />
-           )}
+        <div className="flex-1 overflow-auto p-6">
+          <Tabs defaultValue="approved" className="w-full">
+            <div className="flex items-center justify-between mb-4">
+              <TabsList>
+                <TabsTrigger value="approved">
+                  {t('memory.approved')} ({filteredMemories.length})
+                </TabsTrigger>
+                <TabsTrigger value="pending">
+                  {t('memory.pending')} ({filteredProposed.length})
+                </TabsTrigger>
+              </TabsList>
+
+              {selectedItems.size > 0 && (
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-muted-foreground">
+                    {selectedItems.size} {t('memory.itemSelected')}
+                  </span>
+                  <Button size="sm" variant="outline" onClick={handleBulkApprove}>
+                    {t('memory.bulkApprove')}
+                  </Button>
+                  <Button size="sm" variant="outline" onClick={handleBulkReject}>
+                    {t('memory.bulkReject')}
+                  </Button>
+                  <Button size="sm" variant="ghost" onClick={() => setSelectedItems(new Set())}>
+                    {t('common.clearSelection')}
+                  </Button>
+                </div>
+              )}
+            </div>
+
+            <TabsContent value="approved">
+              {filteredMemories.length === 0 ? (
+                <EmptyState
+                  icon={Brain}
+                  title={t('memory.noMemories')}
+                  description={t('memory.autoCreatedDesc')}
+                />
+              ) : (
+                <MemoryList
+                  memories={filteredMemories}
+                  onDelete={deleteMemory}
+                  onUpdate={async (id, content) => { await updateMemory(id, { content }); }}
+                  getProjectName={getProjectName}
+                />
+              )}
+            </TabsContent>
+
+            <TabsContent value="pending">
+              {filteredProposed.length === 0 ? (
+                <EmptyState
+                  icon={Brain}
+                  title={t('memory.noPending')}
+                  description={t('memory.noPendingMemoriesDesc')}
+                />
+              ) : (
+                <MemoryList
+                  memories={filteredProposed}
+                  isPending
+                  selectedItems={selectedItems}
+                  onSelectionChange={handleSelectionChange}
+                  onApprove={approveMemory}
+                  onReject={rejectMemory}
+                  getProjectName={getProjectName}
+                />
+              )}
+            </TabsContent>
+          </Tabs>
         </div>
       </div>
     </MainLayout>
