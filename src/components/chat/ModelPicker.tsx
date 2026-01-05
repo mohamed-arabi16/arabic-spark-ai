@@ -88,24 +88,37 @@ export function ModelPicker({
   const getTierBadge = (tier: string) => {
     switch (tier) {
       case 'free':
-        return <Badge variant="secondary" className="text-[10px] px-1 py-0">Free</Badge>;
+        return <Badge variant="secondary" className="text-[10px] px-1.5 py-0 font-normal">Free</Badge>;
       case 'premium':
-        return <Badge className="text-[10px] px-1 py-0 bg-gradient-to-r from-amber-500 to-orange-500">Pro</Badge>;
+        return (
+          <Badge className="text-[10px] px-1.5 py-0 font-medium bg-gradient-to-r from-violet-500/90 to-purple-600/90 border-0 shadow-sm">
+            <Crown className="h-2.5 w-2.5 me-0.5" />
+            Pro
+          </Badge>
+        );
       default:
         return null;
     }
   };
 
   return (
-    <div className={cn("flex items-center gap-2", className)}>
+    <div className={cn("flex items-center gap-2", isRTL && "flex-row-reverse", className)}>
       <ModelHelpPanel open={isHelpOpen} onOpenChange={setIsHelpOpen} />
 
-      <div className="flex items-center">
+      <div className={cn("flex items-center", isRTL && "flex-row-reverse")}>
         {useModelPicker ? (
           // New model-based picker
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm" className="h-8 gap-2 bg-background/50 backdrop-blur-sm border-dashed rounded-e-none border-e-0">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className={cn(
+                  "h-8 gap-2 bg-background/50 backdrop-blur-sm border-dashed",
+                  isRTL ? "rounded-s-none border-s-0" : "rounded-e-none border-e-0",
+                  isRTL && "flex-row-reverse"
+                )}
+              >
                 {currentProvider && (
                   <currentProvider.icon className={cn("h-4 w-4", currentProvider.color)} />
                 )}
@@ -115,7 +128,7 @@ export function ModelPicker({
                 <ChevronDown className="h-3 w-3 opacity-50" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="start" className="w-[280px]">
+            <DropdownMenuContent align={isRTL ? "end" : "start"} className="w-[280px]">
               <DropdownMenuLabel className="text-xs text-muted-foreground">
                 {t('chat.selectModel') || 'Select Model'}
               </DropdownMenuLabel>
@@ -156,13 +169,21 @@ export function ModelPicker({
           // Legacy mode-based picker
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm" className="h-8 gap-2 bg-background/50 backdrop-blur-sm border-dashed rounded-e-none border-e-0">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className={cn(
+                  "h-8 gap-2 bg-background/50 backdrop-blur-sm border-dashed",
+                  isRTL ? "rounded-s-none border-s-0" : "rounded-e-none border-e-0",
+                  isRTL && "flex-row-reverse"
+                )}
+              >
                 <activeMode.icon className={cn("h-4 w-4", activeMode.color)} />
                 <span className="text-xs font-medium">{activeMode.label}</span>
                 <ChevronDown className="h-3 w-3 opacity-50" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="start" className="w-[200px]">
+            <DropdownMenuContent align={isRTL ? "end" : "start"} className="w-[200px]">
               <DropdownMenuLabel className="text-xs text-muted-foreground">{t('settings.model')}</DropdownMenuLabel>
               {modes.map((m) => (
                 <DropdownMenuItem
@@ -182,7 +203,10 @@ export function ModelPicker({
         <Button
           variant="outline"
           size="icon"
-          className="h-8 w-8 rounded-s-none border-dashed bg-background/50 backdrop-blur-sm px-0"
+          className={cn(
+            "h-8 w-8 border-dashed bg-background/50 backdrop-blur-sm px-0",
+            isRTL ? "rounded-e-none" : "rounded-s-none"
+          )}
           onClick={() => setIsHelpOpen(true)}
           title="What changes?"
         >
@@ -193,14 +217,18 @@ export function ModelPicker({
       {/* Dialect picker */}
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button variant="ghost" size="sm" className="h-8 gap-2 text-muted-foreground hover:text-foreground">
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            className={cn("h-8 gap-2 text-muted-foreground hover:text-foreground", isRTL && "flex-row-reverse")}
+          >
             <span className="text-xs font-medium">
               {isRTL ? activeDialect.labelAr : activeDialect.label}
             </span>
             <ChevronDown className="h-3 w-3 opacity-50" />
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="start" className="w-[180px]">
+        <DropdownMenuContent align={isRTL ? "end" : "start"} className="w-[180px]">
           <DropdownMenuLabel className="text-xs text-muted-foreground">
             {t('settings.dialect') || 'Dialect'}
           </DropdownMenuLabel>
