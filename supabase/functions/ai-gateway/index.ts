@@ -731,12 +731,26 @@ Key behaviors:
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error(`Provider error (${MODEL_REGISTRY[selectedModel].provider}):`, response.status, errorText);
+      const providerName = MODEL_REGISTRY[selectedModel].provider;
+      console.error(`Provider error (${providerName}):`, response.status, errorText);
       
+      // Handle rate limits
       if (response.status === 429) {
         return new Response(
           JSON.stringify({ error: 'Rate limit exceeded', code: 'rate_limit' }),
           { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      
+      // Handle billing/credit issues
+      if (errorText.includes('credit balance') || errorText.includes('billing') || errorText.includes('purchase credits')) {
+        return new Response(
+          JSON.stringify({ 
+            error: `${providerName.charAt(0).toUpperCase() + providerName.slice(1)} API credits exhausted. Please add credits to your ${providerName} account or select a different provider.`,
+            code: 'billing_error',
+            provider: providerName
+          }),
+          { status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
       
