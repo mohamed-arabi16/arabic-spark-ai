@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Memory, MemoryUpdate } from '@/hooks/useMemory';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -9,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Trash2, Edit2, Save, X, Plus, Check, XCircle, Brain, Sparkles, Globe, FolderOpen } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { formatDate, LTR } from '@/lib/bidi';
 
 interface MemoryManagerProps {
   memories: Memory[];
@@ -47,6 +49,7 @@ export function MemoryManager({
   onReject,
   projectId 
 }: MemoryManagerProps) {
+  const { t, i18n } = useTranslation();
   const [isAdding, setIsAdding] = useState(false);
   const [newContent, setNewContent] = useState('');
   const [newCategory, setNewCategory] = useState('fact');
@@ -83,15 +86,16 @@ export function MemoryManager({
       }`}
     >
       {editingId === memory.id ? (
-        <div className="space-y-2">
-          <Textarea
-            value={editContent}
-            onChange={(e) => setEditContent(e.target.value)}
-            className="min-h-[80px]"
-          />
-          <div className="flex justify-end gap-2">
-            <Button size="sm" onClick={() => saveEdit(memory.id)}>
-              <Save className="h-4 w-4 mr-1" /> Save
+          <div className="space-y-2">
+            <Textarea
+              value={editContent}
+              onChange={(e) => setEditContent(e.target.value)}
+              className="min-h-[80px]"
+              dir="auto"
+            />
+            <div className="flex justify-end gap-2">
+              <Button size="sm" onClick={() => saveEdit(memory.id)}>
+                <Save className="h-4 w-4 me-1" /> {t('common.save')}
             </Button>
             <Button size="sm" variant="ghost" onClick={() => setEditingId(null)}>
               <X className="h-4 w-4" />
@@ -114,16 +118,16 @@ export function MemoryManager({
                   className={`text-[10px] h-5 ${categoryColors[memory.category || 'fact'] || ''}`}
                 >
                   {categoryIcons[memory.category || 'fact']}
-                  <span className="ml-1">{memory.category || 'fact'}</span>
+                  <span className="ms-1">{t(`memory.categories.${memory.category || 'fact'}`)}</span>
                 </Badge>
                 {memory.is_global && (
                   <Badge variant="outline" className="text-[10px] h-5">
-                    <Globe className="h-2.5 w-2.5 mr-1" /> Global
+                    <Globe className="h-2.5 w-2.5 me-1" /> {t('memory.global')}
                   </Badge>
                 )}
                 {(memory as any).confidence && (
                   <span className="text-[10px] text-muted-foreground">
-                    {Math.round((memory as any).confidence * 100)}% confidence
+                    <LTR>{Math.round((memory as any).confidence * 100)}%</LTR> {t('memory.confidence')}
                   </span>
                 )}
               </div>
@@ -131,7 +135,7 @@ export function MemoryManager({
             
             <div className="flex flex-col gap-1">
               {isProposed && onApprove && onReject ? (
-                <>
+                  <>
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <Button 
@@ -143,7 +147,7 @@ export function MemoryManager({
                         <Check className="h-4 w-4" />
                       </Button>
                     </TooltipTrigger>
-                    <TooltipContent>Approve memory</TooltipContent>
+                    <TooltipContent>{t('memory.approveTooltip')}</TooltipContent>
                   </Tooltip>
                   <Tooltip>
                     <TooltipTrigger asChild>
@@ -156,7 +160,7 @@ export function MemoryManager({
                         <XCircle className="h-4 w-4" />
                       </Button>
                     </TooltipTrigger>
-                    <TooltipContent>Reject memory</TooltipContent>
+                    <TooltipContent>{t('memory.rejectTooltip')}</TooltipContent>
                   </Tooltip>
                 </>
               ) : (
@@ -182,11 +186,11 @@ export function MemoryManager({
   );
 
   return (
-    <Card className="h-full flex flex-col">
+    <Card className="h-full flex flex-col" dir={i18n.dir()}>
       <CardHeader className="flex flex-row items-center justify-between pb-2">
         <CardTitle className="text-base font-semibold flex items-center gap-2">
           <Brain className="h-5 w-5 text-primary" />
-          Memory Bank
+          {t('memory.title')}
         </CardTitle>
         <Button variant="ghost" size="sm" onClick={() => setIsAdding(true)} disabled={isAdding}>
           <Plus className="h-4 w-4" />
@@ -197,11 +201,12 @@ export function MemoryManager({
         {isAdding && (
           <div className="p-3 border rounded-lg bg-muted/50 space-y-3 mb-4">
             <Textarea
-              placeholder="What should I remember about you?"
+              placeholder={t('memory.addPlaceholder')}
               value={newContent}
               onChange={(e) => setNewContent(e.target.value)}
               className="min-h-[80px]"
               autoFocus
+              dir="auto"
             />
             <div className="flex flex-wrap gap-2 items-center">
               <Select value={newCategory} onValueChange={setNewCategory}>
@@ -209,11 +214,11 @@ export function MemoryManager({
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="fact">Fact</SelectItem>
-                  <SelectItem value="preference">Preference</SelectItem>
-                  <SelectItem value="instruction">Instruction</SelectItem>
-                  <SelectItem value="constraint">Constraint</SelectItem>
-                  <SelectItem value="identity">Identity</SelectItem>
+                  <SelectItem value="fact">{t('memory.categories.fact')}</SelectItem>
+                  <SelectItem value="preference">{t('memory.categories.preference')}</SelectItem>
+                  <SelectItem value="instruction">{t('memory.categories.instruction')}</SelectItem>
+                  <SelectItem value="constraint">{t('memory.categories.constraint')}</SelectItem>
+                  <SelectItem value="identity">{t('memory.categories.identity')}</SelectItem>
                 </SelectContent>
               </Select>
               <Button 
@@ -222,15 +227,15 @@ export function MemoryManager({
                 onClick={() => setIsGlobal(!isGlobal)}
                 className="h-8"
               >
-                <Globe className="h-3 w-3 mr-1" />
-                {isGlobal ? 'Global' : 'Project Only'}
+                <Globe className="h-3 w-3 me-1" />
+                {isGlobal ? t('memory.global') : t('memory.projectOnly')}
               </Button>
               <div className="flex-1" />
               <Button size="sm" onClick={handleAdd}>
-                <Save className="h-3 w-3 mr-1" /> Save
+                <Save className="h-3 w-3 me-1" /> {t('common.save')}
               </Button>
               <Button size="sm" variant="ghost" onClick={() => setIsAdding(false)}>
-                Cancel
+                {t('common.cancel')}
               </Button>
             </div>
           </div>
@@ -239,12 +244,12 @@ export function MemoryManager({
         <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col overflow-hidden">
           <TabsList className="grid w-full grid-cols-2 mb-3">
             <TabsTrigger value="approved" className="text-xs">
-              Approved ({memories.length})
+              {t('memory.approved')} ({memories.length})
             </TabsTrigger>
             <TabsTrigger value="proposed" className="text-xs relative">
-              Pending ({proposedMemories.length})
+              {t('memory.pending')} ({proposedMemories.length})
               {proposedMemories.length > 0 && (
-                <span className="absolute -top-1 -right-1 h-2 w-2 bg-amber-500 rounded-full animate-pulse" />
+                <span className="absolute -top-1 -end-1 h-2 w-2 bg-amber-500 rounded-full animate-pulse" />
               )}
             </TabsTrigger>
           </TabsList>
@@ -252,7 +257,7 @@ export function MemoryManager({
           <TabsContent value="approved" className="flex-1 overflow-y-auto space-y-2 mt-0">
             {memories.length === 0 ? (
               <p className="text-sm text-muted-foreground text-center py-8">
-                No approved memories yet. Add one above or approve pending suggestions.
+                {t('memory.noApprovedMemories')}
               </p>
             ) : (
               memories.map((memory) => renderMemoryCard(memory, false))
@@ -262,12 +267,12 @@ export function MemoryManager({
           <TabsContent value="proposed" className="flex-1 overflow-y-auto space-y-2 mt-0">
             {proposedMemories.length === 0 ? (
               <p className="text-sm text-muted-foreground text-center py-8">
-                No pending memories. The AI will suggest memories based on your conversations.
+                {t('memory.noPendingMemoriesDesc')}
               </p>
             ) : (
               <>
                 <p className="text-xs text-muted-foreground mb-2">
-                  These memories were extracted from your conversations. Approve to use them in future chats.
+                  {t('memory.pendingExplanation')}
                 </p>
                 {proposedMemories.map((memory) => renderMemoryCard(memory, true))}
               </>

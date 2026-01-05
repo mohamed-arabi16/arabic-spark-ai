@@ -2,6 +2,7 @@ import { ModelBreakdown } from '@/hooks/useUsage';
 import { useTranslation } from 'react-i18next';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip, Legend } from 'recharts';
+import { formatLocalizedCurrency } from '@/lib/formatters';
 
 interface UsageBreakdownProps {
   data: ModelBreakdown[];
@@ -10,7 +11,7 @@ interface UsageBreakdownProps {
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042'];
 
 export function UsageBreakdown({ data }: UsageBreakdownProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
 
   return (
     <Card className="col-span-3">
@@ -36,7 +37,7 @@ export function UsageBreakdown({ data }: UsageBreakdownProps) {
                   <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                 ))}
               </Pie>
-              <Tooltip formatter={(value: number) => `$${value.toFixed(4)}`} />
+              <Tooltip formatter={(value: number) => formatLocalizedCurrency(value, i18n.language)} />
               <Legend />
             </PieChart>
           </ResponsiveContainer>

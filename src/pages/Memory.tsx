@@ -44,10 +44,10 @@ export default function Memory() {
             <div className="flex items-center gap-2 w-full md:w-auto">
                <Select value={selectedProject} onValueChange={setSelectedProject}>
                 <SelectTrigger className="w-[200px]">
-                  <SelectValue placeholder="All Projects" />
+                  <SelectValue placeholder={t('memory.allProjects')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All Projects</SelectItem>
+                  <SelectItem value="all">{t('memory.allProjects')}</SelectItem>
                   {projects.map(p => (
                     <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
                   ))}
@@ -74,7 +74,7 @@ export default function Memory() {
              <EmptyState
                icon={Brain}
                title={t('memory.noMemories')}
-               description="Memories will be automatically created from your conversations."
+               description={t('memory.autoCreatedDesc')}
              />
            ) : (
              <MemoryList

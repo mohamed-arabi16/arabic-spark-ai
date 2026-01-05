@@ -17,7 +17,7 @@ i18n
         translation: ar,
       },
     },
-    fallbackLng: 'en',
+    fallbackLng: 'ar',
     interpolation: {
       escapeValue: false, // not needed for react as it escapes by default
     },

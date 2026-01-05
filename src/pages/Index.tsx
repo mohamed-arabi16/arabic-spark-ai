@@ -9,9 +9,11 @@ import { useNavigate } from 'react-router-dom';
 import { Plus, MessageSquare, FolderOpen, ArrowRight, Clock, Star } from 'lucide-react';
 import { ProjectDialog } from '@/components/projects/ProjectDialog';
 import { ProjectInsert } from '@/hooks/useProjects';
+import { getFirstName } from '@/lib/nameFormatter';
+import { formatDate, LTR } from '@/lib/bidi';
 
 const Index = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { user } = useAuth();
   const navigate = useNavigate();
   const { projects, fetchProjects, createProject, isLoading } = useProjects();
@@ -28,8 +30,8 @@ const Index = () => {
     await createProject(data);
     setIsProjectDialogOpen(false);
   };
-
-  const displayName = user?.user_metadata?.full_name?.split(' ')[0] || 'there';
+  // Format display name properly (fixes casing like "MOhamed" → "Mohamed")
+  const displayName = getFirstName(user?.user_metadata?.full_name) || 'there';
 
   return (
     <MainLayout>
@@ -94,13 +96,13 @@ const Index = () => {
                       <span className="truncate">{project.name}</span>
                     </CardTitle>
                     <CardDescription className="line-clamp-2 min-h-[40px]">
-                      {project.description || 'No description provided.'}
+                      {project.description || t('dashboard.noDescription')}
                     </CardDescription>
                   </CardHeader>
                   <CardFooter className="flex justify-between items-center text-sm text-muted-foreground">
                     <div className="flex items-center gap-1">
                       <Clock className="h-3 w-3" />
-                      <span>{new Date(project.updated_at).toLocaleDateString()}</span>
+                      <LTR>{formatDate(project.updated_at, i18n.language)}</LTR>
                     </div>
                     <Button
                       size="sm"
@@ -108,7 +110,7 @@ const Index = () => {
                       className="opacity-0 group-hover:opacity-100 transition-opacity"
                       onClick={() => navigate(`/chat?project=${project.id}`)}
                     >
-                      Open
+                      {t('common.open')}
                     </Button>
                   </CardFooter>
                 </Card>

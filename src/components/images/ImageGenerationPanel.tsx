@@ -83,7 +83,7 @@ export function ImageGenerationPanel({ onGenerate, isGenerating }: ImageGenerati
                       <span>{model.name}</span>
                       {model.tier === 'premium' && (
                         <Badge className="text-[10px] px-1 py-0 bg-gradient-to-r from-violet-500/90 to-purple-600/90 border-0">
-                          Pro
+                          {t('settings.tierPremium')}
                         </Badge>
                       )}
                     </div>
@@ -142,9 +142,9 @@ export function ImageGenerationPanel({ onGenerate, isGenerating }: ImageGenerati
                   <SelectValue placeholder={t('common.select')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="1024x1024">Square (1024x1024)</SelectItem>
-                  <SelectItem value="1536x1024">Landscape (1536x1024)</SelectItem>
-                  <SelectItem value="1024x1536">Portrait (1024x1536)</SelectItem>
+                  <SelectItem value="1024x1024">{t('images.sizeSquare')}</SelectItem>
+                  <SelectItem value="1536x1024">{t('images.sizeLandscape')}</SelectItem>
+                  <SelectItem value="1024x1536">{t('images.sizePortrait')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
