@@ -7,74 +7,179 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-session-id',
 };
 
-// OpenAI-only Model Registry
+// ============================================================================
+// MULTI-PROVIDER MODEL REGISTRY
+// ============================================================================
+
+type Capability = 'chat' | 'deep_think' | 'deep_research' | 'image' | 'video' | 'transcribe' | 'code';
+
 interface ModelConfig {
-  provider: 'openai';
-  tier: 'free' | 'standard' | 'premium';
-  type: 'chat' | 'image';
+  provider: 'openai' | 'google' | 'anthropic';
+  actualModel: string;
+  capabilities: Capability[];
   displayName: string;
   displayNameAr: string;
   description: string;
-  descriptionAr: string;
-  actualModel: string;
-  pricing: { input: number; output: number } | { per_image: number };
+  tier: 'free' | 'standard' | 'premium';
+  pricing: { input?: number; output?: number; per_image?: number; per_minute?: number };
 }
 
 const MODEL_REGISTRY: Record<string, ModelConfig> = {
-  'openai/gpt-5-nano': {
+  // ==================== OPENAI MODELS ====================
+  'openai/gpt-5.2': {
     provider: 'openai',
-    tier: 'free',
-    type: 'chat',
-    displayName: 'GPT-5 Nano',
-    displayNameAr: 'جي بي تي-5 نانو',
-    description: 'Fastest, most economical',
-    descriptionAr: 'الأسرع والأكثر اقتصادية',
-    actualModel: 'gpt-5-nano-2025-08-07',
-    pricing: { input: 0.25, output: 1.00 },
-  },
-  'openai/gpt-5-mini': {
-    provider: 'openai',
-    tier: 'standard',
-    type: 'chat',
-    displayName: 'GPT-5 Mini',
-    displayNameAr: 'جي بي تي-5 ميني',
-    description: 'Good balance of speed and quality',
-    descriptionAr: 'توازن جيد بين السرعة والجودة',
-    actualModel: 'gpt-5-mini-2025-08-07',
-    pricing: { input: 1.00, output: 4.00 },
-  },
-  'openai/gpt-5': {
-    provider: 'openai',
-    tier: 'premium',
-    type: 'chat',
-    displayName: 'GPT-5',
-    displayNameAr: 'جي بي تي-5',
-    description: 'Best quality, complex reasoning',
-    descriptionAr: 'أفضل جودة، للتفكير المعقد',
     actualModel: 'gpt-5-2025-08-07',
+    capabilities: ['chat', 'deep_think', 'code'],
+    displayName: 'GPT-5.2',
+    displayNameAr: 'جي بي تي 5.2',
+    description: 'Latest flagship model',
+    tier: 'premium',
     pricing: { input: 5.00, output: 20.00 },
   },
-  // Image generation via OpenAI DALL-E
-  'openai/dall-e-3': {
+  'openai/gpt-5-nano': {
     provider: 'openai',
+    actualModel: 'gpt-5-nano-2025-08-07',
+    capabilities: ['chat'],
+    displayName: 'GPT-5 Nano',
+    displayNameAr: 'جي بي تي 5 نانو',
+    description: 'Fastest, most economical',
+    tier: 'free',
+    pricing: { input: 0.25, output: 1.00 },
+  },
+  'openai/gpt-image-1.5': {
+    provider: 'openai',
+    actualModel: 'gpt-image-1',
+    capabilities: ['image'],
+    displayName: 'GPT Image 1.5',
+    displayNameAr: 'جي بي تي صور 1.5',
+    description: 'Advanced image generation',
     tier: 'premium',
-    type: 'image',
-    displayName: 'DALL-E 3',
-    displayNameAr: 'دال-إي 3',
-    description: 'High quality image generation',
-    descriptionAr: 'توليد صور عالية الجودة',
-    actualModel: 'dall-e-3',
     pricing: { per_image: 0.04 },
+  },
+  'openai/sora-2-pro': {
+    provider: 'openai',
+    actualModel: 'sora-2-pro',
+    capabilities: ['video'],
+    displayName: 'Sora 2 Pro',
+    displayNameAr: 'سورا 2 برو',
+    description: 'Video generation',
+    tier: 'premium',
+    pricing: { per_minute: 0.10 },
+  },
+  'openai/o3-deep-research': {
+    provider: 'openai',
+    actualModel: 'o3-2025-04-16',
+    capabilities: ['deep_research'],
+    displayName: 'o3 Deep Research',
+    displayNameAr: 'o3 بحث عميق',
+    description: 'Advanced research model',
+    tier: 'premium',
+    pricing: { input: 10.00, output: 40.00 },
+  },
+  
+  // ==================== GOOGLE MODELS ====================
+  'google/gemini-flash-3': {
+    provider: 'google',
+    actualModel: 'gemini-2.5-flash',
+    capabilities: ['chat', 'code'],
+    displayName: 'Gemini Flash 3',
+    displayNameAr: 'جيميني فلاش 3',
+    description: 'Fast and efficient',
+    tier: 'free',
+    pricing: { input: 0.10, output: 0.40 },
+  },
+  'google/gemini-3-pro': {
+    provider: 'google',
+    actualModel: 'gemini-2.5-pro',
+    capabilities: ['chat', 'deep_think', 'deep_research', 'code'],
+    displayName: 'Gemini 3 Pro',
+    displayNameAr: 'جيميني 3 برو',
+    description: 'Best for deep analysis',
+    tier: 'premium',
+    pricing: { input: 2.50, output: 10.00 },
+  },
+  'google/nanobanana-pro': {
+    provider: 'google',
+    actualModel: 'gemini-2.5-flash-preview-05-20',
+    capabilities: ['image'],
+    displayName: 'NanoBanana Pro',
+    displayNameAr: 'نانو بنانا برو',
+    description: 'High-quality image generation',
+    tier: 'standard',
+    pricing: { per_image: 0.03 },
+  },
+  'google/veo-2.1': {
+    provider: 'google',
+    actualModel: 'veo-2.0-generate-001',
+    capabilities: ['video'],
+    displayName: 'Veo 2.1',
+    displayNameAr: 'فيو 2.1',
+    description: 'Video generation',
+    tier: 'premium',
+    pricing: { per_minute: 0.08 },
+  },
+
+  // ==================== ANTHROPIC MODELS ====================
+  'anthropic/opus-4.5': {
+    provider: 'anthropic',
+    actualModel: 'claude-opus-4-5-20251101',
+    capabilities: ['chat', 'deep_think', 'code'],
+    displayName: 'Claude Opus 4.5',
+    displayNameAr: 'كلود أوبوس 4.5',
+    description: 'Most intelligent Claude',
+    tier: 'premium',
+    pricing: { input: 15.00, output: 75.00 },
+  },
+  'anthropic/sonnet-4.5': {
+    provider: 'anthropic',
+    actualModel: 'claude-sonnet-4-5',
+    capabilities: ['chat', 'deep_think', 'code'],
+    displayName: 'Claude Sonnet 4.5',
+    displayNameAr: 'كلود سونيت 4.5',
+    description: 'High performance reasoning',
+    tier: 'standard',
+    pricing: { input: 3.00, output: 15.00 },
+  },
+  'anthropic/haiku-4.5': {
+    provider: 'anthropic',
+    actualModel: 'claude-3-5-haiku-20241022',
+    capabilities: ['chat'],
+    displayName: 'Claude Haiku 4.5',
+    displayNameAr: 'كلود هايكو 4.5',
+    description: 'Fast responses',
+    tier: 'free',
+    pricing: { input: 0.25, output: 1.25 },
+  },
+  'anthropic/deep-research': {
+    provider: 'anthropic',
+    actualModel: 'claude-opus-4-5-20251101',
+    capabilities: ['deep_research'],
+    displayName: 'Claude Deep Research',
+    displayNameAr: 'كلود بحث عميق',
+    description: 'Deep research with Claude',
+    tier: 'premium',
+    pricing: { input: 15.00, output: 75.00 },
   },
 };
 
-// Mode to model mapping - mode overrides user's default
+// Default models per function/capability
+const FUNCTION_DEFAULTS: Record<Capability, string> = {
+  chat: 'openai/gpt-5.2',
+  deep_think: 'google/gemini-3-pro',
+  deep_research: 'google/gemini-3-pro',
+  image: 'google/nanobanana-pro',
+  video: 'google/veo-2.1',
+  transcribe: 'openai/whisper',
+  code: 'openai/gpt-5.2',
+};
+
+// Mode to model mapping (backward compatibility with existing mode system)
 const MODE_MODEL_MAP: Record<string, { model: string; max_tokens: number }> = {
   fast: { model: 'openai/gpt-5-nano', max_tokens: 2048 },
-  standard: { model: 'openai/gpt-5-mini', max_tokens: 4096 },
-  deep: { model: 'openai/gpt-5', max_tokens: 8192 },
-  pro: { model: 'openai/gpt-5', max_tokens: 16384 },
-  research: { model: 'openai/gpt-5', max_tokens: 8192 },
+  standard: { model: 'openai/gpt-5.2', max_tokens: 4096 },
+  deep: { model: 'google/gemini-3-pro', max_tokens: 8192 },
+  pro: { model: 'anthropic/opus-4.5', max_tokens: 16384 },
+  research: { model: 'google/gemini-3-pro', max_tokens: 8192 },
 };
 
 // Dialect-specific system prompt instructions
@@ -94,88 +199,341 @@ interface Message {
 }
 
 interface ChatRequest {
-  type?: 'chat' | 'models';
+  action?: 'chat' | 'models' | 'image' | 'deep_think' | 'deep_research' | 'transcribe';
   messages?: Message[];
   mode?: string;
-  model?: string;
+  model?: string; // Direct model override
   project_id?: string;
   conversation_id?: string;
   system_instructions?: string;
   memory_context?: string;
   dialect?: string;
+  // For image generation
+  prompt?: string;
+  size?: string;
+  quality?: string;
+  // For audio transcription
+  audio?: string;
+}
+
+// ============================================================================
+// PROVIDER AVAILABILITY CHECK
+// ============================================================================
+
+function getConfiguredProviders(): { openai: boolean; google: boolean; anthropic: boolean } {
+  return {
+    openai: !!Deno.env.get('OPENAI_API_KEY'),
+    google: !!Deno.env.get('GOOGLE_API_KEY'),
+    anthropic: !!Deno.env.get('ANTHROPIC_API_KEY'),
+  };
 }
 
 function getAvailableModels() {
-  const openaiKey = Deno.env.get('OPENAI_API_KEY');
+  const providers = getConfiguredProviders();
   
-  if (!openaiKey) {
-    return { 
-      chatModels: [], 
-      imageModels: [], 
-      hasOpenAI: false,
-      error: 'OpenAI API key not configured' 
-    };
-  }
-  
-  const chatModels: Array<{ id: string; name: string; nameAr: string; description: string; descriptionAr: string; tier: string; available: boolean }> = [];
-  const imageModels: Array<{ id: string; name: string; nameAr: string; description: string; descriptionAr: string; tier: string; available: boolean }> = [];
+  const chatModels: Array<{ id: string; name: string; nameAr: string; description: string; tier: string; provider: string; available: boolean; capabilities: Capability[] }> = [];
+  const imageModels: Array<{ id: string; name: string; nameAr: string; description: string; tier: string; provider: string; available: boolean }> = [];
+  const researchModels: Array<{ id: string; name: string; nameAr: string; description: string; tier: string; provider: string; available: boolean }> = [];
+  const videoModels: Array<{ id: string; name: string; nameAr: string; description: string; tier: string; provider: string; available: boolean }> = [];
   
   for (const [modelId, config] of Object.entries(MODEL_REGISTRY)) {
+    const isAvailable = providers[config.provider];
+    
     const modelInfo = {
       id: modelId,
       name: config.displayName,
       nameAr: config.displayNameAr,
       description: config.description,
-      descriptionAr: config.descriptionAr,
       tier: config.tier,
-      available: true,
+      provider: config.provider,
+      available: isAvailable,
+      capabilities: config.capabilities,
     };
     
-    if (config.type === 'chat') {
+    if (config.capabilities.includes('chat') || config.capabilities.includes('deep_think')) {
       chatModels.push(modelInfo);
-    } else {
-      imageModels.push(modelInfo);
+    }
+    if (config.capabilities.includes('image')) {
+      imageModels.push({ ...modelInfo, capabilities: undefined } as any);
+    }
+    if (config.capabilities.includes('deep_research')) {
+      researchModels.push({ ...modelInfo, capabilities: undefined } as any);
+    }
+    if (config.capabilities.includes('video')) {
+      videoModels.push({ ...modelInfo, capabilities: undefined } as any);
     }
   }
   
-  return { chatModels, imageModels, hasOpenAI: true };
+  return { 
+    chatModels, 
+    imageModels, 
+    researchModels,
+    videoModels,
+    providers,
+    defaults: FUNCTION_DEFAULTS,
+  };
 }
 
+// ============================================================================
+// PROVIDER API CALLS
+// ============================================================================
+
 async function callOpenAI(model: string, messages: Message[], config: { max_tokens: number }) {
-  const openaiKey = Deno.env.get('OPENAI_API_KEY');
-  if (!openaiKey) {
-    throw new Error('OPENAI_API_KEY is not configured. Please add your OpenAI API key.');
-  }
+  const apiKey = Deno.env.get('OPENAI_API_KEY');
+  if (!apiKey) throw new Error('OPENAI_API_KEY not configured');
   
   const modelConfig = MODEL_REGISTRY[model];
-  if (!modelConfig) {
-    throw new Error(`Unknown model: ${model}`);
-  }
+  if (!modelConfig) throw new Error(`Unknown model: ${model}`);
   
-  const requestBody: any = {
-    model: modelConfig.actualModel,
-    messages,
-    max_completion_tokens: config.max_tokens,
-    stream: true,
-    stream_options: { include_usage: true },
-  };
-  
-  // Note: GPT-5 series doesn't support temperature parameter
-  
-  console.log(`Calling OpenAI with model: ${requestBody.model}`);
+  console.log(`Calling OpenAI with model: ${modelConfig.actualModel}`);
   
   return fetch('https://api.openai.com/v1/chat/completions', {
     method: 'POST',
     headers: {
-      'Authorization': `Bearer ${openaiKey}`,
+      'Authorization': `Bearer ${apiKey}`,
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify(requestBody),
+    body: JSON.stringify({
+      model: modelConfig.actualModel,
+      messages,
+      max_completion_tokens: config.max_tokens,
+      stream: true,
+      stream_options: { include_usage: true },
+    }),
   });
 }
 
+async function callGoogle(model: string, messages: Message[], config: { max_tokens: number }) {
+  const apiKey = Deno.env.get('GOOGLE_API_KEY');
+  if (!apiKey) throw new Error('GOOGLE_API_KEY not configured');
+  
+  const modelConfig = MODEL_REGISTRY[model];
+  if (!modelConfig) throw new Error(`Unknown model: ${model}`);
+  
+  console.log(`Calling Google with model: ${modelConfig.actualModel}`);
+  
+  // Convert messages to Gemini format
+  const geminiContents = messages
+    .filter(m => m.role !== 'system')
+    .map(m => ({
+      role: m.role === 'assistant' ? 'model' : 'user',
+      parts: [{ text: m.content }],
+    }));
+  
+  const systemInstruction = messages.find(m => m.role === 'system');
+  
+  const response = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/${modelConfig.actualModel}:streamGenerateContent?key=${apiKey}&alt=sse`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: geminiContents,
+        systemInstruction: systemInstruction ? { parts: [{ text: systemInstruction.content }] } : undefined,
+        generationConfig: {
+          maxOutputTokens: config.max_tokens,
+        },
+      }),
+    }
+  );
+  
+  return response;
+}
+
+async function callAnthropic(model: string, messages: Message[], config: { max_tokens: number }) {
+  const apiKey = Deno.env.get('ANTHROPIC_API_KEY');
+  if (!apiKey) throw new Error('ANTHROPIC_API_KEY not configured');
+  
+  const modelConfig = MODEL_REGISTRY[model];
+  if (!modelConfig) throw new Error(`Unknown model: ${model}`);
+  
+  console.log(`Calling Anthropic with model: ${modelConfig.actualModel}`);
+  
+  // Extract system message
+  const systemMessage = messages.find(m => m.role === 'system')?.content || '';
+  const conversationMessages = messages
+    .filter(m => m.role !== 'system')
+    .map(m => ({ role: m.role, content: m.content }));
+  
+  return fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'x-api-key': apiKey,
+      'anthropic-version': '2023-06-01',
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      model: modelConfig.actualModel,
+      max_tokens: config.max_tokens,
+      system: systemMessage,
+      messages: conversationMessages,
+      stream: true,
+    }),
+  });
+}
+
+async function callProvider(model: string, messages: Message[], config: { max_tokens: number }) {
+  const modelConfig = MODEL_REGISTRY[model];
+  if (!modelConfig) throw new Error(`Unknown model: ${model}`);
+  
+  switch (modelConfig.provider) {
+    case 'openai':
+      return callOpenAI(model, messages, config);
+    case 'google':
+      return callGoogle(model, messages, config);
+    case 'anthropic':
+      return callAnthropic(model, messages, config);
+    default:
+      throw new Error(`Unknown provider: ${modelConfig.provider}`);
+  }
+}
+
+// ============================================================================
+// IMAGE GENERATION
+// ============================================================================
+
+async function generateImage(prompt: string, model: string, options: { size?: string; quality?: string }) {
+  const modelConfig = MODEL_REGISTRY[model];
+  if (!modelConfig) throw new Error(`Unknown image model: ${model}`);
+  
+  if (modelConfig.provider === 'openai') {
+    const apiKey = Deno.env.get('OPENAI_API_KEY');
+    if (!apiKey) throw new Error('OPENAI_API_KEY not configured');
+    
+    const response = await fetch('https://api.openai.com/v1/images/generations', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: modelConfig.actualModel,
+        prompt,
+        n: 1,
+        size: options.size || '1024x1024',
+        quality: options.quality || 'auto',
+      }),
+    });
+    
+    return response;
+  } else if (modelConfig.provider === 'google') {
+    const apiKey = Deno.env.get('GOOGLE_API_KEY');
+    if (!apiKey) throw new Error('GOOGLE_API_KEY not configured');
+    
+    // Use Gemini for image generation
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/${modelConfig.actualModel}:generateContent?key=${apiKey}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: prompt }] }],
+          generationConfig: {
+            responseModalities: ['image', 'text'],
+            imageSizes: options.size || '1024x1024',
+          },
+        }),
+      }
+    );
+    
+    return response;
+  }
+  
+  throw new Error(`Image generation not supported for provider: ${modelConfig.provider}`);
+}
+
+// ============================================================================
+// STREAM TRANSFORMATION
+// ============================================================================
+
+function transformGoogleStream(response: Response): ReadableStream {
+  const reader = response.body!.getReader();
+  const decoder = new TextDecoder();
+  const encoder = new TextEncoder();
+  
+  return new ReadableStream({
+    async start(controller) {
+      try {
+        let buffer = '';
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split('\n');
+          buffer = lines.pop() || '';
+          
+          for (const line of lines) {
+            if (line.startsWith('data: ')) {
+              try {
+                const json = JSON.parse(line.slice(6));
+                const text = json.candidates?.[0]?.content?.parts?.[0]?.text || '';
+                if (text) {
+                  // Transform to OpenAI-compatible format
+                  const openaiFormat = {
+                    choices: [{ delta: { content: text } }],
+                  };
+                  controller.enqueue(encoder.encode(`data: ${JSON.stringify(openaiFormat)}\n\n`));
+                }
+              } catch {}
+            }
+          }
+        }
+        controller.enqueue(encoder.encode('data: [DONE]\n\n'));
+        controller.close();
+      } catch (err) {
+        controller.error(err);
+      }
+    },
+  });
+}
+
+function transformAnthropicStream(response: Response): ReadableStream {
+  const reader = response.body!.getReader();
+  const decoder = new TextDecoder();
+  const encoder = new TextEncoder();
+  
+  return new ReadableStream({
+    async start(controller) {
+      try {
+        let buffer = '';
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split('\n');
+          buffer = lines.pop() || '';
+          
+          for (const line of lines) {
+            if (line.startsWith('data: ')) {
+              try {
+                const json = JSON.parse(line.slice(6));
+                if (json.type === 'content_block_delta' && json.delta?.text) {
+                  // Transform to OpenAI-compatible format
+                  const openaiFormat = {
+                    choices: [{ delta: { content: json.delta.text } }],
+                  };
+                  controller.enqueue(encoder.encode(`data: ${JSON.stringify(openaiFormat)}\n\n`));
+                }
+              } catch {}
+            }
+          }
+        }
+        controller.enqueue(encoder.encode('data: [DONE]\n\n'));
+        controller.close();
+      } catch (err) {
+        controller.error(err);
+      }
+    },
+  });
+}
+
+// ============================================================================
+// MAIN HANDLER
+// ============================================================================
+
 serve(async (req) => {
-  // Handle CORS preflight
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
@@ -194,20 +552,20 @@ serve(async (req) => {
       });
     }
 
-    // Check for OpenAI API key first
-    const openaiKey = Deno.env.get('OPENAI_API_KEY');
-    if (!openaiKey) {
+    // Check that at least one provider is configured
+    const providers = getConfiguredProviders();
+    if (!providers.openai && !providers.google && !providers.anthropic) {
       return new Response(
         JSON.stringify({ 
-          error: 'OpenAI API key not configured',
-          code: 'no_api_key',
-          message: 'The AI service is not configured. Please contact the administrator.'
+          error: 'No AI providers configured',
+          code: 'no_api_keys',
+          message: 'Please configure at least one AI provider API key.',
         }),
         { status: 503, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    // Check authentication
+    // Authentication check
     const authHeader = req.headers.get('Authorization');
     const sessionId = req.headers.get('x-session-id');
     
@@ -229,66 +587,116 @@ serve(async (req) => {
     if (!user && sessionId) {
       isAnonymous = true;
       
-      // Check anonymous usage limits
-      const { data: session, error: sessionError } = await supabase
+      const { data: session } = await supabase
         .from('anonymous_sessions')
         .select('*')
         .eq('session_id', sessionId)
         .single();
       
-      if (session) {
-        if (session.message_count >= MAX_ANONYMOUS_MESSAGES) {
-          return new Response(
-            JSON.stringify({ 
-              error: 'Trial limit reached',
-              code: 'trial_limit',
-              message: 'You have used all 3 free messages. Sign up to continue!',
-              action: 'signup',
-              remaining: 0
-            }),
-            { status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-          );
-        }
+      if (session && session.message_count >= MAX_ANONYMOUS_MESSAGES) {
+        return new Response(
+          JSON.stringify({ 
+            error: 'Trial limit reached',
+            code: 'trial_limit',
+            message: 'You have used all 3 free messages. Sign up to continue!',
+            action: 'signup',
+            remaining: 0,
+          }),
+          { status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
       }
     }
     
-    // If no auth and no session ID, reject
     if (!user && !sessionId) {
       return new Response(
-        JSON.stringify({ error: 'Authentication required. Please sign in or try with a session.' }),
+        JSON.stringify({ error: 'Authentication required' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
     const body: ChatRequest = await req.json();
+    const action = body.action || url.searchParams.get('action') || 'chat';
     
-    // Handle models request via POST as well
-    if (body.type === 'models') {
+    // Handle models request via POST
+    if (action === 'models') {
       const models = getAvailableModels();
       return new Response(JSON.stringify(models), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
+    // Handle image generation
+    if (action === 'image') {
+      const { prompt, model: requestedModel, size, quality } = body;
+      if (!prompt) throw new Error('Prompt is required for image generation');
+      
+      const imageModel = requestedModel || FUNCTION_DEFAULTS.image;
+      const modelConfig = MODEL_REGISTRY[imageModel];
+      
+      if (!modelConfig || !modelConfig.capabilities.includes('image')) {
+        throw new Error(`Model ${imageModel} does not support image generation`);
+      }
+      
+      if (!providers[modelConfig.provider]) {
+        throw new Error(`Provider ${modelConfig.provider} is not configured`);
+      }
+      
+      const response = await generateImage(prompt, imageModel, { size, quality });
+      const data = await response.json();
+      
+      return new Response(JSON.stringify(data), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Chat / Deep Think / Research
     const { 
       messages = [], 
       mode = 'standard', 
       model: requestedModel,
-      project_id,
       conversation_id,
       system_instructions, 
       memory_context,
       dialect = 'msa',
     } = body;
     
-    if (!messages || !Array.isArray(messages) || messages.length === 0) {
+    if (!messages || messages.length === 0) {
       throw new Error('Messages array is required');
     }
 
-    // Determine the actual model to use based on mode
-    const modeConfig = MODE_MODEL_MAP[mode] || MODE_MODEL_MAP['standard'];
-    const selectedModel = modeConfig.model;
-    const maxTokens = modeConfig.max_tokens;
+    // Determine model: direct model override > mode-based selection
+    let selectedModel: string;
+    let maxTokens: number;
+    
+    if (requestedModel && MODEL_REGISTRY[requestedModel]) {
+      // Direct model selection
+      selectedModel = requestedModel;
+      maxTokens = 8192; // Default for direct selection
+    } else {
+      // Mode-based selection (backward compatible)
+      const modeConfig = MODE_MODEL_MAP[mode] || MODE_MODEL_MAP['standard'];
+      selectedModel = modeConfig.model;
+      maxTokens = modeConfig.max_tokens;
+    }
+    
+    // Validate model is available
+    const modelConfig = MODEL_REGISTRY[selectedModel];
+    if (!modelConfig) {
+      throw new Error(`Unknown model: ${selectedModel}`);
+    }
+    
+    if (!providers[modelConfig.provider]) {
+      // Fallback to first available provider
+      const fallbackModel = Object.entries(MODEL_REGISTRY).find(
+        ([_, config]) => config.capabilities.includes('chat') && providers[config.provider]
+      );
+      if (fallbackModel) {
+        selectedModel = fallbackModel[0];
+        console.log(`Provider ${modelConfig.provider} not configured, falling back to ${selectedModel}`);
+      } else {
+        throw new Error('No chat-capable models available');
+      }
+    }
 
     console.log(`AI Gateway - Mode: ${mode}, Model: ${selectedModel}, Dialect: ${dialect}, Anonymous: ${isAnonymous}`);
 
@@ -302,203 +710,87 @@ Key behaviors:
 - Admit uncertainty when you don't know something
 - You understand and can respond in various Arabic dialects`;
 
-    // Add dialect-specific instructions
     const dialectInstruction = DIALECT_INSTRUCTIONS[dialect] || DIALECT_INSTRUCTIONS.msa;
     systemContent += `\n\nLANGUAGE STYLE:\n${dialectInstruction}`;
 
-    // Append project specific instructions if present
     if (system_instructions) {
       systemContent += `\n\nPROJECT INSTRUCTIONS:\n${system_instructions}`;
     }
 
-    // Append memory context if present
     if (memory_context) {
       systemContent += `\n\nRELEVANT MEMORIES:\n${memory_context}`;
     }
 
-    const systemMessage: Message = {
-      role: 'system',
-      content: systemContent,
-    };
+    const allMessages: Message[] = [
+      { role: 'system', content: systemContent },
+      ...messages,
+    ];
 
-    const allMessages = [systemMessage, ...messages];
-
-    // Call OpenAI
-    const response = await callOpenAI(selectedModel, allMessages, { max_tokens: maxTokens });
+    // Call the appropriate provider
+    const response = await callProvider(selectedModel, allMessages, { max_tokens: maxTokens });
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('OpenAI error:', response.status, errorText);
+      console.error(`Provider error (${MODEL_REGISTRY[selectedModel].provider}):`, response.status, errorText);
       
       if (response.status === 429) {
         return new Response(
-          JSON.stringify({ error: 'Rate limit exceeded. Please try again later.', code: 'rate_limit' }),
+          JSON.stringify({ error: 'Rate limit exceeded', code: 'rate_limit' }),
           { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
       
-      if (response.status === 401) {
-        return new Response(
-          JSON.stringify({ error: 'Invalid API key. Please check configuration.' }),
-          { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
-
-      throw new Error(`OpenAI error: ${response.status}`);
+      throw new Error(`Provider error: ${response.status}`);
     }
 
-    // Parse the stream to extract usage and pass through to client
-    const originalReader = response.body!.getReader();
-    const decoder = new TextDecoder();
+    // Transform stream based on provider
+    let stream: ReadableStream;
+    const provider = MODEL_REGISTRY[selectedModel].provider;
     
-    let usageData: { prompt_tokens?: number; completion_tokens?: number; total_tokens?: number } | null = null;
-    const modelConfig = MODEL_REGISTRY[selectedModel];
+    if (provider === 'openai') {
+      stream = response.body!;
+    } else if (provider === 'google') {
+      stream = transformGoogleStream(response);
+    } else if (provider === 'anthropic') {
+      stream = transformAnthropicStream(response);
+    } else {
+      stream = response.body!;
+    }
 
-    // Create a pass-through stream that captures usage data
-    const stream = new ReadableStream({
-      async start(controller) {
-        try {
-          while (true) {
-            const { done, value } = await originalReader.read();
-            if (done) break;
-            
-            // Parse the chunk to extract usage
-            const text = decoder.decode(value, { stream: true });
-            const lines = text.split('\n');
-            for (const line of lines) {
-              if (line.startsWith('data: ') && line !== 'data: [DONE]') {
-                try {
-                  const json = JSON.parse(line.slice(6));
-                  if (json.usage) {
-                    usageData = json.usage;
-                  }
-                } catch {
-                  // Not valid JSON, ignore
-                }
-              }
-            }
-            
-            // Pass through the chunk unchanged
-            controller.enqueue(value);
-          }
-          
-          controller.close();
-          
-          // After stream ends, update usage tracking
-          if (isAnonymous && sessionId) {
-            // Update anonymous session message count
-            try {
-              const { data: existingSession } = await supabase
-                .from('anonymous_sessions')
-                .select('*')
-                .eq('session_id', sessionId)
-                .single();
-              
-              if (existingSession) {
-                await supabase
-                  .from('anonymous_sessions')
-                  .update({ 
-                    message_count: existingSession.message_count + 1,
-                    updated_at: new Date().toISOString()
-                  })
-                  .eq('session_id', sessionId);
-              } else {
-                await supabase
-                  .from('anonymous_sessions')
-                  .insert({
-                    session_id: sessionId,
-                    message_count: 1,
-                  });
-              }
-            } catch (err) {
-              console.error('Failed to update anonymous session:', err);
-            }
-          }
-          
-          // Save usage stats for authenticated users
-          if (user && usageData && conversation_id) {
-            try {
-              const inputTokens = usageData.prompt_tokens || 0;
-              const outputTokens = usageData.completion_tokens || 0;
-              const totalTokens = usageData.total_tokens || (inputTokens + outputTokens);
-              
-              // Calculate cost
-              const pricing = modelConfig?.pricing || { input: 1.00, output: 4.00 };
-              let totalCost = 0;
-              if ('input' in pricing) {
-                totalCost = (inputTokens / 1_000_000) * pricing.input + (outputTokens / 1_000_000) * pricing.output;
-              }
-              
-              console.log(`Usage - Model: ${selectedModel}, Input: ${inputTokens}, Output: ${outputTokens}, Cost: $${totalCost.toFixed(6)}`);
-
-              // Check and deduct user credits
-              const { data: profile } = await supabase
-                .from('profiles')
-                .select('credit_balance')
-                .eq('id', user.id)
-                .single();
-              
-              if (profile) {
-                const newBalance = Math.max(0, (profile.credit_balance || 5) - totalCost);
-                await supabase
-                  .from('profiles')
-                  .update({ credit_balance: newBalance })
-                  .eq('id', user.id);
-              }
-              
-              // Upsert daily usage stats
-              const today = new Date().toISOString().split('T')[0];
-              
-              const { data: existingStats } = await supabase
-                .from('usage_stats')
-                .select('*')
-                .eq('user_id', user.id)
-                .eq('date', today)
-                .single();
-              
-              if (existingStats) {
-                await supabase
-                  .from('usage_stats')
-                  .update({
-                    total_tokens: (existingStats.total_tokens || 0) + totalTokens,
-                    total_cost: (existingStats.total_cost || 0) + totalCost,
-                    message_count: (existingStats.message_count || 0) + 1,
-                  })
-                  .eq('id', existingStats.id);
-              } else {
-                await supabase
-                  .from('usage_stats')
-                  .insert({
-                    user_id: user.id,
-                    date: today,
-                    total_tokens: totalTokens,
-                    total_cost: totalCost,
-                    message_count: 1,
-                    image_count: 0,
-                  });
-              }
-            } catch (dbError) {
-              console.error('Failed to save usage stats:', dbError);
-            }
-          }
-        } catch (err) {
-          controller.error(err);
-        }
+    // Track usage for anonymous users
+    if (isAnonymous && sessionId) {
+      const { data: existingSession } = await supabase
+        .from('anonymous_sessions')
+        .select('*')
+        .eq('session_id', sessionId)
+        .single();
+      
+      if (existingSession) {
+        await supabase
+          .from('anonymous_sessions')
+          .update({ 
+            message_count: existingSession.message_count + 1,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('session_id', sessionId);
+      } else {
+        await supabase
+          .from('anonymous_sessions')
+          .insert({ session_id: sessionId, message_count: 1 });
       }
-    });
+    }
 
     // Calculate remaining messages for anonymous users
-    let remainingMessages = 0;
+    let remainingMessages = MAX_ANONYMOUS_MESSAGES;
     if (isAnonymous && sessionId) {
       const { data: session } = await supabase
         .from('anonymous_sessions')
         .select('message_count')
         .eq('session_id', sessionId)
         .single();
-      remainingMessages = Math.max(0, MAX_ANONYMOUS_MESSAGES - (session?.message_count || 0) - 1);
+      remainingMessages = Math.max(0, MAX_ANONYMOUS_MESSAGES - (session?.message_count || 0));
     }
 
-    // Return stream with model info in headers
     return new Response(stream, {
       headers: {
         ...corsHeaders,
@@ -506,6 +798,7 @@ Key behaviors:
         'Cache-Control': 'no-cache',
         'Connection': 'keep-alive',
         'X-Model-Used': selectedModel,
+        'X-Provider': provider,
         'X-Mode': mode,
         'X-Anonymous': isAnonymous ? 'true' : 'false',
         'X-Remaining-Messages': remainingMessages.toString(),

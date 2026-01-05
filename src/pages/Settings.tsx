@@ -8,74 +8,44 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Globe, Shield, Palette, Save, Zap, Loader2, AlertCircle } from 'lucide-react';
+import { Globe, Shield, Palette, Save, Zap, Loader2, AlertCircle, Bot, Sparkles, Flame, Eye, EyeOff, Check } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { Badge } from '@/components/ui/badge';
+import { Checkbox } from '@/components/ui/checkbox';
+import { useModelSettings } from '@/hooks/useModelSettings';
 
-interface AvailableModel {
-  id: string;
-  name: string;
-  description: string;
-  tier: string;
-  available: boolean;
-}
-
-interface ModelsResponse {
-  chatModels: AvailableModel[];
-  imageModels: AvailableModel[];
-  hasOpenAI: boolean;
-}
-
-const AI_GATEWAY_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-gateway`;
+// Provider icons and colors
+const providerConfig: Record<string, { icon: typeof Bot; color: string; label: string }> = {
+  openai: { icon: Bot, color: 'text-green-500', label: 'OpenAI' },
+  google: { icon: Sparkles, color: 'text-blue-500', label: 'Google' },
+  anthropic: { icon: Flame, color: 'text-orange-500', label: 'Anthropic' },
+};
 
 export default function Settings() {
   const { t, i18n } = useTranslation();
   const { user } = useAuth();
   const isRTL = i18n.dir() === 'rtl';
 
-  // Local state for settings
+  // Model settings from hook
+  const {
+    settings: modelSettings,
+    availableModels,
+    isLoading: isLoadingModels,
+    isSaving,
+    saveSettings,
+    toggleModelEnabled,
+    toggleModelVisible,
+  } = useModelSettings();
+
+  // Local state for other settings
   const [theme, setTheme] = useState('system');
   const [language, setLanguage] = useState(i18n.language);
-
-  // New settings
   const [dialect, setDialect] = useState('msa');
   const [numerals, setNumerals] = useState('western');
   const [rtlOverride, setRtlOverride] = useState(false);
-  const [defaultModel, setDefaultModel] = useState('google/gemini-2.5-flash');
   const [memoryEnabled, setMemoryEnabled] = useState(true);
-
-  // Dynamic models from backend
-  const [availableModels, setAvailableModels] = useState<AvailableModel[]>([]);
-  const [isLoadingModels, setIsLoadingModels] = useState(true);
-  const [hasOpenAI, setHasOpenAI] = useState(false);
-
-  // Fetch available models from backend
-  useEffect(() => {
-    const fetchModels = async () => {
-      setIsLoadingModels(true);
-      try {
-        const response = await fetch(`${AI_GATEWAY_URL}?action=models`);
-        if (response.ok) {
-          const data: ModelsResponse = await response.json();
-          // Only show available chat models
-          setAvailableModels(data.chatModels.filter(m => m.available));
-          setHasOpenAI(data.hasOpenAI);
-        }
-      } catch (error) {
-        console.error('Failed to fetch models:', error);
-        // Fallback to default models
-        setAvailableModels([
-          { id: 'google/gemini-2.5-flash', name: 'Gemini Flash', description: 'Fast responses', tier: 'free', available: true },
-          { id: 'google/gemini-2.5-pro', name: 'Gemini Pro', description: 'Best reasoning', tier: 'premium', available: true },
-        ]);
-      } finally {
-        setIsLoadingModels(false);
-      }
-    };
-    fetchModels();
-  }, []);
 
   useEffect(() => {
     // Load persisted settings
@@ -88,13 +58,6 @@ export default function Settings() {
     const storedRtl = localStorage.getItem('app_rtl_override');
     if (storedRtl) setRtlOverride(storedRtl === 'true');
 
-    const storedModel = localStorage.getItem('app_default_model');
-    if (storedModel) {
-      setDefaultModel(storedModel);
-    } else if (user?.user_metadata?.default_model) {
-      setDefaultModel(user.user_metadata.default_model);
-    }
-
     const storedMemory = localStorage.getItem('app_memory_enabled');
     if (storedMemory) setMemoryEnabled(storedMemory === 'true');
   }, [user]);
@@ -103,23 +66,13 @@ export default function Settings() {
     localStorage.setItem('app_dialect', dialect);
     localStorage.setItem('app_numerals', numerals);
     localStorage.setItem('app_rtl_override', rtlOverride.toString());
-    localStorage.setItem('app_default_model', defaultModel);
     localStorage.setItem('app_memory_enabled', memoryEnabled.toString());
 
-    // Persist to user metadata
-    const { error } = await supabase.auth.updateUser({
-      data: { default_model: defaultModel }
-    });
-
-    if (error) {
-      console.error('Failed to update user metadata:', error);
-    }
-
-    // Apply immediate effects where possible
+    // Apply immediate effects
     if (rtlOverride && language === 'en') {
-        document.dir = 'rtl';
+      document.dir = 'rtl';
     } else if (!rtlOverride && language === 'en') {
-        document.dir = 'ltr';
+      document.dir = 'ltr';
     }
 
     toast.success(t('settings.saved'));
@@ -130,7 +83,7 @@ export default function Settings() {
     i18n.changeLanguage(lang);
     localStorage.setItem('i18nextLng', lang);
     if (!rtlOverride) {
-        document.dir = i18n.dir(lang);
+      document.dir = i18n.dir(lang);
     }
   };
 
@@ -147,6 +100,19 @@ export default function Settings() {
     }
   };
 
+  const getProviderIcon = (provider: string) => {
+    const config = providerConfig[provider];
+    if (!config) return null;
+    const Icon = config.icon;
+    return <Icon className={`h-4 w-4 ${config.color}`} />;
+  };
+
+  // Group models by capability
+  const chatModels = availableModels?.chatModels || [];
+  const imageModels = availableModels?.imageModels || [];
+  const researchModels = availableModels?.researchModels || [];
+  const providers = availableModels?.providers || { openai: false, google: false, anthropic: false };
+
   return (
     <MainLayout>
       <div className="container max-w-4xl py-6 space-y-8 animate-in fade-in duration-500" dir={i18n.dir()}>
@@ -157,20 +123,260 @@ export default function Settings() {
               {t('settings.subtitle')}
             </p>
           </div>
-          <Button onClick={handleSave} className="gap-2">
-            <Save className="h-4 w-4" />
+          <Button onClick={handleSave} className="gap-2" disabled={isSaving}>
+            {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
             {t('common.save')}
           </Button>
         </div>
 
-        <Tabs defaultValue="language" className="w-full">
+        <Tabs defaultValue="models" className="w-full">
           <TabsList className={`grid w-full grid-cols-4 lg:w-[600px] ${isRTL ? 'lg:ms-auto' : ''}`}>
+            <TabsTrigger value="models">{t('settings.models')}</TabsTrigger>
             <TabsTrigger value="language">{t('settings.languageRegion')}</TabsTrigger>
             <TabsTrigger value="appearance">{t('settings.appearance')}</TabsTrigger>
-            <TabsTrigger value="models">{t('settings.models')}</TabsTrigger>
             <TabsTrigger value="privacy">{t('settings.privacy')}</TabsTrigger>
           </TabsList>
 
+          {/* Models Tab - New comprehensive model management */}
+          <TabsContent value="models" className="space-y-6 mt-6">
+            {/* Provider Status */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Zap className="h-5 w-5 text-primary" />
+                  {t('settings.providerStatus') || 'AI Providers'}
+                </CardTitle>
+                <CardDescription>
+                  {t('settings.providerStatusDesc') || 'Connected AI providers and their status'}
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="flex flex-wrap gap-4">
+                  {Object.entries(providers).map(([provider, isConfigured]) => {
+                    const config = providerConfig[provider];
+                    if (!config) return null;
+                    return (
+                      <div key={provider} className={`flex items-center gap-2 px-3 py-2 rounded-lg border ${isConfigured ? 'bg-green-500/10 border-green-500/30' : 'bg-muted/50 border-muted'}`}>
+                        {getProviderIcon(provider)}
+                        <span className="font-medium">{config.label}</span>
+                        {isConfigured ? (
+                          <Check className="h-4 w-4 text-green-500" />
+                        ) : (
+                          <AlertCircle className="h-4 w-4 text-muted-foreground" />
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Default Models by Function */}
+            <Card>
+              <CardHeader>
+                <CardTitle>{t('settings.defaultModels') || 'Default Models'}</CardTitle>
+                <CardDescription>
+                  {t('settings.defaultModelsDesc') || 'Choose the default model for each function'}
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {isLoadingModels ? (
+                  <div className="flex items-center gap-2 text-muted-foreground">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <span>Loading models...</span>
+                  </div>
+                ) : (
+                  <div className="grid gap-4">
+                    {/* Chat Default */}
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <Label>💬 {t('settings.dailyChat') || 'Daily Chat'}</Label>
+                        <p className="text-sm text-muted-foreground">General conversations</p>
+                      </div>
+                      <Select 
+                        value={modelSettings.default_chat_model} 
+                        onValueChange={(v) => saveSettings({ default_chat_model: v })}
+                      >
+                        <SelectTrigger className="w-[220px]">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {chatModels.filter(m => m.available).map((model) => (
+                            <SelectItem key={model.id} value={model.id}>
+                              <div className="flex items-center gap-2">
+                                {getProviderIcon(model.provider)}
+                                <span>{model.name}</span>
+                              </div>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <Separator />
+
+                    {/* Deep Think Default */}
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <Label>🧠 {t('settings.deepAnalysis') || 'Deep Analysis'}</Label>
+                        <p className="text-sm text-muted-foreground">Complex reasoning tasks</p>
+                      </div>
+                      <Select 
+                        value={modelSettings.default_deep_think_model} 
+                        onValueChange={(v) => saveSettings({ default_deep_think_model: v })}
+                      >
+                        <SelectTrigger className="w-[220px]">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {chatModels.filter(m => m.available && m.capabilities?.includes('deep_think')).map((model) => (
+                            <SelectItem key={model.id} value={model.id}>
+                              <div className="flex items-center gap-2">
+                                {getProviderIcon(model.provider)}
+                                <span>{model.name}</span>
+                              </div>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <Separator />
+
+                    {/* Research Default */}
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <Label>🔍 {t('settings.research') || 'Research'}</Label>
+                        <p className="text-sm text-muted-foreground">In-depth research with citations</p>
+                      </div>
+                      <Select 
+                        value={modelSettings.default_research_model} 
+                        onValueChange={(v) => saveSettings({ default_research_model: v })}
+                      >
+                        <SelectTrigger className="w-[220px]">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {[...chatModels, ...researchModels].filter(m => m.available && m.capabilities?.includes('deep_research')).map((model) => (
+                            <SelectItem key={model.id} value={model.id}>
+                              <div className="flex items-center gap-2">
+                                {getProviderIcon(model.provider)}
+                                <span>{model.name}</span>
+                              </div>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <Separator />
+
+                    {/* Image Default */}
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <Label>🖼️ {t('settings.images') || 'Images'}</Label>
+                        <p className="text-sm text-muted-foreground">Image generation</p>
+                      </div>
+                      <Select 
+                        value={modelSettings.default_image_model} 
+                        onValueChange={(v) => saveSettings({ default_image_model: v })}
+                      >
+                        <SelectTrigger className="w-[220px]">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {imageModels.filter(m => m.available).map((model) => (
+                            <SelectItem key={model.id} value={model.id}>
+                              <div className="flex items-center gap-2">
+                                {getProviderIcon(model.provider)}
+                                <span>{model.name}</span>
+                              </div>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Visible Models in Chat */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Eye className="h-5 w-5 text-primary" />
+                  {t('settings.visibleInChat') || 'Visible in Chat'}
+                </CardTitle>
+                <CardDescription>
+                  {t('settings.visibleInChatDesc') || 'Choose which models appear in the chat model picker (max 5)'}
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {isLoadingModels ? (
+                  <div className="flex items-center gap-2 text-muted-foreground">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <span>Loading...</span>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    <p className="text-sm text-muted-foreground">
+                      {modelSettings.visible_chat_models.length}/5 models selected
+                    </p>
+                    
+                    {/* Group by provider */}
+                    {['openai', 'google', 'anthropic'].map(provider => {
+                      const providerModels = chatModels.filter(m => m.provider === provider);
+                      if (providerModels.length === 0) return null;
+                      const config = providerConfig[provider];
+                      
+                      return (
+                        <div key={provider} className="space-y-2">
+                          <div className="flex items-center gap-2 text-sm font-medium">
+                            {getProviderIcon(provider)}
+                            {config?.label}
+                            {!providers[provider as keyof typeof providers] && (
+                              <Badge variant="outline" className="text-xs">Not configured</Badge>
+                            )}
+                          </div>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 ps-6">
+                            {providerModels.map((model) => {
+                              const isVisible = modelSettings.visible_chat_models.includes(model.id);
+                              const isEnabled = modelSettings.enabled_models.includes(model.id);
+                              const isDisabled = !model.available || (!isVisible && modelSettings.visible_chat_models.length >= 5);
+                              
+                              return (
+                                <div
+                                  key={model.id}
+                                  className={`flex items-center gap-2 p-2 rounded-lg border cursor-pointer transition-colors ${
+                                    isVisible ? 'bg-primary/10 border-primary/30' : 'hover:bg-muted/50'
+                                  } ${isDisabled && !isVisible ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                  onClick={() => !isDisabled && toggleModelVisible(model.id)}
+                                >
+                                  <Checkbox 
+                                    checked={isVisible} 
+                                    disabled={isDisabled && !isVisible}
+                                    className="pointer-events-none"
+                                  />
+                                  <div className="flex-1 min-w-0">
+                                    <span className="text-sm font-medium truncate">{model.name}</span>
+                                    <p className="text-xs text-muted-foreground truncate">{model.description}</p>
+                                  </div>
+                                  {getTierBadge(model.tier)}
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Language Tab */}
           <TabsContent value="language" className="space-y-6 mt-6">
             <Card>
               <CardHeader>
@@ -216,16 +422,16 @@ export default function Settings() {
                 <Separator />
 
                 <div className="grid gap-2">
-                   <Label htmlFor="numerals">{t('settings.numerals')}</Label>
-                   <Select value={numerals} onValueChange={setNumerals}>
-                     <SelectTrigger id="numerals" className="w-[250px]">
-                       <SelectValue />
-                     </SelectTrigger>
-                     <SelectContent>
-                       <SelectItem value="western">123 (Western)</SelectItem>
-                       <SelectItem value="eastern">١٢٣ (Eastern/Arabic-Indic)</SelectItem>
-                     </SelectContent>
-                   </Select>
+                  <Label htmlFor="numerals">{t('settings.numerals')}</Label>
+                  <Select value={numerals} onValueChange={setNumerals}>
+                    <SelectTrigger id="numerals" className="w-[250px]">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="western">123 (Western)</SelectItem>
+                      <SelectItem value="eastern">١٢٣ (Eastern/Arabic-Indic)</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
 
                 <Separator />
@@ -246,6 +452,7 @@ export default function Settings() {
             </Card>
           </TabsContent>
 
+          {/* Appearance Tab */}
           <TabsContent value="appearance" className="space-y-6 mt-6">
             <Card>
               <CardHeader>
@@ -272,82 +479,9 @@ export default function Settings() {
             </Card>
           </TabsContent>
 
-          <TabsContent value="models" className="space-y-6 mt-6">
-             <Card>
-               <CardHeader>
-                 <div className={`flex items-center gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
-                   <Zap className="h-5 w-5 text-primary" />
-                   <CardTitle>{t('settings.defaultModel')}</CardTitle>
-                 </div>
-                 <CardDescription className={isRTL ? 'text-right' : ''}>
-                   {t('settings.defaultModelDesc')}
-                 </CardDescription>
-               </CardHeader>
-               <CardContent className="space-y-4">
-                 {isLoadingModels ? (
-                   <div className="flex items-center gap-2 text-muted-foreground">
-                     <Loader2 className="h-4 w-4 animate-spin" />
-                     <span>Loading available models...</span>
-                   </div>
-                 ) : availableModels.length === 0 ? (
-                   <div className="flex items-center gap-2 text-destructive">
-                     <AlertCircle className="h-4 w-4" />
-                     <span>No models available. Check API configuration.</span>
-                   </div>
-                 ) : (
-                   <>
-                     <div className="grid gap-2">
-                       <Label>{t('settings.model')}</Label>
-                       <Select value={defaultModel} onValueChange={setDefaultModel}>
-                         <SelectTrigger className="w-[350px]">
-                           <SelectValue />
-                         </SelectTrigger>
-                         <SelectContent>
-                           {availableModels.map((model) => (
-                             <SelectItem key={model.id} value={model.id}>
-                               <div className="flex items-center gap-2">
-                                 <span>{model.name}</span>
-                                 {getTierBadge(model.tier)}
-                               </div>
-                             </SelectItem>
-                           ))}
-                         </SelectContent>
-                       </Select>
-                       <p className="text-sm text-muted-foreground mt-2">
-                         {availableModels.find(m => m.id === defaultModel)?.description || t('settings.modelTradeoff')}
-                       </p>
-                     </div>
-
-                     {!hasOpenAI && (
-                       <div className="mt-4 p-3 rounded-lg bg-muted/50 border border-muted">
-                         <p className="text-sm text-muted-foreground">
-                           <strong>Note:</strong> OpenAI models (GPT-5) are not available. Add your OPENAI_API_KEY to enable them.
-                         </p>
-                       </div>
-                     )}
-
-                     <Separator className="my-4" />
-                     
-                     <div className={`space-y-2 ${isRTL ? 'text-right' : ''}`}>
-                       <Label className="text-muted-foreground">{t('settings.modeOverride') || 'Chat Mode Override'}</Label>
-                       <p className="text-sm text-muted-foreground">
-                         {t('settings.modeOverrideDesc') || 'When you select a chat mode (Fast/Standard/Deep/Pro), it will use the optimal model for that mode, overriding your default selection.'}
-                       </p>
-                       <ul className="text-sm text-muted-foreground list-disc ps-4 mt-2 space-y-1">
-                         <li><strong>Fast:</strong> Gemini Flash Lite</li>
-                         <li><strong>Standard:</strong> Gemini Flash</li>
-                         <li><strong>Deep:</strong> Gemini Pro</li>
-                         <li><strong>Pro:</strong> GPT-5 (or Gemini Pro if OpenAI unavailable)</li>
-                       </ul>
-                     </div>
-                   </>
-                 )}
-               </CardContent>
-             </Card>
-          </TabsContent>
-
+          {/* Privacy Tab */}
           <TabsContent value="privacy" className="space-y-6 mt-6">
-             <Card>
+            <Card>
               <CardHeader>
                 <div className={`flex items-center gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
                   <Shield className="h-5 w-5 text-primary" />
@@ -355,34 +489,33 @@ export default function Settings() {
                 </div>
               </CardHeader>
               <CardContent className="space-y-6">
-                 <div className={`flex items-center justify-between ${isRTL ? 'flex-row-reverse' : ''}`}>
-                    <div className={`space-y-0.5 ${isRTL ? 'text-right' : ''}`}>
-                      <Label>{t('settings.enableMemory')}</Label>
-                      <p className="text-sm text-muted-foreground">
-                        {t('settings.enableMemoryDesc')}
-                      </p>
-                    </div>
-                    <Switch
-                      checked={memoryEnabled}
-                      onCheckedChange={setMemoryEnabled}
-                    />
-                 </div>
-                 <Separator />
-                 <div className="space-y-2">
-                    <Label>{t('settings.dataControls')}</Label>
-                    <div className={`flex gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
-                       <Button variant="outline" className="text-destructive border-destructive hover:bg-destructive/10">
-                         {t('settings.clearHistory')}
-                       </Button>
-                       <Button variant="outline">
-                         {t('settings.exportData')}
-                       </Button>
-                    </div>
-                 </div>
+                <div className={`flex items-center justify-between ${isRTL ? 'flex-row-reverse' : ''}`}>
+                  <div className={`space-y-0.5 ${isRTL ? 'text-right' : ''}`}>
+                    <Label>{t('settings.enableMemory')}</Label>
+                    <p className="text-sm text-muted-foreground">
+                      {t('settings.enableMemoryDesc')}
+                    </p>
+                  </div>
+                  <Switch
+                    checked={memoryEnabled}
+                    onCheckedChange={setMemoryEnabled}
+                  />
+                </div>
+                <Separator />
+                <div className="space-y-2">
+                  <Label>{t('settings.dataControls')}</Label>
+                  <div className={`flex gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
+                    <Button variant="outline" className="text-destructive border-destructive hover:bg-destructive/10">
+                      {t('settings.clearHistory')}
+                    </Button>
+                    <Button variant="outline">
+                      {t('settings.exportData')}
+                    </Button>
+                  </div>
+                </div>
               </CardContent>
-             </Card>
+            </Card>
           </TabsContent>
-
         </Tabs>
       </div>
     </MainLayout>

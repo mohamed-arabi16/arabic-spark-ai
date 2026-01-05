@@ -147,7 +147,17 @@
     "exportData": "Export Data",
     "saved": "Settings saved",
     "modeOverride": "Chat Mode Override",
-    "modeOverrideDesc": "When you select a chat mode (Fast/Standard/Deep/Pro), it will use the optimal model for that mode, overriding your default selection."
+    "modeOverrideDesc": "When you select a chat mode (Fast/Standard/Deep/Pro), it will use the optimal model for that mode, overriding your default selection.",
+    "providerStatus": "AI Providers",
+    "providerStatusDesc": "Connected AI providers and their status",
+    "defaultModels": "Default Models",
+    "defaultModelsDesc": "Choose the default model for each function",
+    "dailyChat": "Daily Chat",
+    "deepAnalysis": "Deep Analysis",
+    "research": "Research",
+    "images": "Images",
+    "visibleInChat": "Visible in Chat",
+    "visibleInChatDesc": "Choose which models appear in the chat model picker (max 5)"
   },
   "validation": {
     "invalidEmail": "Please enter a valid email address",
@@ -212,7 +222,16 @@
     },
     "tip": "Tip: Use <0>Shift</0> + <0>Enter</0> for new lines",
     "inputFooter": "Estimated cost: ~$0.00 · Press Enter to send",
-    "trialLimitReached": "Trial limit reached! Sign up to continue chatting."
+    "trialLimitReached": "Trial limit reached! Sign up to continue chatting.",
+    "selectModel": "Select Model",
+    "listening": "Listening..."
+  },
+  "voice": {
+    "permissionDenied": "Microphone permission denied. Please allow access in your browser settings.",
+    "noMicrophone": "No microphone found. Please connect a microphone and try again.",
+    "connectionError": "Voice transcription connection failed",
+    "micError": "Could not access microphone",
+    "recordingTimeout": "Recording stopped after 60 seconds"
   },
   "projects": {
     "title": "Projects",

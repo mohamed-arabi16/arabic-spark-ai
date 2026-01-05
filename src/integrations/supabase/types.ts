@@ -86,6 +86,7 @@ export type Database = {
       conversations: {
         Row: {
           created_at: string
+          current_model: string | null
           id: string
           is_archived: boolean | null
           mode: Database["public"]["Enums"]["chat_mode"] | null
@@ -98,6 +99,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          current_model?: string | null
           id?: string
           is_archived?: boolean | null
           mode?: Database["public"]["Enums"]["chat_mode"] | null
@@ -110,6 +112,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          current_model?: string | null
           id?: string
           is_archived?: boolean | null
           mode?: Database["public"]["Enums"]["chat_mode"] | null
@@ -455,6 +458,48 @@ export type Database = {
           total_cost?: number | null
           total_tokens?: number | null
           user_id?: string
+        }
+        Relationships: []
+      }
+      user_model_settings: {
+        Row: {
+          created_at: string | null
+          default_chat_model: string | null
+          default_deep_think_model: string | null
+          default_image_model: string | null
+          default_research_model: string | null
+          default_video_model: string | null
+          enabled_models: string[] | null
+          id: string
+          updated_at: string | null
+          user_id: string
+          visible_chat_models: string[] | null
+        }
+        Insert: {
+          created_at?: string | null
+          default_chat_model?: string | null
+          default_deep_think_model?: string | null
+          default_image_model?: string | null
+          default_research_model?: string | null
+          default_video_model?: string | null
+          enabled_models?: string[] | null
+          id?: string
+          updated_at?: string | null
+          user_id: string
+          visible_chat_models?: string[] | null
+        }
+        Update: {
+          created_at?: string | null
+          default_chat_model?: string | null
+          default_deep_think_model?: string | null
+          default_image_model?: string | null
+          default_research_model?: string | null
+          default_video_model?: string | null
+          enabled_models?: string[] | null
+          id?: string
+          updated_at?: string | null
+          user_id?: string
+          visible_chat_models?: string[] | null
         }
         Relationships: []
       }
