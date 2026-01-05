@@ -24,12 +24,12 @@ export function Header() {
   };
 
   return (
-    <header className="h-14 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 px-6 flex items-center gap-2 sticky top-0 z-10">
+    <header className="h-16 glass-subtle border-b border-border/30 px-6 flex items-center gap-2 sticky top-0 z-10">
       <Link
         to="/"
         className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
       >
-        <Home className="h-4 w-4" />
+        <Home className="h-4 w-4" strokeWidth={1.5} />
       </Link>
 
       {pathSegments.map((segment, index) => {
@@ -39,12 +39,12 @@ export function Header() {
 
         return (
           <div key={path} className="flex items-center gap-2">
-            <ChevronRight className="h-4 w-4 text-muted-foreground rtl:rotate-180" />
+            <ChevronRight className="h-4 w-4 text-muted-foreground/50 rtl:rotate-180" strokeWidth={1.5} />
             <Link
               to={path}
               className={cn(
-                "text-sm font-medium transition-colors hover:text-foreground",
-                isLast ? "text-foreground cursor-default pointer-events-none" : "text-muted-foreground"
+                "text-sm transition-colors hover:text-foreground",
+                isLast ? "text-foreground font-medium cursor-default pointer-events-none" : "text-muted-foreground"
               )}
             >
               {name}
