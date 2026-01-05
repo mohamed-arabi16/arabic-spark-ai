@@ -70,18 +70,29 @@ export function AppSidebar({ collapsed, onToggle }: AppSidebarProps) {
   const fetchRecentConversations = useCallback(async () => {
     if (!user) return;
     
-    const { data, error } = await supabase
+    // Filter by current project, or show conversations without a project (General)
+    let query = supabase
       .from('conversations')
-      .select('id, title, updated_at')
+      .select('id, title, updated_at, project_id')
       .eq('user_id', user.id)
       .eq('is_archived', false)
       .order('updated_at', { ascending: false })
       .limit(5);
 
+    // If a project is selected, show only that project's conversations
+    // Otherwise show conversations with no project (General workspace)
+    if (currentProject) {
+      query = query.eq('project_id', currentProject.id);
+    } else {
+      query = query.is('project_id', null);
+    }
+
+    const { data, error } = await query;
+
     if (!error && data) {
       setRecentConversations(data);
     }
-  }, [user]);
+  }, [user, currentProject]);
 
   useEffect(() => {
     fetchRecentConversations();

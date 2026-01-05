@@ -254,7 +254,8 @@
     "thumbsDown": "Poor response",
     "correctDialect": "Correct Dialect",
     "feedbackPositive": "Thanks for your feedback!",
-    "feedbackNegative": "We'll try to improve"
+    "feedbackNegative": "We'll try to improve",
+    "attachmentComingSoon": "File attachments coming soon"
   },
   "voice": {
     "permissionDenied": "Microphone permission denied. Please allow access in your browser settings.",
@@ -277,6 +278,7 @@
     "createFirstProject": "Get started by creating a new project.",
     "noRecent": "No recent projects",
     "recentDescription": "Projects you create or edit will appear here.",
+    "generalDesc": "Default workspace for quick chats",
     "selectToViewSettings": "Please select a project to view its settings.",
     "dialog": {
       "createTitle": "New Project",

@@ -439,6 +439,7 @@ export type Database = {
           icon: string | null
           id: string
           is_archived: boolean | null
+          is_default: boolean | null
           name: string
           numeral_mode: string | null
           system_instructions: string | null
@@ -456,6 +457,7 @@ export type Database = {
           icon?: string | null
           id?: string
           is_archived?: boolean | null
+          is_default?: boolean | null
           name: string
           numeral_mode?: string | null
           system_instructions?: string | null
@@ -473,6 +475,7 @@ export type Database = {
           icon?: string | null
           id?: string
           is_archived?: boolean | null
+          is_default?: boolean | null
           name?: string
           numeral_mode?: string | null
           system_instructions?: string | null

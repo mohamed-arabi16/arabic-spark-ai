@@ -122,11 +122,13 @@ export function ChatInput({
 
         {/* Input area — Glass card */}
         <div className="relative flex items-end gap-2 p-3 glass rounded-2xl transition-all duration-200 focus-within:border-primary/30">
-          {/* Attachment button */}
+          {/* Attachment button — disabled with tooltip */}
           <Button
             variant="ghost"
             size="icon"
-            className="h-9 w-9 shrink-0 text-muted-foreground hover:text-foreground hidden md:flex"
+            className="h-9 w-9 shrink-0 text-muted-foreground/50 cursor-not-allowed hidden md:flex"
+            disabled
+            title={t('chat.attachmentComingSoon') || 'File attachments coming soon'}
           >
             <Paperclip className="h-4 w-4" strokeWidth={1.5} />
           </Button>
