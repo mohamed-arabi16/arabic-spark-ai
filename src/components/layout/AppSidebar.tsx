@@ -262,7 +262,8 @@ export function AppSidebar({ collapsed, onToggle }: AppSidebarProps) {
                       'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors',
                       isActive
                         ? 'bg-sidebar-accent text-sidebar-accent-foreground'
-                        : 'text-sidebar-foreground hover:bg-sidebar-accent/50'
+                        : 'text-sidebar-foreground hover:bg-sidebar-accent/50',
+                      i18n.dir() === 'rtl' && 'flex-row-reverse text-right'
                     )}
                   >
                     <item.icon className="h-5 w-5 shrink-0" />
@@ -286,7 +287,8 @@ export function AppSidebar({ collapsed, onToggle }: AppSidebarProps) {
                       'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors',
                       isActive
                         ? 'bg-sidebar-accent text-sidebar-accent-foreground'
-                        : 'text-sidebar-foreground hover:bg-sidebar-accent/50'
+                        : 'text-sidebar-foreground hover:bg-sidebar-accent/50',
+                      !collapsed && i18n.dir() === 'rtl' && 'flex-row-reverse text-right'
                     )}
                   >
                     <item.icon className="h-5 w-5 shrink-0" />
@@ -314,7 +316,8 @@ export function AppSidebar({ collapsed, onToggle }: AppSidebarProps) {
                     'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors',
                     isActive
                       ? 'bg-sidebar-accent text-sidebar-accent-foreground'
-                      : 'text-sidebar-foreground hover:bg-sidebar-accent/50'
+                      : 'text-sidebar-foreground hover:bg-sidebar-accent/50',
+                    !collapsed && i18n.dir() === 'rtl' && 'flex-row-reverse text-right'
                   )}
                 >
                   <item.icon className="h-5 w-5 shrink-0" />
@@ -336,7 +339,10 @@ export function AppSidebar({ collapsed, onToggle }: AppSidebarProps) {
                 <button
                   key={conv.id}
                   onClick={() => navigate(`/chat?conversationId=${conv.id}`)}
-                  className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-sidebar-foreground hover:bg-sidebar-accent transition-colors text-start truncate"
+                  className={cn(
+                    "w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-sidebar-foreground hover:bg-sidebar-accent transition-colors truncate",
+                    i18n.dir() === 'rtl' && 'flex-row-reverse text-right'
+                  )}
                 >
                   <MessageSquare className="h-4 w-4 shrink-0 opacity-50" />
                   <span className="truncate">{conv.title || t('chat.untitled')}</span>

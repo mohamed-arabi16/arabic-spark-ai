@@ -21,6 +21,12 @@ interface ExtractedFact {
   reason: string;
 }
 
+interface ExistingMemory {
+  content: string;
+  key: string | null;
+  category: string | null;
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
@@ -58,6 +64,24 @@ serve(async (req) => {
       throw new Error('Invalid token')
     }
 
+    // Fetch existing memories to prevent duplicates
+    const { data: existingMemories } = await supabase
+      .from('memory_objects')
+      .select('content, key, category')
+      .eq('user_id', user.id)
+      .in('status', ['approved', 'proposed'])
+      .eq('is_active', true);
+
+    console.log(`Found ${existingMemories?.length || 0} existing memories for deduplication`);
+
+    // Build existing memories context for the AI
+    const existingContext = existingMemories && existingMemories.length > 0 
+      ? `\n\nEXISTING MEMORIES (DO NOT extract facts that duplicate or are semantically similar to these):
+${existingMemories.map((m: ExistingMemory) => `- [${m.category || 'general'}] ${m.key || 'info'}: ${m.content}`).join('\n')}
+
+IMPORTANT: If you find a fact that is essentially the same as an existing memory (even if worded differently), DO NOT include it in your output.`
+      : '';
+
     // Build extraction prompt
     const conversationText = messages
       .map((m: Message) => `${m.role.toUpperCase()}: ${m.content}`)
@@ -77,13 +101,14 @@ DO NOT extract:
 - Temporary information
 - Sensitive personal data (passwords, addresses, phone numbers)
 - Information that seems confidential
+- Facts that are too generic or obvious${existingContext}
 
 For each fact, assess your confidence (0.0 to 1.0) based on how explicitly the user stated it.
 
 CONVERSATION:
 ${conversationText}
 
-Respond with a JSON array of extracted facts. If no facts are found, return an empty array.
+Respond with a JSON array of extracted facts. If no NEW facts are found (that don't duplicate existing memories), return an empty array.
 Each fact should have:
 - type: "preference" | "fact" | "instruction" | "constraint" | "identity"
 - key: A short label (2-4 words)
@@ -154,6 +179,32 @@ Example response:
 
     // Filter out low confidence extractions
     extractedFacts = extractedFacts.filter(f => f.confidence >= 0.6);
+
+    // Additional deduplication check - compare with existing memories
+    if (existingMemories && existingMemories.length > 0) {
+      const existingContents = existingMemories.map((m: ExistingMemory) => m.content.toLowerCase());
+      const existingKeys = existingMemories.map((m: ExistingMemory) => (m.key || '').toLowerCase());
+      
+      extractedFacts = extractedFacts.filter(fact => {
+        const factValueLower = fact.value.toLowerCase();
+        const factKeyLower = fact.key.toLowerCase();
+        
+        // Check if this fact is too similar to existing ones
+        const isDuplicate = existingContents.some(existing => {
+          // Simple similarity check - if significant overlap
+          const words1 = new Set(existing.split(/\s+/).filter(w => w.length > 3));
+          const words2 = new Set(factValueLower.split(/\s+/).filter(w => w.length > 3));
+          const intersection = [...words1].filter(w => words2.has(w));
+          const similarity = intersection.length / Math.max(words1.size, words2.size);
+          return similarity > 0.5; // 50% word overlap = duplicate
+        }) || existingKeys.some(key => key && factKeyLower.includes(key));
+        
+        if (isDuplicate) {
+          console.log(`Filtered duplicate memory: "${fact.key}"`);
+        }
+        return !isDuplicate;
+      });
+    }
 
     // Save extracted facts to database as "proposed" status
     const savedFacts = [];
