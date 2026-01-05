@@ -191,12 +191,20 @@
     "untitled": "Untitled"
   },
   "history": {
+    "title": "History",
     "description": "View and manage your past conversations.",
+    "conversations": "Conversations",
+    "memoryTimeline": "Memory Timeline",
+    "searchPlaceholder": "Search conversations...",
+    "allTypes": "All Types",
     "noConversations": "No conversations found. Start a new chat!",
+    "emptyDescription": "Your chat history will appear here once you start a conversation.",
+    "noPreview": "No preview available",
     "today": "Today",
     "yesterday": "Yesterday",
     "thisWeek": "This Week",
-    "older": "Older"
+    "older": "Older",
+    "startChat": "Start Chat"
   },
   "dashboard": {
     "newProject": "New Project",
@@ -234,7 +242,17 @@
     "inputFooter": "Estimated cost: ~$0.00 · Press Enter to send",
     "trialLimitReached": "Trial limit reached! Sign up to continue chatting.",
     "selectModel": "Select Model",
-    "listening": "Listening..."
+    "listening": "Listening...",
+    "untitled": "Untitled Conversation",
+    "copy": "Copy",
+    "copied": "Copied",
+    "saveAsMemory": "Save as Memory",
+    "savedAsMemory": "Message saved as memory suggestion",
+    "rephrase": "Rephrase",
+    "regenerate": "Regenerate",
+    "thumbsUp": "Good response",
+    "thumbsDown": "Poor response",
+    "correctDialect": "Correct Dialect"
   },
   "voice": {
     "permissionDenied": "Microphone permission denied. Please allow access in your browser settings.",

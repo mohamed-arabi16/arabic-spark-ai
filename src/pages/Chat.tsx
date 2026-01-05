@@ -533,6 +533,11 @@ export default function Chat() {
                     message.role === 'assistant'
                   }
                   onCorrectDialect={handleCorrectDialect}
+                  onSaveAsMemory={message.role === 'assistant' ? async (content) => {
+                    // Create a proposed memory from the message content
+                    await addMemory(content, 'fact', false, 'proposed');
+                    fetchMemories();
+                  } : undefined}
                 />
               ))}
               {isLoading && !messages[messages.length-1]?.role.includes('assistant') && (
