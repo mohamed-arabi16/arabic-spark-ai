@@ -252,7 +252,9 @@
     "regenerate": "إعادة التوليد",
     "thumbsUp": "استجابة جيدة",
     "thumbsDown": "استجابة سيئة",
-    "correctDialect": "تصحيح اللهجة"
+    "correctDialect": "تصحيح اللهجة",
+    "feedbackPositive": "شكراً على ملاحظاتك!",
+    "feedbackNegative": "سنحاول التحسين"
   },
   "voice": {
     "permissionDenied": "تم رفض إذن الميكروفون. يرجى السماح بالوصول في إعدادات المتصفح.",
@@ -380,6 +382,47 @@
   "privacy": {
     "sensitiveDataBlocked": "تم اكتشاف بيانات حساسة ولم يتم حفظها",
     "dataExported": "تم تصدير بياناتك"
+  },
+  "arabic": {
+    "dialectSettings": "إعدادات اللغة العربية",
+    "formality": "درجة الرسمية",
+    "formal": "رسمي",
+    "casual": "عادي",
+    "codeSwitch": "خلط اللغات",
+    "arabicOnly": "عربي فقط",
+    "mixedAllowed": "مسموح بالخلط",
+    "numeralMode": "شكل الأرقام",
+    "westernNumerals": "أرقام غربية (0-9)",
+    "arabicNumerals": "أرقام عربية (٠-٩)"
+  },
+  "metrics": {
+    "memoryTitle": "استخدام الذاكرة",
+    "memoryDesc": "كيفية التعامل مع اقتراحات الذاكرة",
+    "feedbackTitle": "جودة الاستجابة",
+    "feedbackDesc": "ردود الفعل على استجابات الذكاء الاصطناعي",
+    "approvalRate": "نسبة الموافقة",
+    "positiveRate": "ردود الفعل الإيجابية",
+    "approved": "موافق عليها",
+    "pending": "معلقة",
+    "rejected": "مرفوضة",
+    "positive": "إيجابي",
+    "negative": "سلبي",
+    "noData": "لا توجد بيانات بعد",
+    "noFeedback": "لم تقدم أي ملاحظات بعد"
+  },
+  "shortcuts": {
+    "title": "اختصارات لوحة المفاتيح",
+    "description": "إجراءات سريعة للمستخدمين المتقدمين",
+    "send": "إرسال الرسالة",
+    "newLine": "سطر جديد",
+    "toggleHelp": "إظهار/إخفاء المساعدة",
+    "closeDialog": "إغلاق النافذة",
+    "commandPalette": "لوحة الأوامر (قريباً)"
+  },
+  "accessibility": {
+    "loading": "جارٍ التحميل...",
+    "copyMessage": "نسخ الرسالة",
+    "sendMessage": "إرسال الرسالة"
   },
   "usage": {
     "title": "لوحة تحكم الاستخدام",

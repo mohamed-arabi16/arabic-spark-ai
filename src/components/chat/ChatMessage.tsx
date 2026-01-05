@@ -9,6 +9,8 @@ import { useTranslation } from 'react-i18next';
 import { formatLocalizedNumber } from '@/lib/formatters';
 import { LTR } from '@/lib/bidi';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { useMetrics } from '@/hooks/useMetrics';
+import { useState, memo } from 'react';
 
 export interface Message {
   id: string;
@@ -27,8 +29,10 @@ interface ChatMessageProps {
   onSaveAsMemory?: (content: string) => void;
 }
 
-export function ChatMessage({ message, isStreaming, onCorrectDialect, onSaveAsMemory }: ChatMessageProps) {
+function ChatMessageComponent({ message, isStreaming, onCorrectDialect, onSaveAsMemory }: ChatMessageProps) {
   const { t, i18n } = useTranslation();
+  const { submitFeedback } = useMetrics();
+  const [feedbackGiven, setFeedbackGiven] = useState<'positive' | 'negative' | null>(null);
   const isUser = message.role === 'user';
 
   const copyToClipboard = () => {
@@ -41,6 +45,16 @@ export function ChatMessage({ message, isStreaming, onCorrectDialect, onSaveAsMe
       onSaveAsMemory(message.content);
     }
     toast.success(t('chat.savedAsMemory'));
+  };
+
+  const handleFeedback = async (type: 'positive' | 'negative') => {
+    if (feedbackGiven) return; // Already gave feedback
+    
+    const success = await submitFeedback(message.id, type);
+    if (success) {
+      setFeedbackGiven(type);
+      toast.success(t(type === 'positive' ? 'chat.feedbackPositive' : 'chat.feedbackNegative'));
+    }
   };
 
   return (
@@ -173,7 +187,17 @@ export function ChatMessage({ message, isStreaming, onCorrectDialect, onSaveAsMe
 
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-7 w-7 hover:bg-accent">
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className={cn(
+                    "h-7 w-7 hover:bg-accent",
+                    feedbackGiven === 'positive' && "text-green-500 bg-green-500/10"
+                  )}
+                  onClick={() => handleFeedback('positive')}
+                  disabled={feedbackGiven !== null}
+                  aria-label={t('chat.thumbsUp')}
+                >
                   <ThumbsUp className="h-3.5 w-3.5" />
                 </Button>
               </TooltipTrigger>
@@ -182,7 +206,17 @@ export function ChatMessage({ message, isStreaming, onCorrectDialect, onSaveAsMe
 
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-7 w-7 hover:bg-accent">
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className={cn(
+                    "h-7 w-7 hover:bg-accent",
+                    feedbackGiven === 'negative' && "text-red-500 bg-red-500/10"
+                  )}
+                  onClick={() => handleFeedback('negative')}
+                  disabled={feedbackGiven !== null}
+                  aria-label={t('chat.thumbsDown')}
+                >
                   <ThumbsDown className="h-3.5 w-3.5" />
                 </Button>
               </TooltipTrigger>
@@ -200,3 +234,6 @@ export function ChatMessage({ message, isStreaming, onCorrectDialect, onSaveAsMe
     </div>
   );
 }
+
+// Memoize for performance
+export const ChatMessage = memo(ChatMessageComponent);
