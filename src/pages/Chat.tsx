@@ -19,7 +19,7 @@ import { useTranslation } from 'react-i18next';
 import { LoadingIndicator } from '@/components/ui/LoadingIndicator';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useAuth';
-import { MemoryCaptureToast } from '@/components/memory/MemoryCaptureToast';
+import { showMemorySuggestion } from '@/components/memory/MemorySuggestion';
 import { fetchWithRetry } from '@/lib/api-utils';
 import { useModelSettings } from '@/hooks/useModelSettings';
 
@@ -71,23 +71,24 @@ export default function Chat() {
   const [dialect, setDialect] = useState('msa');
   const [isError, setIsError] = useState(false);
   const [currentModel, setCurrentModel] = useState<string | undefined>(undefined);
-  const [latestProposedMemory, setLatestProposedMemory] = useState<string | null>(null);
   
   // Model settings from user preferences
   const { settings: modelSettings, getVisibleChatModels, availableModels } = useModelSettings();
   const visibleModels = getVisibleChatModels();
+
+  // Show memory suggestions as minimal toasts when new proposed memories arrive
   useEffect(() => {
     if (proposedMemories.length > 0) {
-      // Find the most recent proposed memory
-      // Since fetchMemories sorts by created_at desc, it should be the first one
       const newest = proposedMemories[0];
-      // Only show if we haven't dismissed it (tracked via state or simple logic)
-      // For now, simple logic: show the newest one if it exists
-      if (newest && newest.content !== latestProposedMemory) {
-        setLatestProposedMemory(newest.content);
+      if (newest) {
+        showMemorySuggestion(
+          { id: newest.id, content: newest.content, category: newest.category || 'general' },
+          () => approveMemory(newest.id),
+          newest.id
+        );
       }
     }
-  }, [proposedMemories, latestProposedMemory]);
+  }, [proposedMemories, approveMemory]);
 
   useEffect(() => {
     // Initialize dialect from project or localStorage
@@ -551,30 +552,6 @@ export default function Chat() {
           </div>
         )}
 
-        {latestProposedMemory && (
-          <MemoryCaptureToast
-            content={latestProposedMemory}
-            onApprove={async (content) => {
-              const mem = proposedMemories.find(m => m.content === content);
-              if (mem) await approveMemory(mem.id);
-              setLatestProposedMemory(null);
-            }}
-            onEdit={async (content) => {
-              const mem = proposedMemories.find(m => m.content === latestProposedMemory);
-              if (mem) {
-                await updateMemory(mem.id, { content, status: 'approved' });
-              }
-              setLatestProposedMemory(null);
-            }}
-            onDismiss={() => {
-              const mem = proposedMemories.find(m => m.content === latestProposedMemory);
-              // Just hide the toast, don't reject yet? Or maybe reject?
-              // The card says "Dismiss", so maybe we just close it.
-              setLatestProposedMemory(null);
-            }}
-            onClose={() => setLatestProposedMemory(null)}
-          />
-        )}
 
         {/* Input area */}
         <ChatInput
