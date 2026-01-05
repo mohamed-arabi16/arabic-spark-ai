@@ -1,5 +1,5 @@
-import { useState, ReactNode } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useEffect, ReactNode } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { AppSidebar } from './AppSidebar';
 import { Header } from './Header';
 import { MobileNav } from '@/components/mobile/MobileNav';
@@ -13,10 +13,22 @@ interface MainLayoutProps {
   hideMobileNav?: boolean;
 }
 
+const SIDEBAR_COLLAPSED_KEY = 'sidebar_collapsed';
+
 export function MainLayout({ children, title, hideMobileNav }: MainLayoutProps) {
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  // Default to collapsed on first visit
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
+    const stored = localStorage.getItem(SIDEBAR_COLLAPSED_KEY);
+    return stored === null ? true : stored === 'true';
+  });
   const isMobile = useMediaQuery('(max-width: 768px)');
   const navigate = useNavigate();
+  const location = useLocation();
+
+  // Persist sidebar state
+  useEffect(() => {
+    localStorage.setItem(SIDEBAR_COLLAPSED_KEY, String(sidebarCollapsed));
+  }, [sidebarCollapsed]);
 
   const handleNewChat = () => {
     navigate('/chat');

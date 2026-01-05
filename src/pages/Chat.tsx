@@ -3,7 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { ChatInput } from '@/components/chat/ChatInput';
 import { ChatMessage, Message } from '@/components/chat/ChatMessage';
-import { EmptyState } from '@/components/chat/EmptyState';
+import { ChatHome } from '@/components/chat/ChatHome';
 import { ChatMode } from '@/components/chat/ModeSelector';
 import { SessionBudgetWarning } from '@/components/chat/SessionBudgetWarning';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -33,7 +33,7 @@ export default function Chat() {
   const conversationIdParam = searchParams.get('conversationId');
   const projectIdParam = searchParams.get('project');
   
-  const { projects, currentProject } = useProjects();
+  const { projects, currentProject, generalProject, ensureGeneralProject } = useProjects();
   const projectId = projectIdParam || currentProject?.id;
   const project = projects.find(p => p.id === projectId);
   
@@ -564,21 +564,35 @@ export default function Chat() {
 
         {/* Messages area */}
         <ScrollArea ref={scrollRef} className="flex-1">
-          {messages.length === 0 ? (
-            <EmptyState onSuggestionClick={handleSuggestionClick} />
+          {messages.length === 0 && !conversationIdParam ? (
+            <ChatHome 
+              message={message}
+              setMessage={setMessage}
+              onSend={() => {
+                if (message.trim()) {
+                  handleSend(message.trim(), mode, dialect);
+                  setMessage('');
+                }
+              }}
+              isLoading={isLoading}
+            />
+          ) : messages.length === 0 ? (
+            <div className="flex-1 flex items-center justify-center p-8">
+              <p className="text-muted-foreground">{t('chat.startNewConversation')}</p>
+            </div>
           ) : (
             <div className="max-w-4xl mx-auto pb-4 pt-8">
-              {messages.map((message, index) => (
+              {messages.map((msg, index) => (
                 <ChatMessage
-                  key={message.id}
-                  message={message}
+                  key={msg.id}
+                  message={msg}
                   isStreaming={
                     isLoading &&
                     index === messages.length - 1 &&
-                    message.role === 'assistant'
+                    msg.role === 'assistant'
                   }
                   onCorrectDialect={handleCorrectDialect}
-                  onSaveAsMemory={message.role === 'assistant' ? async (content) => {
+                  onSaveAsMemory={msg.role === 'assistant' ? async (content) => {
                     // Create a proposed memory from the message content
                     await addMemory(content, 'fact', false, 'proposed');
                     fetchMemories();

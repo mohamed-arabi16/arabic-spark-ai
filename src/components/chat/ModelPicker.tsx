@@ -103,7 +103,7 @@ export function ModelPicker({
   };
 
   return (
-    <div className={cn("flex items-center gap-2", isRTL && "flex-row-reverse", className)}>
+    <div className={cn("flex items-center gap-3 flex-wrap", isRTL && "flex-row-reverse", className)}>
       <ModelHelpPanel open={isHelpOpen} onOpenChange={setIsHelpOpen} />
 
       <div className={cn("flex items-center", isRTL && "flex-row-reverse")}>

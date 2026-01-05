@@ -25,7 +25,7 @@ export default function Auth() {
 
   useEffect(() => {
     if (user && !loading) {
-      navigate('/');
+      navigate('/chat');
     }
   }, [user, loading, navigate]);
 
@@ -112,9 +112,9 @@ export default function Auth() {
         <LanguageSwitcher />
       </div>
 
-      {/* Subtle background glow */}
+      {/* Subtle background glow — softer for glass harmony */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-1/3 start-1/2 -translate-x-1/2 w-[500px] h-[500px] bg-primary/5 rounded-full blur-3xl" />
+        <div className="absolute top-1/4 start-1/2 -translate-x-1/2 w-[600px] h-[400px] bg-primary/3 rounded-full blur-[100px]" />
       </div>
 
       {/* Logo */}
@@ -128,8 +128,8 @@ export default function Auth() {
         <p className="text-muted-foreground text-sm">{t('auth.welcomeDescription')}</p>
       </div>
 
-      {/* Auth card — Glass */}
-      <div className="relative z-10 w-full max-w-sm glass-card p-8 space-y-6">
+      {/* Auth card — Softer glass for better blending */}
+      <div className="relative z-10 w-full max-w-sm p-8 space-y-6 rounded-2xl border border-border/20 bg-card/40 backdrop-blur-xl shadow-xl">
         <div className="text-center">
           <h1 className="text-xl font-semibold mb-1">{t('auth.welcomeTitle')}</h1>
           <p className="text-sm text-muted-foreground">{t('auth.welcomeDescription')}</p>

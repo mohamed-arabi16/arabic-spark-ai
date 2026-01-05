@@ -254,7 +254,8 @@
     "thumbsDown": "استجابة سيئة",
     "correctDialect": "تصحيح اللهجة",
     "feedbackPositive": "شكراً على ملاحظاتك!",
-    "feedbackNegative": "سنحاول التحسين"
+    "feedbackNegative": "سنحاول التحسين",
+    "attachmentComingSoon": "إرفاق الملفات قادم قريباً"
   },
   "voice": {
     "permissionDenied": "تم رفض إذن الميكروفون. يرجى السماح بالوصول في إعدادات المتصفح.",
@@ -277,6 +278,7 @@
     "createFirstProject": "ابدأ بإنشاء مشروع جديد.",
     "noRecent": "لا توجد مشاريع حديثة",
     "recentDescription": "المشاريع التي تنشئها أو تعدلها ستظهر هنا.",
+    "generalDesc": "مساحة العمل الافتراضية للمحادثات السريعة",
     "selectToViewSettings": "الرجاء تحديد مشروع لعرض إعداداته.",
     "dialog": {
       "createTitle": "مشروع جديد",

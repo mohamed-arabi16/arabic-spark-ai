@@ -8,10 +8,14 @@ export type Project = Tables<'projects'>;
 export type ProjectInsert = TablesInsert<'projects'>;
 export type ProjectUpdate = TablesUpdate<'projects'>;
 
+// General project is auto-created for users who start chatting without selecting a project
+const GENERAL_PROJECT_NAME = 'General';
+
 export function useProjects() {
   const { t } = useTranslation();
   const [projects, setProjects] = useState<Project[]>([]);
   const [currentProject, setCurrentProject] = useState<Project | null>(null);
+  const [generalProject, setGeneralProject] = useState<Project | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
   const fetchProjects = useCallback(async () => {
@@ -27,10 +31,15 @@ export function useProjects() {
 
       setProjects(data || []);
 
+      // Find the General project (is_default = true)
+      const general = (data || []).find((p: any) => p.is_default === true);
+      if (general) {
+        setGeneralProject(general);
+      }
+
       // Select the first project if none is selected
       if (!currentProject && data && data.length > 0) {
-        // You might want to persist the selection in local storage or DB preference
-        setCurrentProject(data[0]);
+        // Don't auto-select, let user choose or use General
       }
     } catch (error) {
       console.error('Error fetching projects:', error);
@@ -38,7 +47,50 @@ export function useProjects() {
     } finally {
       setIsLoading(false);
     }
-  }, [currentProject]);
+  }, [currentProject, t]);
+
+  // Ensure a General project exists for the user
+  const ensureGeneralProject = useCallback(async (): Promise<Project | null> => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return null;
+
+      // Check if General project already exists
+      const { data: existing } = await supabase
+        .from('projects')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('is_default', true)
+        .single();
+
+      if (existing) {
+        setGeneralProject(existing);
+        return existing;
+      }
+
+      // Create General project
+      const { data: newProject, error } = await supabase
+        .from('projects')
+        .insert({
+          user_id: user.id,
+          name: GENERAL_PROJECT_NAME,
+          description: t('projects.generalDesc') || 'Default workspace for quick chats',
+          icon: '💬',
+          is_default: true,
+        } as any)
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      setGeneralProject(newProject);
+      setProjects(prev => [newProject, ...prev]);
+      return newProject;
+    } catch (error) {
+      console.error('Error ensuring General project:', error);
+      return null;
+    }
+  }, [t]);
 
   const createProject = async (project: Omit<ProjectInsert, 'user_id'>) => {
     try {
@@ -120,11 +172,13 @@ export function useProjects() {
   return {
     projects,
     currentProject,
+    generalProject,
     isLoading,
     fetchProjects,
     createProject,
     updateProject,
     deleteProject,
     selectProject,
+    ensureGeneralProject,
   };
 }
