@@ -54,11 +54,12 @@ const modes = [
 ];
 
 const dialects = [
-  { id: 'msa', label: 'MSA (Fusha)', labelAr: 'الفصحى', sample: 'كيف حالك؟' },
-  { id: 'egyptian', label: 'Egyptian', labelAr: 'مصري', sample: 'ازيك؟' },
-  { id: 'levantine', label: 'Levantine', labelAr: 'شامي', sample: 'كيفك؟' },
-  { id: 'gulf', label: 'Gulf', labelAr: 'خليجي', sample: 'شلونك؟' },
-  { id: 'maghrebi', label: 'Maghrebi', labelAr: 'مغاربي', sample: 'لاباس؟' },
+  { id: 'auto', label: 'Auto', labelAr: 'تلقائي', sample: '(موصى به)', description: 'Detect from conversation' },
+  { id: 'msa', label: 'MSA (Fusha)', labelAr: 'الفصحى', sample: 'كيف حالك؟', description: 'Modern Standard Arabic' },
+  { id: 'egyptian', label: 'Egyptian', labelAr: 'مصري', sample: 'ازيك؟', description: 'Egyptian dialect' },
+  { id: 'levantine', label: 'Levantine', labelAr: 'شامي', sample: 'كيفك؟', description: 'Syrian/Lebanese' },
+  { id: 'gulf', label: 'Gulf', labelAr: 'خليجي', sample: 'شلونك؟', description: 'UAE/Saudi/Qatar' },
+  { id: 'maghrebi', label: 'Maghrebi', labelAr: 'مغاربي', sample: 'لاباس؟', description: 'Moroccan/Algerian' },
 ];
 
 export function ModelPicker({ 

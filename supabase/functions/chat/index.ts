@@ -27,54 +27,88 @@ const COST_PER_1M: Record<string, { input: number; output: number } | { per_imag
   'gpt-image-1': { per_image: 0.04 },
 };
 
-// Extended dialect instructions with formality and code-switch options
+// Dialect detection markers for auto mode
+const DIALECT_MARKERS: Record<string, RegExp> = {
+  egyptian: /إيه|عايز|كده|ازيك|ازاي|ليه|مش|ده|دي|بتاع|طب|اوي|كمان/g,
+  gulf: /شلونك|وش|هالحين|أبي|ابي|يالله|زين|حده|اشوفك|ابغى|كذا|وايد/g,
+  levantine: /هلق|هلأ|شو|بدي|كيفك|هيك|منيح|بعدين|ليش|هاد|كتير/g,
+  maghrebi: /واش|راك|بغيت|لاباس|كيداير|زوين|بزاف|ماشي|كيفاش/g,
+};
+
+// Detect dialect from text with confidence
+function detectDialectFromText(text: string): { dialect: string; confidence: string; markers: string[] } {
+  const foundMarkers: Record<string, string[]> = {};
+  
+  for (const [dialect, pattern] of Object.entries(DIALECT_MARKERS)) {
+    const matches = text.match(pattern);
+    if (matches) {
+      foundMarkers[dialect] = [...new Set(matches)];
+    }
+  }
+  
+  let topDialect = 'msa';
+  let maxMarkers = 0;
+  let markers: string[] = [];
+  
+  for (const [dialect, found] of Object.entries(foundMarkers)) {
+    if (found.length > maxMarkers) {
+      maxMarkers = found.length;
+      topDialect = dialect;
+      markers = found;
+    }
+  }
+  
+  let confidence = 'none';
+  if (maxMarkers >= 3) confidence = 'high';
+  else if (maxMarkers === 2) confidence = 'medium';
+  else if (maxMarkers === 1) confidence = 'low';
+  
+  return { dialect: topDialect, confidence, markers };
+}
+
+// Build dialect instructions with structured rules (no example expressions)
 function buildDialectInstructions(dialect: string, options: { formality?: string; codeSwitch?: string; numeralMode?: string } = {}): string {
-  const baseInstructions: Record<string, string> = {
-    msa: `When responding in Arabic, use Modern Standard Arabic (الفصحى). Be formal and use proper classical Arabic grammar. Avoid colloquialisms.
-Examples:
-- "How are you?": "كيف حالك؟"
-- "I want this": "أريد هذا"
-- "What happened?": "ماذا حدث؟"`,
-    egyptian: `When responding in Arabic, use Egyptian Arabic dialect (مصري). Use common Egyptian expressions like "إيه، كده، ازيك، عايز". Be conversational and warm.
-Examples:
-- "How are you?": "ازيك؟ عامل ايه؟"
-- "I want this": "أنا عايز ده"
-- "What happened?": "ايه اللي حصل؟"`,
-    gulf: `When responding in Arabic, use Gulf Arabic dialect (خليجي). Use expressions common in UAE, Saudi, Qatar like "شلونك، وش، هالحين، أبي". Be friendly and direct.
-Examples:
-- "How are you?": "شلونك؟ عساك طيب"
-- "I want this": "أبي هذا"
-- "What happened?": "وش صار؟"`,
-    levantine: `When responding in Arabic, use Levantine Arabic dialect (شامي). Use Syrian/Lebanese/Palestinian expressions like "كيفك، هلق، شو، بدي". Be warm and expressive.
-Examples:
-- "How are you?": "كيفك؟"
-- "I want this": "بدي هاد"
-- "What happened?": "شو صار؟"`,
-    maghrebi: `When responding in Arabic, use Maghrebi Arabic dialect (مغاربي). Use Moroccan/Algerian/Tunisian expressions. Be direct and practical.
-Examples:
-- "How are you?": "واش راك؟ لاباس؟"
-- "I want this": "بغيت هذا"`,
+  const dialectRules: Record<string, string> = {
+    msa: `VARIETY: Modern Standard Arabic (الفصحى)
+GRAMMAR: Classical Arabic grammar, case endings optional
+VOCABULARY: Formal register, avoid colloquialisms`,
+    
+    egyptian: `VARIETY: Egyptian Arabic
+GRAMMAR: Egyptian verb conjugations, negation with مش
+VOCABULARY: Egyptian vocabulary`,
+    
+    gulf: `VARIETY: Gulf Arabic (UAE/Saudi/Qatar)
+GRAMMAR: Gulf verb forms
+VOCABULARY: Gulf vocabulary`,
+    
+    levantine: `VARIETY: Levantine Arabic (Syrian/Lebanese/Palestinian)
+GRAMMAR: Levantine conjugations
+VOCABULARY: Levantine vocabulary`,
+    
+    maghrebi: `VARIETY: Maghrebi Arabic (Moroccan/Algerian/Tunisian)
+GRAMMAR: Maghrebi verb forms
+VOCABULARY: Maghrebi vocabulary`,
   };
 
-  let instructions = baseInstructions[dialect] || baseInstructions.msa;
+  let instructions = dialectRules[dialect] || dialectRules.msa;
 
-  // Add formality
-  if (options.formality === 'formal') {
-    instructions += `\nTONE: Formal and respectful. Use complete sentences and proper grammar.`;
-  } else {
-    instructions += `\nTONE: Casual and friendly. Use natural conversational style.`;
-  }
+  // Formality rule
+  instructions += `\nTONE: ${
+    options.formality === 'formal' 
+      ? 'Formal, respectful. Complete sentences, proper grammar.' 
+      : 'Casual, conversational. Natural flow, friendly.'
+  }`;
 
-  // Add code-switch preference
-  if (options.codeSwitch === 'arabic_only') {
-    instructions += `\nCODE-SWITCH: Respond in Arabic only. Avoid English unless technical terms absolutely require it.`;
-  } else {
-    instructions += `\nCODE-SWITCH: Mixed language allowed. Use technical terms in English when natural.`;
-  }
+  // Code-switch rule
+  instructions += `\nCODE-SWITCHING: ${
+    options.codeSwitch === 'arabic_only' 
+      ? 'Arabic only. Translate technical terms if possible.' 
+      : 'Natural code-switching allowed for technical terms.'
+  }`;
 
-  // Add numeral mode
+  // Numeral rule
   if (options.numeralMode === 'arabic') {
-    instructions += `\nNUMERALS: Use Eastern Arabic numerals (٠١٢٣٤٥٦٧٨٩) for all numbers.`;
+    instructions += `\nNUMERALS: Use Eastern Arabic numerals (٠١٢٣٤٥٦٧٨٩)`;
   }
 
   return instructions;
@@ -191,7 +225,37 @@ serve(async (req) => {
       maxCompletionTokens = 16384;
     }
 
-    console.log(`Chat request - Mode: ${mode}, Model: ${selectedModel}, Dialect: ${dialect}, Options: ${JSON.stringify(projectDialectOptions)}, Messages: ${messages.length}`);
+    // Handle "auto" dialect detection
+    let effectiveDialect = dialect;
+    let dialectDetectionResult = { dialect: 'msa', confidence: 'none', markers: [] as string[] };
+    
+    if (dialect === 'auto') {
+      // Combine all user messages for detection
+      const userText = messages.filter(m => m.role === 'user').map(m => m.content).join(' ');
+      dialectDetectionResult = detectDialectFromText(userText);
+      
+      // Only apply detected dialect if confidence is high
+      if (dialectDetectionResult.confidence === 'high') {
+        effectiveDialect = dialectDetectionResult.dialect;
+        console.log(`Auto dialect detection: ${dialectDetectionResult.dialect} (confidence: ${dialectDetectionResult.confidence}, markers: ${dialectDetectionResult.markers.join(', ')})`);
+      } else {
+        effectiveDialect = 'msa'; // Fall back to MSA
+        console.log(`Auto dialect: low confidence, falling back to MSA`);
+      }
+    }
+    
+    // Build processing metadata for logging
+    const processingMetadata = {
+      processing_version: 'v1',
+      dialect_requested: dialect,
+      dialect_used: effectiveDialect,
+      dialect_confidence: dialectDetectionResult.confidence,
+      formality: projectDialectOptions.formality || 'casual',
+      code_switch: projectDialectOptions.codeSwitch || 'mixed',
+      numeral_mode: projectDialectOptions.numeralMode || 'western',
+    };
+
+    console.log(`Chat request - Mode: ${mode}, Model: ${selectedModel}, Dialect: ${effectiveDialect}, Processing: ${JSON.stringify(processingMetadata)}, Messages: ${messages.length}`);
 
     // Fetch memory context if not provided (3-tier retrieval)
     let enrichedMemoryContext = memory_context || '';
@@ -278,7 +342,7 @@ Key behaviors:
 - Admit uncertainty when you don't know something`;
 
     // Add dialect-specific instructions using enhanced function
-    const dialectInstruction = buildDialectInstructions(dialect, projectDialectOptions);
+    const dialectInstruction = buildDialectInstructions(effectiveDialect, projectDialectOptions);
     systemContent += `\n\nLANGUAGE STYLE:\n${dialectInstruction}`;
 
     // Append project specific instructions if present
@@ -394,7 +458,7 @@ Key behaviors:
               
               console.log(`Usage - Input: ${inputTokens}, Output: ${outputTokens}, Cost: $${totalCost.toFixed(6)}`);
 
-              // Record individual usage event
+              // Record individual usage event with processing metadata
               try {
                 await supabase.from('usage_events').insert({
                   user_id: user.id,
@@ -408,8 +472,9 @@ Key behaviors:
                   meta: {
                     conversation_id,
                     mode,
-                    dialect,
-                    reasoning_effort: reasoningEffort
+                    reasoning_effort: reasoningEffort,
+                    // Processing metadata for QA and analytics
+                    ...processingMetadata
                   }
                 });
                 console.log('Usage event recorded');
