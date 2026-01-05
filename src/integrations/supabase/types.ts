@@ -180,6 +180,39 @@ export type Database = {
           },
         ]
       }
+      memory_audit_log: {
+        Row: {
+          action: string
+          created_at: string | null
+          id: string
+          memory_id: string | null
+          metadata: Json | null
+          new_content: string | null
+          old_content: string | null
+          user_id: string
+        }
+        Insert: {
+          action: string
+          created_at?: string | null
+          id?: string
+          memory_id?: string | null
+          metadata?: Json | null
+          new_content?: string | null
+          old_content?: string | null
+          user_id: string
+        }
+        Update: {
+          action?: string
+          created_at?: string | null
+          id?: string
+          memory_id?: string | null
+          metadata?: Json | null
+          new_content?: string | null
+          old_content?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       memory_objects: {
         Row: {
           category: string | null
@@ -190,6 +223,7 @@ export type Database = {
           is_active: boolean | null
           is_global: boolean | null
           key: string | null
+          last_used_at: string | null
           project_id: string | null
           source_conversation_id: string | null
           source_message_ids: string[] | null
@@ -207,6 +241,7 @@ export type Database = {
           is_active?: boolean | null
           is_global?: boolean | null
           key?: string | null
+          last_used_at?: string | null
           project_id?: string | null
           source_conversation_id?: string | null
           source_message_ids?: string[] | null
@@ -224,6 +259,7 @@ export type Database = {
           is_active?: boolean | null
           is_global?: boolean | null
           key?: string | null
+          last_used_at?: string | null
           project_id?: string | null
           source_conversation_id?: string | null
           source_message_ids?: string[] | null

@@ -143,6 +143,81 @@ serve(async (req) => {
 
     console.log(`Chat request - Mode: ${mode}, Model: ${selectedModel}, Reasoning: ${reasoningEffort}, Dialect: ${dialect}, Messages: ${messages.length}`);
 
+    // Fetch memory context if not provided (3-tier retrieval)
+    let enrichedMemoryContext = memory_context || '';
+    
+    if (!memory_context) {
+      try {
+        const memoryParts: string[] = [];
+
+        // 1. Fetch conversation summary (if exists)
+        if (conversation_id) {
+          const { data: summary } = await supabase
+            .from('conversation_summaries')
+            .select('summary')
+            .eq('conversation_id', conversation_id)
+            .order('updated_at', { ascending: false })
+            .limit(1)
+            .maybeSingle();
+
+          if (summary?.summary) {
+            memoryParts.push(`CONVERSATION CONTEXT:\n${summary.summary.slice(0, 300)}`);
+          }
+        }
+
+        // 2. Fetch approved project memories (max 5)
+        if (project_id) {
+          const { data: projectMems } = await supabase
+            .from('memory_objects')
+            .select('id, content, category')
+            .eq('project_id', project_id)
+            .eq('status', 'approved')
+            .eq('is_active', true)
+            .order('confidence', { ascending: false })
+            .limit(5);
+
+          if (projectMems?.length) {
+            memoryParts.push(`PROJECT CONTEXT:\n${projectMems.map(m => `- ${m.content}`).join('\n')}`);
+            
+            // Update last_used_at for these memories
+            const memoryIds = projectMems.map(m => m.id);
+            await supabase
+              .from('memory_objects')
+              .update({ last_used_at: new Date().toISOString() })
+              .in('id', memoryIds);
+          }
+        }
+
+        // 3. Fetch approved global memories (max 3)
+        const { data: globalMems } = await supabase
+          .from('memory_objects')
+          .select('id, content, category')
+          .eq('user_id', user.id)
+          .eq('is_global', true)
+          .eq('status', 'approved')
+          .eq('is_active', true)
+          .order('confidence', { ascending: false })
+          .limit(3);
+
+        if (globalMems?.length) {
+          memoryParts.push(`USER CONTEXT:\n${globalMems.map(m => `- ${m.content}`).join('\n')}`);
+          
+          // Update last_used_at for these memories
+          const memoryIds = globalMems.map(m => m.id);
+          await supabase
+            .from('memory_objects')
+            .update({ last_used_at: new Date().toISOString() })
+            .in('id', memoryIds);
+        }
+
+        enrichedMemoryContext = memoryParts.join('\n\n');
+        console.log(`Memory retrieval - Parts: ${memoryParts.length}, Total length: ${enrichedMemoryContext.length}`);
+      } catch (memError) {
+        console.warn('Memory retrieval failed, proceeding without memory:', memError);
+        // Graceful degradation - continue without memory
+      }
+    }
+
     // Build base system prompt
     let systemContent = `You are a helpful, intelligent AI assistant. You provide clear, accurate, and thoughtful responses.
 
@@ -162,8 +237,8 @@ Key behaviors:
     }
 
     // Append memory context if present
-    if (memory_context) {
-      systemContent += `\n\nRELEVANT MEMORIES (User Facts & Preferences):\n${memory_context}\n\nUse these memories to personalize your response, but do not explicitly mention that you are reading from a memory bank unless relevant.`;
+    if (enrichedMemoryContext) {
+      systemContent += `\n\nRELEVANT MEMORIES (User Facts & Preferences):\n${enrichedMemoryContext}\n\nUse these memories to personalize your response, but do not explicitly mention that you are reading from a memory bank unless relevant.`;
     }
 
     const systemMessage: Message = {

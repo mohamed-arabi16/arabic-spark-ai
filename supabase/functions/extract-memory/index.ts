@@ -99,9 +99,12 @@ ONLY extract:
 DO NOT extract:
 - One-time queries or questions
 - Temporary information
-- Sensitive personal data (passwords, addresses, phone numbers)
-- Information that seems confidential
-- Facts that are too generic or obvious${existingContext}
+- SENSITIVE PERSONAL DATA: passwords, API keys, credit card numbers, social security numbers
+- Phone numbers, email addresses (unless explicitly for contact preference)
+- Physical addresses or precise locations
+- Medical or health information
+- Financial account details
+- Information that seems confidential or private${existingContext}
 
 For each fact, assess your confidence (0.0 to 1.0) based on how explicitly the user stated it.
 
@@ -179,6 +182,38 @@ Example response:
 
     // Filter out low confidence extractions
     extractedFacts = extractedFacts.filter(f => f.confidence >= 0.6);
+
+    // Sensitive data patterns - filter out any facts containing these
+    const sensitivePatterns = [
+      /\b\d{4}[\s-]?\d{4}[\s-]?\d{4}[\s-]?\d{4}\b/, // Credit card
+      /\b\d{3}[-.]?\d{3}[-.]?\d{4}\b/, // US phone
+      /\+?\d{10,15}/, // International phone
+      /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b/i, // Email
+      /password\s*[:=]\s*\S+/i,
+      /api[_-]?key\s*[:=]\s*\S+/i,
+      /secret\s*[:=]\s*\S+/i,
+      /token\s*[:=]\s*\S+/i,
+      /\b\d{3}[-]?\d{2}[-]?\d{4}\b/, // SSN
+      /\b(?:sk|pk)[-_](?:live|test)[-_]\w+\b/i, // Stripe keys
+    ];
+
+    const containsSensitiveData = (text: string): boolean => {
+      return sensitivePatterns.some(pattern => pattern.test(text));
+    };
+
+    // Filter out facts with sensitive data
+    const beforeFilter = extractedFacts.length;
+    extractedFacts = extractedFacts.filter(fact => {
+      const hasSensitive = containsSensitiveData(fact.value) || containsSensitiveData(fact.key);
+      if (hasSensitive) {
+        console.log(`Filtered sensitive memory: "${fact.key}" - contains sensitive data`);
+      }
+      return !hasSensitive;
+    });
+
+    if (beforeFilter > extractedFacts.length) {
+      console.log(`Filtered ${beforeFilter - extractedFacts.length} facts containing sensitive data`);
+    }
 
     // Additional deduplication check - compare with existing memories
     if (existingMemories && existingMemories.length > 0) {
