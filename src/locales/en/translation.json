@@ -255,7 +255,12 @@
     "correctDialect": "Correct Dialect",
     "feedbackPositive": "Thanks for your feedback!",
     "feedbackNegative": "We'll try to improve",
-    "attachmentComingSoon": "File attachments coming soon"
+    "attachmentComingSoon": "File attachments coming soon",
+    "send": "Send",
+    "promptWriteEmail": "Help me write an email...",
+    "promptExplain": "Explain a concept simply",
+    "promptSummarize": "Summarize this text",
+    "promptBrainstorm": "Brainstorm ideas for..."
   },
   "voice": {
     "permissionDenied": "Microphone permission denied. Please allow access in your browser settings.",

@@ -255,7 +255,12 @@
     "correctDialect": "تصحيح اللهجة",
     "feedbackPositive": "شكراً على ملاحظاتك!",
     "feedbackNegative": "سنحاول التحسين",
-    "attachmentComingSoon": "إرفاق الملفات قادم قريباً"
+    "attachmentComingSoon": "إرفاق الملفات قادم قريباً",
+    "send": "إرسال",
+    "promptWriteEmail": "ساعدني أكتب إيميل...",
+    "promptExplain": "اشرحلي مفهوم ببساطة",
+    "promptSummarize": "لخّص هذا النص",
+    "promptBrainstorm": "فكّر معي بأفكار عن..."
   },
   "voice": {
     "permissionDenied": "تم رفض إذن الميكروفون. يرجى السماح بالوصول في إعدادات المتصفح.",

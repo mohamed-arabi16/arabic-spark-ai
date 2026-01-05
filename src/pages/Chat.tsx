@@ -575,6 +575,15 @@ export default function Chat() {
                 }
               }}
               isLoading={isLoading}
+              mode={mode}
+              setMode={setMode}
+              dialect={dialect}
+              setDialect={setDialect}
+              currentModel={currentModel}
+              onModelChange={setCurrentModel}
+              visibleModels={visibleModels}
+              routingMode={routingMode}
+              onRoutingModeChange={setRoutingMode}
             />
           ) : messages.length === 0 ? (
             <div className="flex-1 flex items-center justify-center p-8">
@@ -616,24 +625,25 @@ export default function Chat() {
           </div>
         )}
 
-
-        {/* Input area */}
-        <ChatInput
-          onSend={handleSend}
-          isLoading={isLoading}
-          onStop={handleStop}
-          message={message}
-          setMessage={setMessage}
-          mode={mode}
-          setMode={setMode}
-          dialect={dialect}
-          setDialect={setDialect}
-          currentModel={currentModel}
-          onModelChange={setCurrentModel}
-          visibleModels={visibleModels}
-          routingMode={routingMode}
-          onRoutingModeChange={setRoutingMode}
-        />
+        {/* Input area - Only show when in active conversation */}
+        {(messages.length > 0 || conversationIdParam) && (
+          <ChatInput
+            onSend={handleSend}
+            isLoading={isLoading}
+            onStop={handleStop}
+            message={message}
+            setMessage={setMessage}
+            mode={mode}
+            setMode={setMode}
+            dialect={dialect}
+            setDialect={setDialect}
+            currentModel={currentModel}
+            onModelChange={setCurrentModel}
+            visibleModels={visibleModels}
+            routingMode={routingMode}
+            onRoutingModeChange={setRoutingMode}
+          />
+        )}
       </div>
     </MainLayout>
   );
