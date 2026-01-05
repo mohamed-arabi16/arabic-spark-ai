@@ -1,19 +1,21 @@
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
+import { motion } from 'framer-motion';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { MemoryList } from '@/components/memory/MemoryList';
 import { useMemory } from '@/hooks/useMemory';
 import { useProjects } from '@/hooks/useProjects';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Brain, Search, Download, Loader2 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { EmptyState } from '@/components/common/EmptyState';
+import { prefersReducedMotion, fadeInUp } from '@/lib/motion';
 
 export default function Memory() {
   const { t } = useTranslation();
+  const reducedMotion = prefersReducedMotion();
   const { projects } = useProjects();
   const [selectedProject, setSelectedProject] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
@@ -75,31 +77,40 @@ export default function Memory() {
     !searchQuery || m.content.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
+  const MotionDiv = reducedMotion ? 'div' : motion.div;
+
   return (
     <MainLayout>
       <div className="flex-1 flex flex-col h-full overflow-hidden">
-        <div className="border-b bg-background/95 backdrop-blur p-6">
-          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
+        {/* Header */}
+        <div className="glass-subtle border-b border-border/50 p-6 md:p-8">
+          <MotionDiv
+            className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6"
+            {...(reducedMotion ? {} : { variants: fadeInUp, initial: "hidden", animate: "visible" })}
+          >
             <div>
-              <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2">
-                <Brain className="h-6 w-6 text-primary" />
+              <h1 className="text-2xl md:text-3xl font-bold tracking-tight flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
+                  <Brain className="h-5 w-5 text-primary" />
+                </div>
                 {t('memory.title')}
               </h1>
-              <p className="text-muted-foreground mt-1">
+              <p className="text-muted-foreground mt-2">
                 {t('memory.subtitle')}
               </p>
             </div>
 
-            <div className="flex items-center gap-2 w-full md:w-auto">
+            <div className="flex items-center gap-3 w-full md:w-auto">
               <Button
-                variant="outline"
+                variant="glass"
                 onClick={() => exportData()}
                 disabled={isExporting}
+                className="gap-2"
               >
                 {isExporting ? (
-                  <Loader2 className="h-4 w-4 me-2 animate-spin" />
+                  <Loader2 className="h-4 w-4 animate-spin" />
                 ) : (
-                  <Download className="h-4 w-4 me-2" />
+                  <Download className="h-4 w-4" />
                 )}
                 {t('memory.exportAll')}
               </Button>
@@ -115,24 +126,23 @@ export default function Memory() {
                 </SelectContent>
               </Select>
             </div>
-          </div>
+          </MotionDiv>
 
-          <div className="flex gap-4">
-            <div className="relative flex-1 max-w-md">
-              <Search className="absolute start-2 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder={t('memory.searchPlaceholder')}
-                className="ps-8"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
-            </div>
+          <div className="relative max-w-md">
+            <Search className="absolute start-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder={t('memory.searchPlaceholder')}
+              className="ps-9"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
           </div>
         </div>
 
-        <div className="flex-1 overflow-auto p-6">
+        {/* Content */}
+        <div className="flex-1 overflow-auto p-6 md:p-8">
           <Tabs defaultValue="approved" className="w-full">
-            <div className="flex items-center justify-between mb-4">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
               <TabsList>
                 <TabsTrigger value="approved">
                   {t('memory.approved')} ({filteredMemories.length})
@@ -143,14 +153,14 @@ export default function Memory() {
               </TabsList>
 
               {selectedItems.size > 0 && (
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-wrap">
                   <span className="text-sm text-muted-foreground">
                     {selectedItems.size} {t('memory.itemSelected')}
                   </span>
-                  <Button size="sm" variant="outline" onClick={handleBulkApprove}>
+                  <Button size="sm" variant="glass" onClick={handleBulkApprove}>
                     {t('memory.bulkApprove')}
                   </Button>
-                  <Button size="sm" variant="outline" onClick={handleBulkReject}>
+                  <Button size="sm" variant="glass" onClick={handleBulkReject}>
                     {t('memory.bulkReject')}
                   </Button>
                   <Button size="sm" variant="ghost" onClick={() => setSelectedItems(new Set())}>

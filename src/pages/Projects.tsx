@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
+import { motion } from 'framer-motion';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { useProjects, Project, ProjectInsert, ProjectUpdate } from '@/hooks/useProjects';
 import { ProjectCard } from '@/components/projects/ProjectCard';
@@ -12,9 +13,11 @@ import { Plus, Search, Loader2, FolderPlus } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { EmptyState } from '@/components/common/EmptyState';
+import { staggerContainer, staggerItem, prefersReducedMotion } from '@/lib/motion';
 
 export default function Projects() {
   const { t } = useTranslation();
+  const reducedMotion = prefersReducedMotion();
   const {
     projects,
     currentProject,
@@ -83,23 +86,26 @@ export default function Projects() {
     }
   };
 
+  const MotionWrapper = reducedMotion ? 'div' : motion.div;
+
   return (
     <MainLayout>
-      <div className="flex-1 p-6 space-y-6 overflow-y-auto">
-        <div className="flex items-center justify-between">
+      <div className="flex-1 p-6 md:p-8 space-y-8 overflow-y-auto">
+        {/* Page Header */}
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold tracking-tight">{t('projects.title')}</h1>
-            <p className="text-muted-foreground">
+            <h1 className="text-2xl md:text-3xl font-bold tracking-tight">{t('projects.title')}</h1>
+            <p className="text-muted-foreground mt-1">
               {t('projects.subtitle')}
             </p>
           </div>
-          <Button onClick={handleCreate}>
-            <Plus className="me-2 h-4 w-4" /> {t('projects.newProject')}
+          <Button onClick={handleCreate} className="gap-2">
+            <Plus className="h-4 w-4" /> {t('projects.newProject')}
           </Button>
         </div>
 
         <Tabs defaultValue="all" className="w-full">
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
             <TabsList>
               <TabsTrigger value="all">{t('projects.allProjects')}</TabsTrigger>
               <TabsTrigger value="recent">{t('projects.recent')}</TabsTrigger>
@@ -108,11 +114,11 @@ export default function Projects() {
               </TabsTrigger>
             </TabsList>
 
-            <div className="relative w-64">
-              <Search className="absolute start-2 top-2.5 h-4 w-4 text-muted-foreground" />
+            <div className="relative w-full sm:w-64">
+              <Search className="absolute start-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder={t('projects.searchPlaceholder')}
-                className="ps-8"
+                className="ps-9"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 aria-label="Search projects"
@@ -120,7 +126,7 @@ export default function Projects() {
             </div>
           </div>
 
-          <TabsContent value="all" className="space-y-8">
+          <TabsContent value="all" className="space-y-10">
             {isLoading && projects.length === 0 ? (
               <div className="flex items-center justify-center h-40">
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -137,72 +143,83 @@ export default function Projects() {
               <>
                 {/* Active Projects */}
                 <div>
-                    <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                        Active Projects
-                        <span className="text-xs bg-secondary text-secondary-foreground px-2 py-0.5 rounded-full">{activeProjects.length}</span>
-                    </h2>
-                    {activeProjects.length > 0 ? (
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                            {activeProjects.map((project) => (
-                            <ProjectCard
-                                key={project.id}
-                                project={project}
-                                onEdit={handleEdit}
-                                onArchive={handleArchive}
-                                onDelete={handleHardDelete}
-                                onUpdate={fetchProjects}
-                                onSelect={handleSelect}
-                                onViewMemory={handleViewMemory}
-                                isSelected={currentProject?.id === project.id}
-                            />
-                            ))}
-                        </div>
-                    ) : (
-                        <p className="text-muted-foreground text-sm">No active projects.</p>
-                    )}
+                  <h2 className="text-lg font-semibold mb-5 flex items-center gap-2">
+                    Active Projects
+                    <span className="text-xs bg-primary/10 text-primary px-2.5 py-0.5 rounded-full">
+                      {activeProjects.length}
+                    </span>
+                  </h2>
+                  {activeProjects.length > 0 ? (
+                    <MotionWrapper
+                      className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+                      {...(reducedMotion ? {} : { variants: staggerContainer, initial: "hidden", animate: "visible" })}
+                    >
+                      {activeProjects.map((project) => (
+                        <MotionWrapper
+                          key={project.id}
+                          {...(reducedMotion ? {} : { variants: staggerItem })}
+                        >
+                          <ProjectCard
+                            project={project}
+                            onEdit={handleEdit}
+                            onArchive={handleArchive}
+                            onDelete={handleHardDelete}
+                            onUpdate={fetchProjects}
+                            onSelect={handleSelect}
+                            onViewMemory={handleViewMemory}
+                            isSelected={currentProject?.id === project.id}
+                          />
+                        </MotionWrapper>
+                      ))}
+                    </MotionWrapper>
+                  ) : (
+                    <p className="text-muted-foreground text-sm">No active projects.</p>
+                  )}
                 </div>
 
                 {/* Archived Projects */}
                 {archivedProjects.length > 0 && (
-                    <div className="pt-4 border-t">
-                        <h2 className="text-lg font-semibold mb-4 flex items-center gap-2 text-muted-foreground">
-                            Archived Projects
-                            <span className="text-xs bg-secondary text-secondary-foreground px-2 py-0.5 rounded-full">{archivedProjects.length}</span>
-                        </h2>
-                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                            {archivedProjects.map((project) => (
-                            <ProjectCard
-                                key={project.id}
-                                project={project}
-                                onEdit={handleEdit}
-                                onArchive={handleArchive}
-                                onDelete={handleHardDelete}
-                                onUpdate={fetchProjects}
-                                onSelect={handleSelect}
-                                onViewMemory={handleViewMemory}
-                                isSelected={currentProject?.id === project.id}
-                            />
-                            ))}
-                        </div>
+                  <div className="pt-6 border-t border-border/50">
+                    <h2 className="text-lg font-semibold mb-5 flex items-center gap-2 text-muted-foreground">
+                      Archived Projects
+                      <span className="text-xs bg-muted text-muted-foreground px-2.5 py-0.5 rounded-full">
+                        {archivedProjects.length}
+                      </span>
+                    </h2>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                      {archivedProjects.map((project) => (
+                        <ProjectCard
+                          key={project.id}
+                          project={project}
+                          onEdit={handleEdit}
+                          onArchive={handleArchive}
+                          onDelete={handleHardDelete}
+                          onUpdate={fetchProjects}
+                          onSelect={handleSelect}
+                          onViewMemory={handleViewMemory}
+                          isSelected={currentProject?.id === project.id}
+                        />
+                      ))}
                     </div>
+                  </div>
                 )}
               </>
             )}
           </TabsContent>
 
-          <TabsContent value="recent" className="space-y-4">
+          <TabsContent value="recent" className="space-y-6">
             {isLoading && projects.length === 0 ? (
               <div className="flex items-center justify-center h-40">
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
               </div>
             ) : projects.slice(0, 5).length === 0 ? (
-               <EmptyState
+              <EmptyState
                 icon={FolderPlus}
                 title={t('projects.noRecent')}
                 description={t('projects.recentDescription')}
               />
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {projects.slice(0, 5).map((project) => (
                   <ProjectCard
                     key={project.id}
@@ -228,7 +245,7 @@ export default function Projects() {
                 onDelete={() => handleHardDelete(currentProject)}
               />
             ) : (
-              <div className="text-center py-10">
+              <div className="text-center py-10 text-muted-foreground">
                 {t('projects.selectToViewSettings')}
               </div>
             )}

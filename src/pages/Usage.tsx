@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
+import { motion } from 'framer-motion';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { useUsage } from '@/hooks/useUsage';
 import { UsageSummaryCards } from '@/components/usage/UsageSummary';
@@ -12,27 +13,32 @@ import { TopConversationsTable } from '@/components/usage/TopConversationsTable'
 import { SkeletonSummaryCards, SkeletonChart } from '@/components/ui/skeleton-list';
 import { MetricsSummary } from '@/components/usage/MetricsSummary';
 import { Separator } from '@/components/ui/separator';
+import { staggerContainer, staggerItem, prefersReducedMotion } from '@/lib/motion';
 
 export default function Usage() {
   const { t } = useTranslation();
+  const reducedMotion = prefersReducedMotion();
   const { dailyStats, summary, breakdown, projectBreakdown, topConversations, isLoading, fetchUsage } = useUsage();
 
   useEffect(() => {
     fetchUsage();
   }, [fetchUsage]);
 
+  const MotionDiv = reducedMotion ? 'div' : motion.div;
+
   return (
     <MainLayout>
-      <div className="flex-1 p-6 space-y-6 overflow-y-auto">
+      <div className="flex-1 p-6 md:p-8 space-y-8 overflow-y-auto">
+        {/* Page Header */}
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">{t('usage.title')}</h1>
-          <p className="text-muted-foreground">
+          <h1 className="text-2xl md:text-3xl font-bold tracking-tight">{t('usage.title')}</h1>
+          <p className="text-muted-foreground mt-1">
             {t('usage.subtitle')}
           </p>
         </div>
 
         {isLoading && !summary ? (
-          <div className="space-y-6">
+          <div className="space-y-8">
             <SkeletonSummaryCards count={4} />
             <div className="grid grid-cols-1 lg:grid-cols-7 gap-6">
               <SkeletonChart className="col-span-1 lg:col-span-4" />
@@ -40,36 +46,52 @@ export default function Usage() {
             </div>
           </div>
         ) : (
-          <div className="space-y-6">
-            <UsageSummaryCards summary={summary} />
+          <MotionDiv
+            className="space-y-8"
+            {...(reducedMotion ? {} : { variants: staggerContainer, initial: "hidden", animate: "visible" })}
+          >
+            {/* Summary Cards */}
+            <MotionDiv {...(reducedMotion ? {} : { variants: staggerItem })}>
+              <UsageSummaryCards summary={summary} />
+            </MotionDiv>
 
-            <div className="grid grid-cols-1 lg:grid-cols-7 gap-6">
+            {/* Charts Row */}
+            <MotionDiv 
+              className="grid grid-cols-1 lg:grid-cols-7 gap-6"
+              {...(reducedMotion ? {} : { variants: staggerItem })}
+            >
               <UsageChart data={dailyStats} />
               <UsageBreakdown data={breakdown} />
-            </div>
+            </MotionDiv>
 
-            <div className="grid grid-cols-1 lg:grid-cols-7 gap-6">
-               <ProjectUsageTable data={projectBreakdown} />
-               <div className="col-span-1 lg:col-span-3 space-y-6">
-                 <BudgetCard currentCost={summary?.total_cost || 0} />
-                 <QuotaDisplay currentCost={summary?.total_cost || 0} />
-               </div>
-            </div>
+            {/* Budget & Quota Row */}
+            <MotionDiv 
+              className="grid grid-cols-1 lg:grid-cols-7 gap-6"
+              {...(reducedMotion ? {} : { variants: staggerItem })}
+            >
+              <ProjectUsageTable data={projectBreakdown} />
+              <div className="col-span-1 lg:col-span-3 space-y-6">
+                <BudgetCard currentCost={summary?.total_cost || 0} />
+                <QuotaDisplay currentCost={summary?.total_cost || 0} />
+              </div>
+            </MotionDiv>
 
-            {/* Top conversations by cost */}
-            <TopConversationsTable 
-              conversations={topConversations} 
-              isLoading={isLoading} 
-            />
+            {/* Top Conversations */}
+            <MotionDiv {...(reducedMotion ? {} : { variants: staggerItem })}>
+              <TopConversationsTable 
+                conversations={topConversations} 
+                isLoading={isLoading} 
+              />
+            </MotionDiv>
 
-            <Separator />
+            <Separator className="bg-border/50" />
 
             {/* Memory & Feedback Metrics */}
-            <div>
-              <h2 className="text-lg font-semibold mb-4">{t('metrics.memoryTitle')}</h2>
+            <MotionDiv {...(reducedMotion ? {} : { variants: staggerItem })}>
+              <h2 className="text-lg font-semibold mb-5">{t('metrics.memoryTitle')}</h2>
               <MetricsSummary />
-            </div>
-          </div>
+            </MotionDiv>
+          </MotionDiv>
         )}
       </div>
     </MainLayout>
