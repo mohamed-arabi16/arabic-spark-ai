@@ -2,17 +2,18 @@ import { UsageStat } from '@/hooks/useUsage';
 import { useTranslation } from 'react-i18next';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts';
+import { formatLocalizedCurrency, formatLocalizedDate } from '@/lib/formatters';
 
 interface UsageChartProps {
   data: UsageStat[];
 }
 
 export function UsageChart({ data }: UsageChartProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
 
   // Transform data for display
   const chartData = data.map(d => ({
-    date: new Date(d.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }),
+    date: formatLocalizedDate(d.date, i18n.language),
     cost: d.total_cost,
     tokens: d.total_tokens,
   }));
@@ -22,7 +23,7 @@ export function UsageChart({ data }: UsageChartProps) {
       <CardHeader>
         <CardTitle>{t('usage.dailyCost')}</CardTitle>
       </CardHeader>
-      <CardContent className="pl-2">
+      <CardContent className="ps-2">
         <div className="h-[300px] w-full">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={chartData}>
@@ -37,11 +38,11 @@ export function UsageChart({ data }: UsageChartProps) {
               <YAxis
                 tickLine={false}
                 axisLine={false}
-                tickFormatter={(value) => `$${value}`}
+                tickFormatter={(value) => formatLocalizedCurrency(value, i18n.language)}
                 tick={{ fontSize: 12 }}
               />
               <Tooltip
-                 formatter={(value: number) => [`$${value.toFixed(4)}`, 'Cost']}
+                 formatter={(value: number) => [formatLocalizedCurrency(value, i18n.language), t('usage.cost')]}
                  cursor={{ fill: 'transparent' }}
               />
               <Bar dataKey="cost" fill="#8884d8" radius={[4, 4, 0, 0]} />

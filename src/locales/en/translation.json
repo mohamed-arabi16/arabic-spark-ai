@@ -155,11 +155,18 @@
     "defaultModels": "Default Models",
     "defaultModelsDesc": "Choose the default model for each function",
     "dailyChat": "Daily Chat",
+    "dailyChatDesc": "General conversations",
     "deepAnalysis": "Deep Analysis",
+    "deepAnalysisDesc": "Complex reasoning tasks",
     "research": "Research",
+    "researchDesc": "In-depth research with citations",
     "images": "Images",
+    "imagesDesc": "Image generation",
     "visibleInChat": "Visible in Chat",
-    "visibleInChatDesc": "Choose which models appear in the chat model picker (max 5)"
+    "visibleInChatDesc": "Choose which models appear in the chat model picker (max 5)",
+    "tierFree": "Free",
+    "tierStandard": "Standard",
+    "tierPremium": "Premium"
   },
   "validation": {
     "invalidEmail": "Please enter a valid email address",
@@ -198,7 +205,8 @@
     "greeting": "Good afternoon, {{name}}",
     "subgreeting": "Welcome to your AI Workspace. What would you like to do today?",
     "noProjects": "No projects yet",
-    "createFirstProject": "Create your first project to get started with organized chats."
+    "createFirstProject": "Create your first project to get started with organized chats.",
+    "noDescription": "No description provided."
   },
   "chat": {
     "you": "You",
@@ -298,14 +306,17 @@
     "statusInitializing": "Initializing...",
     "statusGenerating": "Generating image...",
     "statusRefining": "Refining details...",
-    "statusFinalizing": "Finalizing..."
+    "statusFinalizing": "Finalizing...",
+    "sizeSquare": "Square (1024×1024)",
+    "sizeLandscape": "Landscape (1536×1024)",
+    "sizePortrait": "Portrait (1024×1536)"
   },
   "memory": {
     "title": "Memory Bank",
     "subtitle": "Manage all your AI memories across projects",
     "projectSpecific": "Project-Specific",
-    "global": "Global Memories",
-    "pending": "Pending Review",
+    "global": "Global",
+    "pending": "Pending",
     "total": "Total Memories",
     "searchPlaceholder": "Search memories...",
     "noMemories": "No memories found",
@@ -317,12 +328,26 @@
     "noGlobal": "No global memories",
     "selectProject": "Select a project to view memories",
     "noProjectMemories": "No memories for this project",
+    "allProjects": "All Projects",
+    "approved": "Approved",
+    "confidence": "confidence",
+    "added": "Added",
+    "approveTooltip": "Approve memory",
+    "rejectTooltip": "Reject memory",
+    "addPlaceholder": "What should I remember about you?",
+    "projectOnly": "Project Only",
+    "noApprovedMemories": "No approved memories yet. Add one above or approve pending suggestions.",
+    "noPendingMemoriesDesc": "No pending memories. The AI will suggest memories based on your conversations.",
+    "pendingExplanation": "These memories were extracted from your conversations. Approve to use them in future chats.",
+    "autoCreatedDesc": "Memories will be automatically created from your conversations.",
     "categories": {
       "all": "All Categories",
-      "preference": "Preferences",
-      "fact": "Facts",
-      "instruction": "Instructions",
-      "style": "Style"
+      "preference": "Preference",
+      "fact": "Fact",
+      "instruction": "Instruction",
+      "style": "Style",
+      "constraint": "Constraint",
+      "identity": "Identity"
     }
   },
   "usage": {
@@ -353,7 +378,8 @@
     "projectUsageTitle": "Project Usage",
     "projectUsageDesc": "Consumption breakdown by project",
     "noProjectData": "No project usage data available",
-    "projectName": "Project Name"
+    "projectName": "Project Name",
+    "cost": "Cost"
   },
   "errors": {
     "loadProjects": "Failed to load projects",

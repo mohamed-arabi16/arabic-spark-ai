@@ -22,6 +22,7 @@ import {
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useState } from 'react';
+import { formatDate, LTR } from '@/lib/bidi';
 
 const categoryIcons: Record<string, any> = {
   preference: Heart,
@@ -62,7 +63,7 @@ export function MemoryList({
   onUpdate,
   getProjectName = (id) => id ? 'Project' : 'Global'
 }: MemoryListProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editContent, setEditContent] = useState('');
 
@@ -105,7 +106,7 @@ export function MemoryList({
               <div className="flex items-center gap-2 mb-2 flex-wrap">
                 <Badge variant="outline" className={colorClass}>
                   <CategoryIcon className="h-3 w-3 me-1" />
-                  {memory.category || 'general'}
+                  {t(`memory.categories.${memory.category || 'fact'}`)}
                 </Badge>
                 {memory.is_global && (
                   <Badge variant="outline" className="text-green-400 border-green-500/30">
@@ -126,7 +127,7 @@ export function MemoryList({
                 )}
                 {memory.confidence && (
                   <span className="text-xs text-muted-foreground">
-                    {Math.round(memory.confidence * 100)}% confidence
+                    <LTR>{Math.round(memory.confidence * 100)}%</LTR> {t('memory.confidence')}
                   </span>
                 )}
               </div>
@@ -151,7 +152,7 @@ export function MemoryList({
               )}
 
               <p className="text-xs text-muted-foreground mt-2">
-                Added {new Date(memory.created_at).toLocaleDateString()}
+                {t('memory.added')} <LTR>{formatDate(memory.created_at, i18n.language)}</LTR>
               </p>
             </div>
 

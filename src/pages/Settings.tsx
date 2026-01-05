@@ -90,11 +90,11 @@ export default function Settings() {
   const getTierBadge = (tier: string) => {
     switch (tier) {
       case 'free':
-        return <Badge variant="secondary" className="text-xs">Free</Badge>;
+        return <Badge variant="secondary" className="text-xs">{t('settings.tierFree')}</Badge>;
       case 'standard':
-        return <Badge variant="outline" className="text-xs">Standard</Badge>;
+        return <Badge variant="outline" className="text-xs">{t('settings.tierStandard')}</Badge>;
       case 'premium':
-        return <Badge className="text-xs bg-gradient-to-r from-amber-500 to-orange-500">Premium</Badge>;
+        return <Badge className="text-xs bg-gradient-to-r from-amber-500 to-orange-500">{t('settings.tierPremium')}</Badge>;
       default:
         return null;
     }
@@ -190,8 +190,8 @@ export default function Settings() {
                     {/* Chat Default */}
                     <div className="flex items-center justify-between">
                       <div>
-                        <Label>💬 {t('settings.dailyChat') || 'Daily Chat'}</Label>
-                        <p className="text-sm text-muted-foreground">General conversations</p>
+                        <Label>💬 {t('settings.dailyChat')}</Label>
+                        <p className="text-sm text-muted-foreground">{t('settings.dailyChatDesc')}</p>
                       </div>
                       <Select 
                         value={modelSettings.default_chat_model} 
@@ -218,8 +218,8 @@ export default function Settings() {
                     {/* Deep Think Default */}
                     <div className="flex items-center justify-between">
                       <div>
-                        <Label>🧠 {t('settings.deepAnalysis') || 'Deep Analysis'}</Label>
-                        <p className="text-sm text-muted-foreground">Complex reasoning tasks</p>
+                        <Label>🧠 {t('settings.deepAnalysis')}</Label>
+                        <p className="text-sm text-muted-foreground">{t('settings.deepAnalysisDesc')}</p>
                       </div>
                       <Select 
                         value={modelSettings.default_deep_think_model} 
@@ -246,8 +246,8 @@ export default function Settings() {
                     {/* Research Default */}
                     <div className="flex items-center justify-between">
                       <div>
-                        <Label>🔍 {t('settings.research') || 'Research'}</Label>
-                        <p className="text-sm text-muted-foreground">In-depth research with citations</p>
+                        <Label>🔍 {t('settings.research')}</Label>
+                        <p className="text-sm text-muted-foreground">{t('settings.researchDesc')}</p>
                       </div>
                       <Select 
                         value={modelSettings.default_research_model} 
@@ -274,8 +274,8 @@ export default function Settings() {
                     {/* Image Default */}
                     <div className="flex items-center justify-between">
                       <div>
-                        <Label>🖼️ {t('settings.images') || 'Images'}</Label>
-                        <p className="text-sm text-muted-foreground">Image generation</p>
+                        <Label>🖼️ {t('settings.images')}</Label>
+                        <p className="text-sm text-muted-foreground">{t('settings.imagesDesc')}</p>
                       </div>
                       <Select 
                         value={modelSettings.default_image_model} 
