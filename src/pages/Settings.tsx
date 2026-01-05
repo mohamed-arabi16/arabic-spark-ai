@@ -8,25 +8,34 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Globe, Shield, Smartphone, Palette, Save, Zap, MessageSquare } from 'lucide-react';
+import { Globe, Shield, Palette, Save, Zap, Loader2, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { Badge } from '@/components/ui/badge';
 
-const AVAILABLE_MODELS = [
-  { value: 'google/gemini-2.5-flash', label: 'Gemini Flash (Fast)', description: 'Quick responses, lower cost' },
-  { value: 'google/gemini-2.5-pro', label: 'Gemini Pro (Smart)', description: 'Best for complex tasks' },
-  { value: 'openai/gpt-5-mini', label: 'GPT-5 Mini (Balanced)', description: 'Good balance of speed and quality' },
-  { value: 'openai/gpt-5', label: 'GPT-5 (Premium)', description: 'Highest quality, slower' },
-];
+interface AvailableModel {
+  id: string;
+  name: string;
+  description: string;
+  tier: string;
+  available: boolean;
+}
+
+interface ModelsResponse {
+  chatModels: AvailableModel[];
+  imageModels: AvailableModel[];
+  hasOpenAI: boolean;
+}
+
+const AI_GATEWAY_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-gateway`;
 
 export default function Settings() {
   const { t, i18n } = useTranslation();
   const { user } = useAuth();
+  const isRTL = i18n.dir() === 'rtl';
 
   // Local state for settings
-  const [notifications, setNotifications] = useState(true);
-  const [autoSave, setAutoSave] = useState(true);
   const [theme, setTheme] = useState('system');
   const [language, setLanguage] = useState(i18n.language);
 
@@ -36,6 +45,37 @@ export default function Settings() {
   const [rtlOverride, setRtlOverride] = useState(false);
   const [defaultModel, setDefaultModel] = useState('google/gemini-2.5-flash');
   const [memoryEnabled, setMemoryEnabled] = useState(true);
+
+  // Dynamic models from backend
+  const [availableModels, setAvailableModels] = useState<AvailableModel[]>([]);
+  const [isLoadingModels, setIsLoadingModels] = useState(true);
+  const [hasOpenAI, setHasOpenAI] = useState(false);
+
+  // Fetch available models from backend
+  useEffect(() => {
+    const fetchModels = async () => {
+      setIsLoadingModels(true);
+      try {
+        const response = await fetch(`${AI_GATEWAY_URL}?action=models`);
+        if (response.ok) {
+          const data: ModelsResponse = await response.json();
+          // Only show available chat models
+          setAvailableModels(data.chatModels.filter(m => m.available));
+          setHasOpenAI(data.hasOpenAI);
+        }
+      } catch (error) {
+        console.error('Failed to fetch models:', error);
+        // Fallback to default models
+        setAvailableModels([
+          { id: 'google/gemini-2.5-flash', name: 'Gemini Flash', description: 'Fast responses', tier: 'free', available: true },
+          { id: 'google/gemini-2.5-pro', name: 'Gemini Pro', description: 'Best reasoning', tier: 'premium', available: true },
+        ]);
+      } finally {
+        setIsLoadingModels(false);
+      }
+    };
+    fetchModels();
+  }, []);
 
   useEffect(() => {
     // Load persisted settings
@@ -89,17 +129,29 @@ export default function Settings() {
     setLanguage(lang);
     i18n.changeLanguage(lang);
     localStorage.setItem('i18nextLng', lang);
-    // document.dir is handled by i18n generally, but let's ensure it matches logic
     if (!rtlOverride) {
         document.dir = i18n.dir(lang);
+    }
+  };
+
+  const getTierBadge = (tier: string) => {
+    switch (tier) {
+      case 'free':
+        return <Badge variant="secondary" className="text-xs">Free</Badge>;
+      case 'standard':
+        return <Badge variant="outline" className="text-xs">Standard</Badge>;
+      case 'premium':
+        return <Badge className="text-xs bg-gradient-to-r from-amber-500 to-orange-500">Premium</Badge>;
+      default:
+        return null;
     }
   };
 
   return (
     <MainLayout>
       <div className="container max-w-4xl py-6 space-y-8 animate-in fade-in duration-500" dir={i18n.dir()}>
-        <div className="flex items-center justify-between">
-          <div>
+        <div className={`flex items-center justify-between ${isRTL ? 'flex-row-reverse' : ''}`}>
+          <div className={isRTL ? 'text-right' : ''}>
             <h1 className="text-3xl font-bold tracking-tight">{t('settings.title')}</h1>
             <p className="text-muted-foreground mt-2">
               {t('settings.subtitle')}
@@ -112,7 +164,7 @@ export default function Settings() {
         </div>
 
         <Tabs defaultValue="language" className="w-full">
-          <TabsList className="grid w-full grid-cols-4 lg:w-[600px]">
+          <TabsList className={`grid w-full grid-cols-4 lg:w-[600px] ${isRTL ? 'lg:ms-auto' : ''}`}>
             <TabsTrigger value="language">{t('settings.languageRegion')}</TabsTrigger>
             <TabsTrigger value="appearance">{t('settings.appearance')}</TabsTrigger>
             <TabsTrigger value="models">{t('settings.models')}</TabsTrigger>
@@ -122,11 +174,11 @@ export default function Settings() {
           <TabsContent value="language" className="space-y-6 mt-6">
             <Card>
               <CardHeader>
-                <div className="flex items-center gap-2">
+                <div className={`flex items-center gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
                   <Globe className="h-5 w-5 text-primary" />
                   <CardTitle>{t('settings.language')}</CardTitle>
                 </div>
-                <CardDescription>{t('settings.languageDesc')}</CardDescription>
+                <CardDescription className={isRTL ? 'text-right' : ''}>{t('settings.languageDesc')}</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid gap-2">
@@ -178,8 +230,8 @@ export default function Settings() {
 
                 <Separator />
 
-                <div className="flex items-center justify-between">
-                  <div className="space-y-0.5">
+                <div className={`flex items-center justify-between ${isRTL ? 'flex-row-reverse' : ''}`}>
+                  <div className={`space-y-0.5 ${isRTL ? 'text-right' : ''}`}>
                     <Label>{t('settings.forceRTL')}</Label>
                     <p className="text-sm text-muted-foreground">
                       {t('settings.forceRTLDesc')}
@@ -197,7 +249,7 @@ export default function Settings() {
           <TabsContent value="appearance" className="space-y-6 mt-6">
             <Card>
               <CardHeader>
-                <div className="flex items-center gap-2">
+                <div className={`flex items-center gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
                   <Palette className="h-5 w-5 text-primary" />
                   <CardTitle>{t('settings.theme')}</CardTitle>
                 </div>
@@ -223,31 +275,73 @@ export default function Settings() {
           <TabsContent value="models" className="space-y-6 mt-6">
              <Card>
                <CardHeader>
-                 <div className="flex items-center gap-2">
+                 <div className={`flex items-center gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
                    <Zap className="h-5 w-5 text-primary" />
                    <CardTitle>{t('settings.defaultModel')}</CardTitle>
                  </div>
-                 <CardDescription>{t('settings.defaultModelDesc')}</CardDescription>
+                 <CardDescription className={isRTL ? 'text-right' : ''}>
+                   {t('settings.defaultModelDesc')}
+                 </CardDescription>
                </CardHeader>
                <CardContent className="space-y-4">
-                  <div className="grid gap-2">
-                    <Label>{t('settings.model')}</Label>
-                    <Select value={defaultModel} onValueChange={setDefaultModel}>
-                      <SelectTrigger className="w-[300px]">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {AVAILABLE_MODELS.map((model) => (
-                          <SelectItem key={model.value} value={model.value}>
-                            <span>{model.label}</span>
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <p className="text-sm text-muted-foreground mt-2">
-                      {AVAILABLE_MODELS.find(m => m.value === defaultModel)?.description || t('settings.modelTradeoff')}
-                    </p>
-                  </div>
+                 {isLoadingModels ? (
+                   <div className="flex items-center gap-2 text-muted-foreground">
+                     <Loader2 className="h-4 w-4 animate-spin" />
+                     <span>Loading available models...</span>
+                   </div>
+                 ) : availableModels.length === 0 ? (
+                   <div className="flex items-center gap-2 text-destructive">
+                     <AlertCircle className="h-4 w-4" />
+                     <span>No models available. Check API configuration.</span>
+                   </div>
+                 ) : (
+                   <>
+                     <div className="grid gap-2">
+                       <Label>{t('settings.model')}</Label>
+                       <Select value={defaultModel} onValueChange={setDefaultModel}>
+                         <SelectTrigger className="w-[350px]">
+                           <SelectValue />
+                         </SelectTrigger>
+                         <SelectContent>
+                           {availableModels.map((model) => (
+                             <SelectItem key={model.id} value={model.id}>
+                               <div className="flex items-center gap-2">
+                                 <span>{model.name}</span>
+                                 {getTierBadge(model.tier)}
+                               </div>
+                             </SelectItem>
+                           ))}
+                         </SelectContent>
+                       </Select>
+                       <p className="text-sm text-muted-foreground mt-2">
+                         {availableModels.find(m => m.id === defaultModel)?.description || t('settings.modelTradeoff')}
+                       </p>
+                     </div>
+
+                     {!hasOpenAI && (
+                       <div className="mt-4 p-3 rounded-lg bg-muted/50 border border-muted">
+                         <p className="text-sm text-muted-foreground">
+                           <strong>Note:</strong> OpenAI models (GPT-5) are not available. Add your OPENAI_API_KEY to enable them.
+                         </p>
+                       </div>
+                     )}
+
+                     <Separator className="my-4" />
+                     
+                     <div className={`space-y-2 ${isRTL ? 'text-right' : ''}`}>
+                       <Label className="text-muted-foreground">{t('settings.modeOverride') || 'Chat Mode Override'}</Label>
+                       <p className="text-sm text-muted-foreground">
+                         {t('settings.modeOverrideDesc') || 'When you select a chat mode (Fast/Standard/Deep/Pro), it will use the optimal model for that mode, overriding your default selection.'}
+                       </p>
+                       <ul className="text-sm text-muted-foreground list-disc ps-4 mt-2 space-y-1">
+                         <li><strong>Fast:</strong> Gemini Flash Lite</li>
+                         <li><strong>Standard:</strong> Gemini Flash</li>
+                         <li><strong>Deep:</strong> Gemini Pro</li>
+                         <li><strong>Pro:</strong> GPT-5 (or Gemini Pro if OpenAI unavailable)</li>
+                       </ul>
+                     </div>
+                   </>
+                 )}
                </CardContent>
              </Card>
           </TabsContent>
@@ -255,14 +349,14 @@ export default function Settings() {
           <TabsContent value="privacy" className="space-y-6 mt-6">
              <Card>
               <CardHeader>
-                <div className="flex items-center gap-2">
+                <div className={`flex items-center gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
                   <Shield className="h-5 w-5 text-primary" />
                   <CardTitle>{t('settings.privacySecurity')}</CardTitle>
                 </div>
               </CardHeader>
               <CardContent className="space-y-6">
-                 <div className="flex items-center justify-between">
-                    <div className="space-y-0.5">
+                 <div className={`flex items-center justify-between ${isRTL ? 'flex-row-reverse' : ''}`}>
+                    <div className={`space-y-0.5 ${isRTL ? 'text-right' : ''}`}>
                       <Label>{t('settings.enableMemory')}</Label>
                       <p className="text-sm text-muted-foreground">
                         {t('settings.enableMemoryDesc')}
@@ -276,7 +370,7 @@ export default function Settings() {
                  <Separator />
                  <div className="space-y-2">
                     <Label>{t('settings.dataControls')}</Label>
-                    <div className="flex gap-2">
+                    <div className={`flex gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
                        <Button variant="outline" className="text-destructive border-destructive hover:bg-destructive/10">
                          {t('settings.clearHistory')}
                        </Button>

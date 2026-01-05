@@ -242,9 +242,9 @@ export default function History() {
 
           <TabsContent value="memory" className="flex-1 overflow-hidden m-0">
              <ScrollArea className="h-full p-6">
-                <MemoryList
+               <MemoryList
                   memories={[...memories, ...proposedMemories]}
-                  onUpdate={updateMemory}
+                  onUpdate={async (id, content) => { await updateMemory(id, { content }); }}
                   onDelete={deleteMemory}
                   onApprove={approveMemory}
                   onReject={rejectMemory}

@@ -23,7 +23,17 @@ import { useAuth } from '@/hooks/useAuth';
 import { MemoryCaptureToast } from '@/components/memory/MemoryCaptureToast';
 import { fetchWithRetry } from '@/lib/api-utils';
 
-const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat`;
+const AI_GATEWAY_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-gateway`;
+
+// Mode to display name mapping (actual model is determined by backend)
+const MODE_DISPLAY_NAMES: Record<string, string> = {
+  fast: 'Gemini Flash Lite',
+  standard: 'Gemini Flash',
+  deep: 'Gemini Pro',
+  pro: 'GPT-5 Pro',
+  research: 'Gemini Pro (Research)',
+  image: 'Gemini Image',
+};
 
 export default function Chat() {
   const { t } = useTranslation();
@@ -193,13 +203,14 @@ export default function Chat() {
         throw new Error('No active session');
       }
 
-      const resp = await fetchWithRetry(CHAT_URL, {
+      const resp = await fetchWithRetry(AI_GATEWAY_URL, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${session.access_token}`,
         },
         body: JSON.stringify({
+          type: 'chat',
           messages: apiMessages,
           mode: chatMode,
           project_id: projectId,
@@ -207,10 +218,9 @@ export default function Chat() {
           system_instructions: project?.system_instructions,
           memory_context: memoryContext,
           dialect: selectedDialect,
-          model: model,
         }),
         signal: abortControllerRef.current.signal,
-        timeout: 30000, // 30s timeout
+        timeout: 60000, // 60s timeout for deep/pro modes
         retries: 2,
       });
 
@@ -237,16 +247,8 @@ export default function Chat() {
       let streamDone = false;
       let usageData: any = null;
 
-      // Determine model name for display based on mode
-      const MODE_TO_MODEL_NAME: Record<ChatMode, string> = {
-        fast: 'gpt-5.2 (fast)',
-        standard: 'gpt-5.2 (standard)',
-        pro: 'gpt-5.2 (pro)',
-        deep: 'gpt-5.2 (deep)',
-        research: 'gpt-5.2 (research)',
-        image: 'gpt-image-1',
-      };
-      const modelName = MODE_TO_MODEL_NAME[chatMode] || 'gpt-5.2 (fast)';
+      // Display name based on mode - actual model is determined by backend
+      const modelName = MODE_DISPLAY_NAMES[chatMode] || 'Gemini Flash';
 
       const assistantMessageId = crypto.randomUUID();
       

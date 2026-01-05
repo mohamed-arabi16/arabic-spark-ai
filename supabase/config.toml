@@ -1,5 +1,8 @@
 project_id = "wnvdfalvnbyzxhdqebij"
 
+[functions.ai-gateway]
+verify_jwt = false
+
 [functions.chat]
 verify_jwt = false
 
@@ -16,4 +19,7 @@ verify_jwt = false
 verify_jwt = false
 
 [functions.research]
+verify_jwt = false
+
+[functions.elevenlabs-scribe-token]
 verify_jwt = false
