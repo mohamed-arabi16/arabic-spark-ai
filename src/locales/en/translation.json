@@ -1,4 +1,42 @@
 {
+  "landing": {
+    "brand": "Bayt Al-Lisan",
+    "badge": "AI Assistant for Arabic Speakers",
+    "headline": "Your AI Assistant That Understands Your Dialect",
+    "subheadline": "Switch between AI models without losing memory. Dialect-aware responses. Projects with separate context. All at a lower price.",
+    "tryNow": "Try Now",
+    "signUpFree": "Sign Up Free",
+    "startNow": "Start Now",
+    "trialInfo": "3 free messages without signup",
+    "creditInfo": "$5 free credit when you register",
+    "featuresTitle": "What Makes Us Different",
+    "featuresSubtitle": "Built for Arabic speakers, with features you won't find elsewhere",
+    "ctaTitle": "Ready to Try?",
+    "ctaSubtitle": "Experience AI that truly understands Arabic dialects",
+    "rights": "All rights reserved.",
+    "features": {
+      "dialects": {
+        "title": "Dialect Understanding",
+        "description": "We understand Levantine, Egyptian, Gulf, and Maghrebi Arabic"
+      },
+      "models": {
+        "title": "Switch AI Models",
+        "description": "GPT-5, Claude, Gemini - switch without losing your memory"
+      },
+      "memory": {
+        "title": "Smart Memory",
+        "description": "We remember what matters in every conversation"
+      },
+      "projects": {
+        "title": "Separate Projects",
+        "description": "Project-specific or global memory - you choose"
+      },
+      "pricing": {
+        "title": "Lower Price",
+        "description": "Subscription cheaper than other platforms"
+      }
+    }
+  },
   "common": {
     "welcome": "Welcome",
     "signIn": "Sign In",
@@ -40,7 +78,10 @@
     "accountCreated": "Account created! Welcome aboard.",
     "emailPlaceholder": "you@example.com",
     "passwordPlaceholder": "••••••••",
-    "namePlaceholder": "John Doe"
+    "namePlaceholder": "John Doe",
+    "orTry": "Or try",
+    "tryWithoutAccount": "Try without account",
+    "trialLimit": "3 free messages without signing up"
   },
   "sidebar": {
     "home": "Home",
@@ -148,6 +189,8 @@
     "createFirstProject": "Create your first project to get started with organized chats."
   },
   "chat": {
+    "you": "You",
+    "assistant": "Assistant",
     "newChat": "New Chat",
     "startNewConversation": "Start a new conversation",
     "howCanIHelp": "How can I help you today?",
@@ -168,7 +211,8 @@
       "pro": "Pro"
     },
     "tip": "Tip: Use <0>Shift</0> + <0>Enter</0> for new lines",
-    "inputFooter": "Estimated cost: ~$0.00 · Press Enter to send"
+    "inputFooter": "Estimated cost: ~$0.00 · Press Enter to send",
+    "trialLimitReached": "Trial limit reached! Sign up to continue chatting."
   },
   "projects": {
     "title": "Projects",

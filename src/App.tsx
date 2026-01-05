@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/hooks/useAuth";
 import Chat from "./pages/Chat";
 import Index from "./pages/Index";
+import Landing from "./pages/Landing";
 import Projects from "./pages/Projects";
 import Images from "./pages/Images";
 import Usage from "./pages/Usage";
@@ -57,23 +58,59 @@ function PublicRoute({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
+// Route that allows anonymous trial users
+function TrialOrProtectedRoute({ children }: { children: React.ReactNode }) {
+  const { user, loading } = useAuth();
+  const hasTrialSession = localStorage.getItem('trial_started') === 'true';
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  // Allow if authenticated OR has a trial session
+  if (!user && !hasTrialSession) {
+    return <Navigate to="/auth" replace />;
+  }
+
+  return <>{children}</>;
+}
+
+// Route for landing page - shows landing for guests, dashboard for users
+function LandingRoute() {
+  const { user, loading } = useAuth();
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (user) {
+    return <Index />;
+  }
+
+  return <Landing />;
+}
+
 function AppRoutes() {
   return (
     <Routes>
       <Route
         path="/"
-        element={
-          <ProtectedRoute>
-            <Index />
-          </ProtectedRoute>
-        }
+        element={<LandingRoute />}
       />
       <Route
         path="/chat"
         element={
-          <ProtectedRoute>
+          <TrialOrProtectedRoute>
             <Chat />
-          </ProtectedRoute>
+          </TrialOrProtectedRoute>
         }
       />
       <Route
