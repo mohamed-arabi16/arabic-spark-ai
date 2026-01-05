@@ -4,6 +4,7 @@ import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { ModelPicker } from './ModelPicker';
+import { RoutingBadge } from './RoutingBadge';
 import { ChatMode } from './ModeSelector';
 import { Send, Paperclip, Mic, Square, Loader2 } from 'lucide-react';
 import { useVoiceInput } from '@/hooks/useVoiceInput';
@@ -31,6 +32,8 @@ interface ChatInputProps {
   currentModel?: string;
   onModelChange?: (modelId: string) => void;
   visibleModels?: ModelInfo[];
+  routingMode?: 'auto' | 'manual';
+  onRoutingModeChange?: (mode: 'auto' | 'manual') => void;
 }
 
 export function ChatInput({
@@ -46,8 +49,11 @@ export function ChatInput({
   currentModel,
   onModelChange,
   visibleModels = [],
+  routingMode = 'auto',
+  onRoutingModeChange,
 }: ChatInputProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const isRTL = i18n.dir() === 'rtl';
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [partialTranscript, setPartialTranscript] = useState('');
 
@@ -86,11 +92,23 @@ export function ChatInput({
   return (
     <div className="border-t border-border bg-background p-3 md:p-4 safe-area-bottom">
       <div className="max-w-4xl mx-auto space-y-3">
-        {/* Model & Dialect Picker */}
+        {/* Model & Dialect Picker with Routing Badge */}
         <div className={cn(
-          "flex items-center justify-between px-1",
-          isRecording && "opacity-50"
+          "flex items-center justify-between gap-2 px-1 flex-wrap",
+          isRecording && "opacity-50",
+          isRTL && "flex-row-reverse"
         )}>
+           <div className={cn("flex items-center gap-2", isRTL && "flex-row-reverse")}>
+             {/* Routing Badge */}
+             {onRoutingModeChange && (
+               <RoutingBadge
+                 routingMode={routingMode}
+                 onRoutingModeChange={onRoutingModeChange}
+                 currentModel={currentModel}
+                 taskType="chat"
+               />
+             )}
+           </div>
            <ModelPicker
              mode={mode}
              onModeChange={setMode}

@@ -8,11 +8,12 @@ import { UsageBreakdown } from '@/components/usage/UsageBreakdown';
 import { QuotaDisplay } from '@/components/usage/QuotaDisplay';
 import { BudgetCard } from '@/components/usage/BudgetCard';
 import { ProjectUsageTable } from '@/components/usage/ProjectUsageTable';
+import { TopConversationsTable } from '@/components/usage/TopConversationsTable';
 import { SkeletonSummaryCards, SkeletonChart } from '@/components/ui/skeleton-list';
 
 export default function Usage() {
   const { t } = useTranslation();
-  const { dailyStats, summary, breakdown, projectBreakdown, isLoading, fetchUsage } = useUsage();
+  const { dailyStats, summary, breakdown, projectBreakdown, topConversations, isLoading, fetchUsage } = useUsage();
 
   useEffect(() => {
     fetchUsage();
@@ -52,6 +53,12 @@ export default function Usage() {
                  <QuotaDisplay currentCost={summary?.total_cost || 0} />
                </div>
             </div>
+
+            {/* Top conversations by cost */}
+            <TopConversationsTable 
+              conversations={topConversations} 
+              isLoading={isLoading} 
+            />
           </div>
         )}
       </div>

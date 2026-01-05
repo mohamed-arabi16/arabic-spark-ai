@@ -173,6 +173,24 @@ const FUNCTION_DEFAULTS: Record<Capability, string> = {
   code: 'openai/gpt-5.2',
 };
 
+// Fallback chains per model - when primary fails, try these in order
+const FALLBACK_CHAINS: Record<string, string[]> = {
+  // OpenAI fallbacks
+  'openai/gpt-5.2': ['google/gemini-3-pro', 'anthropic/sonnet-4.5'],
+  'openai/gpt-5-nano': ['google/gemini-flash-3', 'anthropic/haiku-4.5'],
+  'openai/gpt-image-1.5': ['google/nanobanana-pro'],
+  'openai/o3-deep-research': ['google/gemini-3-pro', 'anthropic/deep-research'],
+  // Google fallbacks
+  'google/gemini-3-pro': ['openai/gpt-5.2', 'anthropic/sonnet-4.5'],
+  'google/gemini-flash-3': ['openai/gpt-5-nano', 'anthropic/haiku-4.5'],
+  'google/nanobanana-pro': ['openai/gpt-image-1.5'],
+  // Anthropic fallbacks
+  'anthropic/opus-4.5': ['openai/gpt-5.2', 'google/gemini-3-pro'],
+  'anthropic/sonnet-4.5': ['google/gemini-3-pro', 'openai/gpt-5.2'],
+  'anthropic/haiku-4.5': ['google/gemini-flash-3', 'openai/gpt-5-nano'],
+  'anthropic/deep-research': ['google/gemini-3-pro', 'openai/o3-deep-research'],
+};
+
 // Mode to model mapping (backward compatibility with existing mode system)
 const MODE_MODEL_MAP: Record<string, { model: string; max_tokens: number }> = {
   fast: { model: 'openai/gpt-5-nano', max_tokens: 2048 },
@@ -199,7 +217,7 @@ interface Message {
 }
 
 interface ChatRequest {
-  action?: 'chat' | 'models' | 'image' | 'deep_think' | 'deep_research' | 'transcribe';
+  action?: 'chat' | 'models' | 'image' | 'deep_think' | 'deep_research' | 'transcribe' | 'test_provider';
   messages?: Message[];
   mode?: string;
   model?: string; // Direct model override
@@ -214,6 +232,8 @@ interface ChatRequest {
   quality?: string;
   // For audio transcription
   audio?: string;
+  // For provider testing
+  provider?: string;
 }
 
 // ============================================================================
@@ -385,6 +405,131 @@ async function callProvider(model: string, messages: Message[], config: { max_to
       return callAnthropic(model, messages, config);
     default:
       throw new Error(`Unknown provider: ${modelConfig.provider}`);
+  }
+}
+
+// ============================================================================
+// FALLBACK-AWARE PROVIDER CALLS
+// ============================================================================
+
+interface CallWithFallbackResult {
+  response: Response;
+  modelUsed: string;
+  fallbackUsed: boolean;
+  fallbackReason?: string;
+}
+
+async function callWithFallback(
+  primaryModel: string, 
+  messages: Message[], 
+  config: { max_tokens: number },
+  providers: { openai: boolean; google: boolean; anthropic: boolean }
+): Promise<CallWithFallbackResult> {
+  const chain = [primaryModel, ...(FALLBACK_CHAINS[primaryModel] || [])];
+  let lastError: Error | null = null;
+  let fallbackUsed = false;
+  let fallbackReason = '';
+  
+  for (const model of chain) {
+    const modelConfig = MODEL_REGISTRY[model];
+    if (!modelConfig) continue;
+    
+    // Check if provider is configured
+    if (!providers[modelConfig.provider]) {
+      console.log(`Skipping ${model}: provider ${modelConfig.provider} not configured`);
+      fallbackUsed = true;
+      fallbackReason = `${modelConfig.provider} not configured`;
+      continue;
+    }
+    
+    try {
+      const response = await callProvider(model, messages, config);
+      
+      if (response.ok) {
+        return { 
+          response, 
+          modelUsed: model, 
+          fallbackUsed: fallbackUsed && model !== primaryModel,
+          fallbackReason 
+        };
+      }
+      
+      // Check for rate limit / billing errors - try fallback
+      if (response.status === 429 || response.status === 402) {
+        console.log(`Model ${model} returned ${response.status}, trying fallback`);
+        lastError = new Error(`Provider ${modelConfig.provider} returned ${response.status}`);
+        fallbackUsed = true;
+        fallbackReason = response.status === 429 ? 'rate_limit' : 'billing';
+        continue;
+      }
+      
+      // Other errors - try fallback
+      const errorText = await response.text();
+      console.error(`Model ${model} error:`, response.status, errorText);
+      lastError = new Error(`Provider error: ${response.status}`);
+      fallbackUsed = true;
+      fallbackReason = 'provider_error';
+      continue;
+      
+    } catch (err) {
+      console.error(`Exception calling ${model}:`, err);
+      lastError = err instanceof Error ? err : new Error('Unknown error');
+      fallbackUsed = true;
+      fallbackReason = 'exception';
+    }
+  }
+  
+  throw lastError || new Error('All providers failed');
+}
+
+// ============================================================================
+// PROVIDER TESTING
+// ============================================================================
+
+async function testProviderConnection(provider: string): Promise<{ valid: boolean; error?: string }> {
+  try {
+    const providers = getConfiguredProviders();
+    
+    if (!providers[provider as keyof typeof providers]) {
+      return { valid: false, error: 'API key not configured' };
+    }
+    
+    // Simple validation call per provider
+    if (provider === 'openai') {
+      const apiKey = Deno.env.get('OPENAI_API_KEY');
+      const response = await fetch('https://api.openai.com/v1/models', {
+        headers: { 'Authorization': `Bearer ${apiKey}` },
+      });
+      if (!response.ok) {
+        const error = await response.text();
+        return { valid: false, error: `HTTP ${response.status}` };
+      }
+      return { valid: true };
+    }
+    
+    if (provider === 'google') {
+      const apiKey = Deno.env.get('GOOGLE_API_KEY');
+      const response = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`
+      );
+      if (!response.ok) {
+        return { valid: false, error: `HTTP ${response.status}` };
+      }
+      return { valid: true };
+    }
+    
+    if (provider === 'anthropic') {
+      // Anthropic doesn't have a models endpoint, so we just verify the key format
+      const apiKey = Deno.env.get('ANTHROPIC_API_KEY');
+      if (!apiKey || !apiKey.startsWith('sk-ant-')) {
+        return { valid: false, error: 'Invalid key format' };
+      }
+      return { valid: true };
+    }
+    
+    return { valid: false, error: 'Unknown provider' };
+  } catch (err) {
+    return { valid: false, error: err instanceof Error ? err.message : 'Unknown error' };
   }
 }
 
@@ -625,6 +770,21 @@ serve(async (req) => {
       });
     }
 
+    // Handle provider testing
+    if (action === 'test_provider') {
+      const { provider } = body;
+      if (!provider) {
+        return new Response(
+          JSON.stringify({ valid: false, error: 'Provider not specified' }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      const result = await testProviderConnection(provider);
+      return new Response(JSON.stringify(result), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
     // Handle image generation
     if (action === 'image') {
       const { prompt, model: requestedModel, size, quality } = body;
@@ -679,23 +839,9 @@ serve(async (req) => {
       maxTokens = modeConfig.max_tokens;
     }
     
-    // Validate model is available
-    const modelConfig = MODEL_REGISTRY[selectedModel];
-    if (!modelConfig) {
+    // Validate model exists in registry
+    if (!MODEL_REGISTRY[selectedModel]) {
       throw new Error(`Unknown model: ${selectedModel}`);
-    }
-    
-    if (!providers[modelConfig.provider]) {
-      // Fallback to first available provider
-      const fallbackModel = Object.entries(MODEL_REGISTRY).find(
-        ([_, config]) => config.capabilities.includes('chat') && providers[config.provider]
-      );
-      if (fallbackModel) {
-        selectedModel = fallbackModel[0];
-        console.log(`Provider ${modelConfig.provider} not configured, falling back to ${selectedModel}`);
-      } else {
-        throw new Error('No chat-capable models available');
-      }
     }
 
     console.log(`AI Gateway - Mode: ${mode}, Model: ${selectedModel}, Dialect: ${dialect}, Anonymous: ${isAnonymous}`);
@@ -726,40 +872,26 @@ Key behaviors:
       ...messages,
     ];
 
-    // Call the appropriate provider
-    const response = await callProvider(selectedModel, allMessages, { max_tokens: maxTokens });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      const providerName = MODEL_REGISTRY[selectedModel].provider;
-      console.error(`Provider error (${providerName}):`, response.status, errorText);
-      
-      // Handle rate limits
-      if (response.status === 429) {
-        return new Response(
-          JSON.stringify({ error: 'Rate limit exceeded', code: 'rate_limit' }),
-          { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
-      
-      // Handle billing/credit issues
-      if (errorText.includes('credit balance') || errorText.includes('billing') || errorText.includes('purchase credits')) {
-        return new Response(
-          JSON.stringify({ 
-            error: `${providerName.charAt(0).toUpperCase() + providerName.slice(1)} API credits exhausted. Please add credits to your ${providerName} account or select a different provider.`,
-            code: 'billing_error',
-            provider: providerName
-          }),
-          { status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
-      
-      throw new Error(`Provider error: ${response.status}`);
+    // Call with fallback chain for resilience
+    let callResult: CallWithFallbackResult;
+    try {
+      callResult = await callWithFallback(selectedModel, allMessages, { max_tokens: maxTokens }, providers);
+    } catch (err) {
+      console.error('All providers failed:', err);
+      return new Response(
+        JSON.stringify({ 
+          error: 'All AI providers are currently unavailable. Please try again later.',
+          code: 'all_providers_failed',
+        }),
+        { status: 503, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
+
+    const { response, modelUsed, fallbackUsed, fallbackReason } = callResult;
 
     // Transform stream based on provider
     let stream: ReadableStream;
-    const provider = MODEL_REGISTRY[selectedModel].provider;
+    const provider = MODEL_REGISTRY[modelUsed].provider;
     
     if (provider === 'openai') {
       stream = response.body!;
@@ -811,11 +943,14 @@ Key behaviors:
         'Content-Type': 'text/event-stream',
         'Cache-Control': 'no-cache',
         'Connection': 'keep-alive',
-        'X-Model-Used': selectedModel,
+        'X-Model-Used': modelUsed,
+        'X-Model-Requested': selectedModel,
         'X-Provider': provider,
         'X-Mode': mode,
         'X-Anonymous': isAnonymous ? 'true' : 'false',
         'X-Remaining-Messages': remainingMessages.toString(),
+        'X-Fallback-Used': fallbackUsed ? 'true' : 'false',
+        'X-Fallback-Reason': fallbackReason || '',
       },
     });
 

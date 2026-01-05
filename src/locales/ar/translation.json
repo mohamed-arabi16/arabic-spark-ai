@@ -397,7 +397,49 @@
     "projectUsageDesc": "توزيع الاستهلاك حسب المشروع",
     "noProjectData": "لا توجد بيانات استخدام للمشاريع",
     "projectName": "اسم المشروع",
-    "cost": "التكلفة"
+    "cost": "التكلفة",
+    "topConversations": "أكثر المحادثات تكلفة",
+    "topConversationsDesc": "محادثاتك الأعلى تكلفة",
+    "noConversationsYet": "لا توجد بيانات محادثات بعد",
+    "conversation": "المحادثة"
+  },
+  "routing": {
+    "auto": "تلقائي",
+    "autoRecommended": "تلقائي (موصى به)",
+    "manual": "يدوي",
+    "whyThisModel": "لماذا هذا النموذج؟",
+    "autoDesc": "يتم اختيار النموذج بناءً على المهمة والإعدادات",
+    "manualDesc": "أنت تختار النموذج",
+    "switchToManual": "التبديل إلى اليدوي",
+    "switchToAuto": "التبديل إلى التلقائي"
+  },
+  "providers": {
+    "title": "موفرو الذكاء الاصطناعي",
+    "description": "إدارة اتصالات مزودي الذكاء الاصطناعي وحدودهم",
+    "connected": "متصل",
+    "notConfigured": "غير مهيأ",
+    "enable": "تفعيل",
+    "enabled": "تم تفعيل المزود",
+    "disabled": "تم تعطيل المزود",
+    "testKey": "اختبار المفتاح",
+    "testNotAvailable": "اختبار المفتاح غير متاح",
+    "testSuccess": "تم التحقق من اتصال {{provider}}",
+    "testFailed": "فشل الاختبار: {{error}}",
+    "lastChecked": "آخر فحص",
+    "spendingLimit": "حد الإنفاق",
+    "limitSaved": "تم حفظ حد الإنفاق"
+  },
+  "budget": {
+    "perProject": "ميزانية المشروع",
+    "dailyLimit": "الحد اليومي",
+    "sessionCost": "الجلسة: ${{cost}}",
+    "sessionWarning": "تكلفة الجلسة: ${{cost}}",
+    "continueOrSwitch": "هل تريد المتابعة أو التبديل لوضع أرخص؟",
+    "continue": "متابعة",
+    "switchToCheaper": "التبديل لوضع أرخص",
+    "budgetExceededTitle": "تم تجاوز الميزانية",
+    "budgetExceededDesc": "لقد وصلت إلى حد الإنفاق اليومي.",
+    "approachingBudget": "اقتراب من حد الميزانية ({{percentage}}% مستخدم)"
   },
   "errors": {
     "loadProjects": "فشل تحميل المشاريع",
@@ -414,7 +456,11 @@
     "deleteMemory": "فشل حذف الذاكرة",
     "loadImages": "فشل تحميل الصور",
     "generateImage": "فشل توليد الصورة",
-    "deleteImage": "فشل حذف الصورة"
+    "deleteImage": "فشل حذف الصورة",
+    "providerUnavailable": "تعذّر الاتصال بالمزوّد. نحاول مزوّداً آخر.",
+    "allProvidersFailed": "تعذّر الاتصال بجميع المزوّدين. يرجى المحاولة لاحقاً.",
+    "fallbackUsed": "تم استخدام مزوّد بديل: {{provider}}",
+    "showDetails": "عرض التفاصيل"
   },
   "messages": {
     "projectCreated": "تم إنشاء المشروع",

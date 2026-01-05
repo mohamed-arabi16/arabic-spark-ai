@@ -26,11 +26,21 @@ export interface ProjectBreakdown {
   cost: number;
 }
 
+export interface TopConversation {
+  id: string;
+  title: string | null;
+  total_cost: number | null;
+  total_tokens: number | null;
+  project_id: string | null;
+  project_name?: string;
+}
+
 export function useUsage() {
   const [dailyStats, setDailyStats] = useState<UsageStat[]>([]);
   const [summary, setSummary] = useState<UsageSummary | null>(null);
   const [breakdown, setBreakdown] = useState<ModelBreakdown[]>([]);
   const [projectBreakdown, setProjectBreakdown] = useState<ProjectBreakdown[]>([]);
+  const [topConversations, setTopConversations] = useState<TopConversation[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
   const fetchUsage = useCallback(async (days = 30) => {
@@ -98,6 +108,33 @@ export function useUsage() {
         setProjectBreakdown(Array.from(projectMap.values()).sort((a, b) => b.cost - a.cost));
       }
 
+      // 3. Fetch top conversations by cost
+      const { data: convData, error: convError } = await supabase
+        .from('conversations')
+        .select(`
+          id,
+          title,
+          total_cost,
+          total_tokens,
+          project_id,
+          projects (name)
+        `)
+        .eq('user_id', user.id)
+        .order('total_cost', { ascending: false, nullsFirst: false })
+        .limit(10);
+
+      if (!convError && convData) {
+        const topConvs: TopConversation[] = convData.map((c: any) => ({
+          id: c.id,
+          title: c.title,
+          total_cost: c.total_cost,
+          total_tokens: c.total_tokens,
+          project_id: c.project_id,
+          project_name: c.projects?.name,
+        }));
+        setTopConversations(topConvs);
+      }
+
     } catch (error) {
       console.error('Error fetching usage:', error);
       toast.error('Failed to load usage data');
@@ -111,6 +148,7 @@ export function useUsage() {
       });
       setBreakdown([]);
       setProjectBreakdown([]);
+      setTopConversations([]);
     } finally {
       setIsLoading(false);
     }
@@ -121,6 +159,7 @@ export function useUsage() {
     summary,
     breakdown,
     projectBreakdown,
+    topConversations,
     isLoading,
     fetchUsage
   };
