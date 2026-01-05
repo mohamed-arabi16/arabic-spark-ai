@@ -6,7 +6,7 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
-const LOVABLE_AI_URL = 'https://ai.gateway.lovable.dev/v1/chat/completions';
+const OPENAI_API_URL = 'https://api.openai.com/v1/images/generations';
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -23,15 +23,15 @@ serve(async (req) => {
     const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? ''
     const supabaseKey = Deno.env.get('SUPABASE_ANON_KEY') ?? ''
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-    const lovableApiKey = Deno.env.get('LOVABLE_API_KEY') ?? ''
+    const openaiApiKey = Deno.env.get('OPENAI_API_KEY') ?? ''
     const authHeader = req.headers.get('Authorization')
 
     if (!authHeader) {
       throw new Error('Missing Authorization header')
     }
 
-    if (!lovableApiKey) {
-      throw new Error('AI API key not configured')
+    if (!openaiApiKey) {
+      throw new Error('OpenAI API key not configured. Please add OPENAI_API_KEY.')
     }
 
     const supabase = createClient(supabaseUrl, supabaseKey, {
@@ -45,39 +45,45 @@ serve(async (req) => {
 
     console.log(`Generating image for prompt: "${prompt.substring(0, 50)}..."`);
 
-    // Construct the enhanced prompt
-    let enhancedPrompt = `Generate an image: ${prompt}. Make it high quality and visually appealing.`;
+    // Construct the enhanced prompt for DALL-E 3
+    let enhancedPrompt = prompt;
 
     if (style && style !== 'none') {
-      enhancedPrompt += ` Style: ${style}.`;
+      enhancedPrompt += `. Style: ${style}.`;
     }
 
     if (negative_prompt) {
-      enhancedPrompt += ` Negative prompt (avoid these): ${negative_prompt}.`;
+      enhancedPrompt += `. Avoid: ${negative_prompt}.`;
     }
 
-    // Use Gemini 3 Pro Image Preview for high-quality image generation
-    const response = await fetch(LOVABLE_AI_URL, {
+    // Map size to DALL-E 3 supported sizes
+    let dalleSize = '1024x1024';
+    if (size === '1792x1024' || size === '1024x1792') {
+      dalleSize = size;
+    } else if (size === '512x512' || size === '256x256') {
+      dalleSize = '1024x1024'; // DALL-E 3 doesn't support smaller sizes
+    }
+
+    // Call OpenAI DALL-E 3 API
+    const response = await fetch(OPENAI_API_URL, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${lovableApiKey}`,
+        'Authorization': `Bearer ${openaiApiKey}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'google/gemini-3-pro-image-preview',
-        messages: [
-          {
-            role: 'user',
-            content: enhancedPrompt
-          }
-        ],
-        modalities: ['image', 'text'],
+        model: 'dall-e-3',
+        prompt: enhancedPrompt,
+        n: 1,
+        size: dalleSize,
+        quality: 'standard',
+        response_format: 'url',
       }),
     });
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('Image generation error:', response.status, errorText);
+      console.error('DALL-E 3 error:', response.status, errorText);
       
       if (response.status === 429) {
         return new Response(
@@ -85,10 +91,10 @@ serve(async (req) => {
           { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
-      if (response.status === 402) {
+      if (response.status === 401) {
         return new Response(
-          JSON.stringify({ error: 'Usage limit reached. Please add credits.' }),
-          { status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          JSON.stringify({ error: 'Invalid OpenAI API key.' }),
+          { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
       
@@ -96,70 +102,23 @@ serve(async (req) => {
     }
 
     const aiResponse = await response.json();
-    console.log('AI response received');
+    console.log('DALL-E 3 response received');
 
-    // Extract image from response
-    const images = aiResponse.choices?.[0]?.message?.images;
-    if (!images || images.length === 0) {
+    // Extract image URL from response
+    const imageData = aiResponse.data?.[0];
+    if (!imageData || !imageData.url) {
       throw new Error('No image generated');
     }
 
-    const imageData = images[0]?.image_url?.url;
-    if (!imageData) {
-      throw new Error('Invalid image data');
+    const imageUrl = imageData.url;
+    const revisedPrompt = imageData.revised_prompt || prompt;
+
+    // Calculate cost for DALL-E 3
+    // Standard quality: $0.040/image for 1024x1024, $0.080 for 1024x1792 or 1792x1024
+    let cost = 0.04;
+    if (dalleSize === '1024x1792' || dalleSize === '1792x1024') {
+      cost = 0.08;
     }
-
-    // The image is base64 encoded - we'll store it in Supabase Storage
-    let imageUrl = imageData;
-    
-    // If it's base64, upload to storage
-    if (imageData.startsWith('data:image')) {
-      // Create storage bucket if needed (using service role)
-      const adminSupabase = createClient(supabaseUrl, supabaseServiceKey);
-      
-      // Check if bucket exists, create if not
-      const { data: buckets } = await adminSupabase.storage.listBuckets();
-      const bucketExists = buckets?.some(b => b.id === 'generated-images');
-      
-      if (!bucketExists) {
-        await adminSupabase.storage.createBucket('generated-images', {
-          public: true,
-          fileSizeLimit: 10485760, // 10MB
-        });
-      }
-
-      // Extract base64 data
-      const base64Match = imageData.match(/^data:image\/(\w+);base64,(.+)$/);
-      if (base64Match) {
-        const imageType = base64Match[1];
-        const base64Data = base64Match[2];
-        const binaryData = Uint8Array.from(atob(base64Data), c => c.charCodeAt(0));
-        
-        const fileName = `${user.id}/${crypto.randomUUID()}.${imageType}`;
-        
-        const { error: uploadError } = await adminSupabase.storage
-          .from('generated-images')
-          .upload(fileName, binaryData, {
-            contentType: `image/${imageType}`,
-            upsert: false,
-          });
-
-        if (uploadError) {
-          console.error('Upload error:', uploadError);
-          // Fall back to using base64 URL directly
-        } else {
-          // Get public URL
-          const { data: urlData } = adminSupabase.storage
-            .from('generated-images')
-            .getPublicUrl(fileName);
-          
-          imageUrl = urlData.publicUrl;
-        }
-      }
-    }
-
-    // Calculate estimated cost for Gemini 3 Pro Image
-    const cost = 0.04; // Higher quality model cost
 
     // Save to database
     const { data, error } = await supabase
@@ -167,12 +126,12 @@ serve(async (req) => {
       .insert({
         user_id: user.id,
         conversation_id: conversation_id || null,
-        prompt: prompt, // We save the original prompt, or should we save enhanced?
-        // Let's save the original prompt to keep it clean for the user in history
+        prompt: prompt,
+        revised_prompt: revisedPrompt,
         image_url: imageUrl,
-        size,
-        model_used: 'gemini-3-pro-image-preview',
-        cost: 0.04  // Higher cost for pro model
+        size: dalleSize,
+        model_used: 'dall-e-3',
+        cost: cost
       })
       .select()
       .single()
@@ -182,30 +141,56 @@ serve(async (req) => {
       throw error;
     }
 
-    // Record individual usage event
+    // Update user's daily usage stats
     try {
-      await supabase.from('usage_events').insert({
-        user_id: user.id,
-        project_id: null, // Images might be associated with a conversation, but project_id is not directly passed here usually.
-                         // We could fetch it via conversation_id if needed, but for now null is safe or we can try to get it from conversation?
-                         // The generate-image endpoint doesn't seem to receive project_id.
-                         // Let's leave it null for now.
-        request_type: 'image',
-        model_id: 'gemini-3-pro-image-preview',
-        prompt_tokens: 0,
-        completion_tokens: 0,
-        total_tokens: 0,
-        cost: cost,
-        meta: {
-          conversation_id,
-          prompt,
-          size,
-          style
-        }
-      });
-      console.log('Image usage event recorded');
-    } catch (eventError) {
-      console.error('Failed to record image usage event:', eventError);
+      const today = new Date().toISOString().split('T')[0];
+      
+      const { data: existingStats } = await supabase
+        .from('usage_stats')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('date', today)
+        .single();
+      
+      if (existingStats) {
+        await supabase
+          .from('usage_stats')
+          .update({
+            total_cost: (existingStats.total_cost || 0) + cost,
+            image_count: (existingStats.image_count || 0) + 1,
+          })
+          .eq('id', existingStats.id);
+      } else {
+        await supabase
+          .from('usage_stats')
+          .insert({
+            user_id: user.id,
+            date: today,
+            total_tokens: 0,
+            total_cost: cost,
+            message_count: 0,
+            image_count: 1,
+          });
+      }
+      
+      // Deduct from user credits
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('credit_balance')
+        .eq('id', user.id)
+        .single();
+      
+      if (profile) {
+        const newBalance = Math.max(0, (profile.credit_balance || 5) - cost);
+        await supabase
+          .from('profiles')
+          .update({ credit_balance: newBalance })
+          .eq('id', user.id);
+      }
+      
+      console.log('Image usage recorded');
+    } catch (usageError) {
+      console.error('Failed to record image usage:', usageError);
     }
 
     console.log('Image saved to database');

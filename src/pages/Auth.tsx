@@ -5,10 +5,10 @@ import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
-import { Loader2, Sparkles } from 'lucide-react';
+import { Loader2, Sparkles, MessageSquare } from 'lucide-react';
 import { z } from 'zod';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 
@@ -256,6 +256,32 @@ export default function Auth() {
             </TabsContent>
           </Tabs>
         </CardContent>
+        <CardFooter className="flex flex-col gap-4 pt-0">
+          <div className="relative w-full">
+            <div className="absolute inset-0 flex items-center">
+              <span className="w-full border-t border-border" />
+            </div>
+            <div className="relative flex justify-center text-xs uppercase">
+              <span className="bg-card px-2 text-muted-foreground">{t('auth.orTry')}</span>
+            </div>
+          </div>
+          <Button
+            variant="secondary"
+            className="w-full gap-2"
+            onClick={() => {
+              const sessionId = crypto.randomUUID();
+              localStorage.setItem('anonymous_session_id', sessionId);
+              localStorage.setItem('trial_started', 'true');
+              navigate('/chat');
+            }}
+          >
+            <MessageSquare className="h-4 w-4" />
+            {t('auth.tryWithoutAccount')}
+          </Button>
+          <p className="text-xs text-muted-foreground text-center">
+            {t('auth.trialLimit')}
+          </p>
+        </CardFooter>
       </Card>
 
       {/* Footer */}

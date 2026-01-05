@@ -14,6 +14,30 @@ export type Database = {
   }
   public: {
     Tables: {
+      anonymous_sessions: {
+        Row: {
+          created_at: string | null
+          id: string
+          message_count: number | null
+          session_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          message_count?: number | null
+          session_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          message_count?: number | null
+          session_id?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       conversation_summaries: {
         Row: {
           conversation_id: string
@@ -273,6 +297,8 @@ export type Database = {
         Row: {
           avatar_url: string | null
           created_at: string
+          credit_balance: number | null
+          credit_limit: number | null
           display_name: string | null
           global_memory_enabled: boolean | null
           id: string
@@ -280,12 +306,15 @@ export type Database = {
             | Database["public"]["Enums"]["dialect_preset"]
             | null
           preferred_mode: Database["public"]["Enums"]["chat_mode"] | null
+          subscription_tier: string | null
           theme: string | null
           updated_at: string
         }
         Insert: {
           avatar_url?: string | null
           created_at?: string
+          credit_balance?: number | null
+          credit_limit?: number | null
           display_name?: string | null
           global_memory_enabled?: boolean | null
           id: string
@@ -293,12 +322,15 @@ export type Database = {
             | Database["public"]["Enums"]["dialect_preset"]
             | null
           preferred_mode?: Database["public"]["Enums"]["chat_mode"] | null
+          subscription_tier?: string | null
           theme?: string | null
           updated_at?: string
         }
         Update: {
           avatar_url?: string | null
           created_at?: string
+          credit_balance?: number | null
+          credit_limit?: number | null
           display_name?: string | null
           global_memory_enabled?: boolean | null
           id?: string
@@ -306,6 +338,7 @@ export type Database = {
             | Database["public"]["Enums"]["dialect_preset"]
             | null
           preferred_mode?: Database["public"]["Enums"]["chat_mode"] | null
+          subscription_tier?: string | null
           theme?: string | null
           updated_at?: string
         }

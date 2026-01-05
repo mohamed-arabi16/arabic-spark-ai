@@ -27,12 +27,12 @@ const AI_GATEWAY_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-gat
 
 // Mode to display name mapping (actual model is determined by backend)
 const MODE_DISPLAY_NAMES: Record<string, string> = {
-  fast: 'Gemini Flash Lite',
-  standard: 'Gemini Flash',
-  deep: 'Gemini Pro',
+  fast: 'GPT-5 Nano',
+  standard: 'GPT-5 Mini',
+  deep: 'GPT-5',
   pro: 'GPT-5 Pro',
-  research: 'Gemini Pro (Research)',
-  image: 'Gemini Image',
+  research: 'GPT-5 (Research)',
+  image: 'DALL-E 3',
 };
 
 export default function Chat() {
@@ -198,17 +198,25 @@ export default function Chat() {
         .map(m => `${m.category}: ${m.content}`)
         .join('\n');
 
+      // Get session info - supports both authenticated and anonymous users
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        throw new Error('No active session');
+      const anonymousSessionId = localStorage.getItem('anonymous_session_id');
+      
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+      
+      if (session) {
+        headers['Authorization'] = `Bearer ${session.access_token}`;
+      } else if (anonymousSessionId) {
+        headers['x-session-id'] = anonymousSessionId;
+      } else {
+        throw new Error('No session available. Please sign in or start a trial.');
       }
 
       const resp = await fetchWithRetry(AI_GATEWAY_URL, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session.access_token}`,
-        },
+        headers,
         body: JSON.stringify({
           type: 'chat',
           messages: apiMessages,
@@ -226,9 +234,23 @@ export default function Chat() {
 
       if (!resp.ok) {
         let errorMsg = 'Failed to get response';
+        let errorCode = '';
         try {
            const error = await resp.json();
-           errorMsg = error.error || errorMsg;
+           errorMsg = error.message || error.error || errorMsg;
+           errorCode = error.code || '';
+           
+           // Handle trial limit
+           if (resp.status === 402 && error.action === 'signup') {
+             toast.error(t('chat.trialLimitReached') || 'Trial limit reached. Please sign up to continue!', {
+               action: {
+                 label: t('common.signUp'),
+                 onClick: () => window.location.href = '/auth',
+               },
+             });
+             setIsLoading(false);
+             return;
+           }
         } catch {
            errorMsg = `HTTP Error ${resp.status}`;
         }
