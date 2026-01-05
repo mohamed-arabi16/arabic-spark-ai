@@ -56,7 +56,7 @@ serve(async (req) => {
       enhancedPrompt += ` Negative prompt (avoid these): ${negative_prompt}.`;
     }
 
-    // Use Lovable AI's Nano Banana model for image generation
+    // Use Gemini 3 Pro Image Preview for high-quality image generation
     const response = await fetch(LOVABLE_AI_URL, {
       method: 'POST',
       headers: {
@@ -64,7 +64,7 @@ serve(async (req) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'google/gemini-2.5-flash-image',
+        model: 'google/gemini-3-pro-image-preview',
         messages: [
           {
             role: 'user',
@@ -158,8 +158,8 @@ serve(async (req) => {
       }
     }
 
-    // Calculate estimated cost
-    const cost = 0.02; // Approximate cost per image
+    // Calculate estimated cost for Gemini 3 Pro Image
+    const cost = 0.04; // Higher quality model cost
 
     // Save to database
     const { data, error } = await supabase
@@ -171,8 +171,8 @@ serve(async (req) => {
         // Let's save the original prompt to keep it clean for the user in history
         image_url: imageUrl,
         size,
-        model_used: 'gemini-2.5-flash-image',
-        cost
+        model_used: 'gemini-3-pro-image-preview',
+        cost: 0.04  // Higher cost for pro model
       })
       .select()
       .single()
@@ -191,8 +191,8 @@ serve(async (req) => {
                          // The generate-image endpoint doesn't seem to receive project_id.
                          // Let's leave it null for now.
         request_type: 'image',
-        model_id: 'gemini-2.5-flash-image',
-        prompt_tokens: 0, // Images don't have tokens in the same way
+        model_id: 'gemini-3-pro-image-preview',
+        prompt_tokens: 0,
         completion_tokens: 0,
         total_tokens: 0,
         cost: cost,

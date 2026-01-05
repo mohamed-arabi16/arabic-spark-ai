@@ -354,8 +354,9 @@ export function AppSidebar({ collapsed, onToggle }: AppSidebarProps) {
           variant="ghost"
           size="sm"
           className={cn(
-            'w-full justify-start gap-3 text-sidebar-foreground hover:bg-sidebar-accent',
-            collapsed && 'justify-center px-0'
+            'w-full gap-3 text-sidebar-foreground hover:bg-sidebar-accent',
+            collapsed ? 'justify-center px-0' : 'justify-start',
+            i18n.dir() === 'rtl' && !collapsed && 'flex-row-reverse'
           )}
           onClick={toggleTheme}
         >
@@ -365,10 +366,13 @@ export function AppSidebar({ collapsed, onToggle }: AppSidebarProps) {
 
         {/* Language Switcher */}
         {!collapsed && (
-          <div className="px-3 flex items-center justify-between">
+          <div className={cn(
+            "px-3 flex items-center justify-between",
+            i18n.dir() === 'rtl' && 'flex-row-reverse'
+          )}>
              <span className="text-sm text-muted-foreground">{t('common.language')}</span>
              <LanguageSwitcher />
-          </div>
+           </div>
         )}
 
         {/* User menu */}
@@ -378,8 +382,9 @@ export function AppSidebar({ collapsed, onToggle }: AppSidebarProps) {
               variant="ghost"
               size="sm"
               className={cn(
-                'w-full justify-start gap-3 text-sidebar-foreground hover:bg-sidebar-accent',
-                collapsed && 'justify-center px-0'
+                'w-full gap-3 text-sidebar-foreground hover:bg-sidebar-accent',
+                collapsed ? 'justify-center px-0' : 'justify-start',
+                i18n.dir() === 'rtl' && !collapsed && 'flex-row-reverse'
               )}
             >
               <Avatar className="h-6 w-6">
