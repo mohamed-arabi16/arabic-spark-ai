@@ -206,11 +206,6 @@ export function useModelSettings() {
 
   // Toggle model visibility in chat picker
   const toggleModelVisible = useCallback((modelId: string) => {
-    if (!settings.enabled_models.includes(modelId)) {
-      toast.error('Enable the model first');
-      return;
-    }
-    
     const isVisible = settings.visible_chat_models.includes(modelId);
     
     if (!isVisible && settings.visible_chat_models.length >= 5) {
@@ -218,11 +213,16 @@ export function useModelSettings() {
       return;
     }
     
+    // If enabling visibility, also ensure the model is in enabled_models
+    const newEnabled = !isVisible && !settings.enabled_models.includes(modelId)
+      ? [...settings.enabled_models, modelId]
+      : settings.enabled_models;
+    
     const newVisible = isVisible
       ? settings.visible_chat_models.filter(m => m !== modelId)
       : [...settings.visible_chat_models, modelId];
     
-    saveSettings({ visible_chat_models: newVisible });
+    saveSettings({ visible_chat_models: newVisible, enabled_models: newEnabled });
   }, [settings, saveSettings]);
 
   // Get visible chat models with full info

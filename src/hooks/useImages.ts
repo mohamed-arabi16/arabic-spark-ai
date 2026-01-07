@@ -30,7 +30,7 @@ export function useImages() {
     }
   }, []);
 
-  const generateImage = async (prompt: string, size: string, negativePrompt?: string, style?: string) => {
+  const generateImage = async (prompt: string, size: string, negativePrompt?: string, style?: string, model?: string) => {
     setIsGenerating(true);
     let userId = 'mock-user';
     try {
@@ -46,7 +46,8 @@ export function useImages() {
           size,
           user_id: userId,
           negative_prompt: negativePrompt,
-          style
+          style,
+          model // Pass the selected model to the edge function
         },
       });
 

@@ -110,7 +110,7 @@ serve(async (req) => {
       throw new Error('No image generated');
     }
 
-    const imageUrl = imageData.url;
+    const tempImageUrl = imageData.url;
     const revisedPrompt = imageData.revised_prompt || prompt;
 
     // Calculate cost for DALL-E 3
@@ -118,6 +118,42 @@ serve(async (req) => {
     let cost = 0.04;
     if (dalleSize === '1024x1792' || dalleSize === '1792x1024') {
       cost = 0.08;
+    }
+
+    // Download and upload to Supabase storage (OpenAI URLs expire after ~1 hour)
+    let permanentUrl = tempImageUrl;
+    try {
+      const imageResponse = await fetch(tempImageUrl);
+      if (imageResponse.ok) {
+        const imageBlob = await imageResponse.blob();
+        const imageId = crypto.randomUUID();
+        const fileName = `${user.id}/${imageId}.png`;
+        
+        // Create service client for storage operations
+        const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
+        
+        const { data: uploadData, error: uploadError } = await supabaseAdmin.storage
+          .from('generated-images')
+          .upload(fileName, imageBlob, {
+            contentType: 'image/png',
+            upsert: false,
+          });
+
+        if (!uploadError && uploadData) {
+          // Get public URL
+          const { data: publicUrlData } = supabaseAdmin.storage
+            .from('generated-images')
+            .getPublicUrl(fileName);
+          
+          permanentUrl = publicUrlData.publicUrl;
+          console.log('Image uploaded to storage:', permanentUrl);
+        } else {
+          console.error('Storage upload error:', uploadError);
+        }
+      }
+    } catch (storageError) {
+      console.error('Failed to upload image to storage:', storageError);
+      // Continue with temp URL - it will work for a while
     }
 
     // Save to database
@@ -128,7 +164,7 @@ serve(async (req) => {
         conversation_id: conversation_id || null,
         prompt: prompt,
         revised_prompt: revisedPrompt,
-        image_url: imageUrl,
+        image_url: permanentUrl,
         size: dalleSize,
         model_used: 'dall-e-3',
         cost: cost
