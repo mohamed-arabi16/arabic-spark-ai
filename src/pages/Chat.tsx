@@ -23,11 +23,12 @@ import { useAuth } from '@/hooks/useAuth';
 import { showMemorySuggestion } from '@/components/memory/MemorySuggestion';
 import { fetchWithRetry } from '@/lib/api-utils';
 import { useModelSettings } from '@/hooks/useModelSettings';
+import { getTaskExplanation } from '@/lib/model-explanations';
 
 const AI_GATEWAY_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-gateway`;
 
 export default function Chat() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { user } = useAuth();
   const [searchParams] = useSearchParams();
   const conversationIdParam = searchParams.get('conversationId');
@@ -79,7 +80,10 @@ export default function Chat() {
   // Model settings from user preferences
   const { settings: modelSettings, getVisibleChatModels, availableModels } = useModelSettings();
   const visibleModels = getVisibleChatModels();
-  const isModelLoading = availableModels === null;
+  const routingReason = routingMode === 'auto' && currentModel
+    ? getTaskExplanation('chat', i18n.language)
+    : undefined;
+  const isDefaultModel = Boolean(currentModel && modelSettings.default_chat_model === currentModel);
 
   // Budget check
   const checkBudget = () => {
@@ -620,7 +624,9 @@ export default function Chat() {
               onModelChange={handleModelChange}
               visibleModels={visibleModels}
               routingMode={routingMode}
-              onRoutingModeChange={handleRoutingModeChange}
+              onRoutingModeChange={setRoutingMode}
+              routingReason={routingReason}
+              isDefault={isDefaultModel}
             />
           ) : messages.length === 0 ? (
             <div className="flex-1 flex items-center justify-center p-8">
@@ -679,7 +685,9 @@ export default function Chat() {
             visibleModels={visibleModels}
             isModelLoading={isModelLoading}
             routingMode={routingMode}
-            onRoutingModeChange={handleRoutingModeChange}
+            onRoutingModeChange={setRoutingMode}
+            routingReason={routingReason}
+            isDefault={isDefaultModel}
           />
         )}
       </div>
