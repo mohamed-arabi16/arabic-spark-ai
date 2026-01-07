@@ -116,6 +116,32 @@ export function useModelSettings() {
     fetchSettings();
   }, [fetchModels, fetchSettings]);
 
+  useEffect(() => {
+    if (!user) {
+      return undefined;
+    }
+
+    const channel = supabase
+      .channel(`user-model-settings-${user.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'user_model_settings',
+          filter: `user_id=eq.${user.id}`,
+        },
+        () => {
+          fetchSettings();
+        },
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user, fetchSettings]);
+
   // Save settings to database
   const saveSettings = useCallback(async (newSettings: Partial<UserModelSettings>) => {
     if (!user) return;
