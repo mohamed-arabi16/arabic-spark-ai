@@ -233,6 +233,7 @@ interface ChatRequest {
   messages?: Message[];
   mode?: string;
   model?: string; // Direct model override
+  routing_mode?: 'auto' | 'manual';
   project_id?: string;
   conversation_id?: string;
   system_instructions?: string;
@@ -875,6 +876,7 @@ serve(async (req) => {
       messages = [], 
       mode = 'standard', 
       model: requestedModel,
+      routing_mode,
       conversation_id,
       system_instructions, 
       memory_context,
@@ -998,6 +1000,8 @@ Key behaviors:
       remainingMessages = Math.max(0, MAX_ANONYMOUS_MESSAGES - (session?.message_count || 0));
     }
 
+    const resolvedRoutingMode = routing_mode || (requestedModel ? 'manual' : 'auto');
+
     return new Response(stream, {
       headers: {
         ...corsHeaders,
@@ -1008,6 +1012,7 @@ Key behaviors:
         'X-Model-Requested': selectedModel,
         'X-Provider': provider,
         'X-Mode': mode,
+        'X-Routing-Mode': resolvedRoutingMode,
         'X-Anonymous': isAnonymous ? 'true' : 'false',
         'X-Remaining-Messages': remainingMessages.toString(),
         'X-Fallback-Used': fallbackUsed ? 'true' : 'false',

@@ -72,6 +72,7 @@ export default function Chat() {
   const [dialect, setDialect] = useState('msa');
   const [isError, setIsError] = useState(false);
   const [currentModel, setCurrentModel] = useState<string | undefined>(undefined);
+  const [isModelManuallySelected, setIsModelManuallySelected] = useState(false);
   const [routingMode, setRoutingMode] = useState<'auto' | 'manual'>('auto');
   const [hasManuallySelected, setHasManuallySelected] = useState(false);
   
@@ -116,6 +117,21 @@ export default function Chat() {
       setCurrentModel(modelSettings.default_chat_model);
     }
   }, [project, modelSettings.default_chat_model, hasManuallySelected]);
+
+  const handleModelChange = (modelId: string) => {
+    setCurrentModel(modelId);
+    setIsModelManuallySelected(true);
+  };
+
+  const getAutoSelectedModel = () => {
+    if (currentModel) {
+      return currentModel;
+    }
+    if (modelSettings.default_chat_model) {
+      return modelSettings.default_chat_model;
+    }
+    return visibleModels[0]?.id;
+  };
 
   // Load conversation from DB if conversationId is provided
   useEffect(() => {
@@ -248,6 +264,15 @@ export default function Chat() {
         throw new Error('No session available. Please sign in or start a trial.');
       }
 
+      const autoSelectedModel = routingMode === 'auto' && !isModelManuallySelected
+        ? getAutoSelectedModel()
+        : undefined;
+      const modelForRequest = isModelManuallySelected ? currentModel : autoSelectedModel ?? currentModel;
+
+      if (!currentModel && autoSelectedModel) {
+        setCurrentModel(autoSelectedModel);
+      }
+
       const resp = await fetchWithRetry(AI_GATEWAY_URL, {
         method: 'POST',
         headers,
@@ -255,7 +280,8 @@ export default function Chat() {
           action: 'chat',
           messages: apiMessages,
           mode: chatMode,
-          model: currentModel, // Direct model selection
+          model: modelForRequest, // Direct model selection
+          routing_mode: routingMode,
           project_id: projectId,
           conversation_id: convId,
           system_instructions: project?.system_instructions,
