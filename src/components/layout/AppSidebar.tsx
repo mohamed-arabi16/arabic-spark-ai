@@ -178,7 +178,20 @@ export function AppSidebar({
 
       {/* New chat button */}
       <div className="p-4">
-        <Button className={cn('w-full gap-2', collapsed ? 'px-0' : '')} onClick={() => navigate('/chat')}>
+        <Button 
+          className={cn('w-full gap-2', collapsed ? 'px-0' : '')} 
+          onClick={() => {
+            // If already on chat page, force a reload by navigating to /chat with a fresh state
+            if (location.pathname === '/chat') {
+              // Navigate to /chat with no params to start fresh
+              navigate('/chat', { replace: true });
+              // Force page reload to clear conversation state
+              window.location.href = '/chat';
+            } else {
+              navigate('/chat');
+            }
+          }}
+        >
           <Plus className="h-4 w-4" strokeWidth={1.5} />
           {!collapsed && <span>{t('chat.newChat')}</span>}
         </Button>

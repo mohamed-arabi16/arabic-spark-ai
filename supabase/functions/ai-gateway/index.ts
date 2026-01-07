@@ -909,6 +909,11 @@ serve(async (req) => {
 
     console.log(`AI Gateway - Mode: ${mode}, Model: ${selectedModel}, Dialect: ${dialect}, Anonymous: ${isAnonymous}`);
 
+    // Get model display info for identity
+    const modelConfig = MODEL_REGISTRY[selectedModel];
+    const modelDisplayName = modelConfig?.displayName || 'AI Assistant';
+    const modelDisplayNameAr = modelConfig?.displayNameAr || 'مساعد ذكي';
+
     // Build system prompt
     let systemContent = `You are a helpful, intelligent AI assistant called "بيت اللسان" (Bayt Al-Lisan). You provide clear, accurate, and thoughtful responses.
 
@@ -917,7 +922,11 @@ Key behaviors:
 - Use markdown formatting when helpful
 - Cite sources when making factual claims
 - Admit uncertainty when you don't know something
-- You understand and can respond in various Arabic dialects`;
+- You understand and can respond in various Arabic dialects
+
+MODEL IDENTITY:
+You are currently running as ${modelDisplayName} (${modelDisplayNameAr}). When users ask "who are you", "what model are you", "which AI are you", or similar questions about your identity, respond that you are "${modelDisplayName}" provided through AI Workspace / بيت اللسان.
+IMPORTANT: Do NOT claim to be GPT-4, GPT-3.5, ChatGPT, Claude, Gemini, or any other specific model name unless you actually ARE that model. Be honest about your true identity as ${modelDisplayName}.`;
 
     const dialectInstruction = DIALECT_INSTRUCTIONS[dialect] || DIALECT_INSTRUCTIONS.msa;
     systemContent += `\n\nLANGUAGE STYLE:\n${dialectInstruction}`;
