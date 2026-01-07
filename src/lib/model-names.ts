@@ -16,12 +16,14 @@ export const modelFriendlyNames: Record<string, { en: string; ar: string; shortE
   'anthropic/sonnet-4.5': { en: 'Claude Sonnet 4.5', ar: 'كلود سونيت 4.5', shortEn: 'Sonnet', shortAr: 'سونيت' },
   'anthropic/haiku-4.5': { en: 'Claude Haiku 4.5', ar: 'كلود هايكو 4.5', shortEn: 'Haiku', shortAr: 'هايكو' },
   'anthropic/deep-research': { en: 'Claude Deep Research', ar: 'كلود بحث عميق' },
+  'thaura/thaura': { en: 'Thaura', ar: 'ثورة', shortEn: 'Thaura', shortAr: 'ثورة' },
 };
 
 export const providerNames: Record<string, { en: string; ar: string }> = {
   openai: { en: 'OpenAI', ar: 'أوبن إيه آي' },
   google: { en: 'Google', ar: 'جوجل' },
   anthropic: { en: 'Anthropic', ar: 'أنثروبيك' },
+  thaura: { en: 'Thaura', ar: 'ثورة' },
 };
 
 export function getModelDisplayName(modelId: string, locale: string, short = false): string {

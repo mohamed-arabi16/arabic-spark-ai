@@ -23,6 +23,7 @@ interface ModelsResponse {
     openai: boolean;
     google: boolean;
     anthropic: boolean;
+    thaura: boolean;
   };
   defaults: Record<string, string>;
 }
@@ -48,7 +49,8 @@ const DEFAULT_SETTINGS: UserModelSettings = {
   enabled_models: [
     'openai/gpt-5.2', 'openai/gpt-5-nano', 'openai/gpt-image-1.5',
     'google/gemini-flash-3', 'google/gemini-3-pro', 'google/nanobanana-pro',
-    'anthropic/sonnet-4.5', 'anthropic/haiku-4.5'
+    'anthropic/sonnet-4.5', 'anthropic/haiku-4.5',
+    'thaura/thaura'
   ],
   visible_chat_models: [
     'openai/gpt-5.2', 'google/gemini-3-pro', 'anthropic/sonnet-4.5'

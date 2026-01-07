@@ -490,7 +490,9 @@
     "testFailed": "Test failed: {{error}}",
     "lastChecked": "Last checked",
     "spendingLimit": "Spending limit",
-    "limitSaved": "Spending limit saved"
+    "limitSaved": "Spending limit saved",
+    "thaura": "Thaura",
+    "thauraDescription": "Ethical AI with privacy by design"
   },
   "budget": {
     "perProject": "Project Budget",
