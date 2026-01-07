@@ -78,7 +78,7 @@ export default function Chat() {
   const [hasManuallySelected, setHasManuallySelected] = useState(false);
   
   // Model settings from user preferences
-  const { settings: modelSettings, getVisibleChatModels, availableModels } = useModelSettings();
+  const { settings: modelSettings, getVisibleChatModels, availableModels, isLoading: isModelLoading } = useModelSettings();
   const visibleModels = getVisibleChatModels();
   const routingReason = routingMode === 'auto' && currentModel
     ? getTaskExplanation('chat', i18n.language)
@@ -122,11 +122,6 @@ export default function Chat() {
       setCurrentModel(modelSettings.default_chat_model);
     }
   }, [project, modelSettings.default_chat_model, hasManuallySelected]);
-
-  const handleModelChange = (modelId: string) => {
-    setCurrentModel(modelId);
-    setIsModelManuallySelected(true);
-  };
 
   const getAutoSelectedModel = () => {
     if (currentModel) {
