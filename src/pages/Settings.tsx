@@ -21,6 +21,7 @@ const providerConfig: Record<string, { icon: typeof Bot; color: string; label: s
   openai: { icon: Bot, color: 'text-green-500', label: 'OpenAI' },
   google: { icon: Sparkles, color: 'text-blue-500', label: 'Google' },
   anthropic: { icon: Flame, color: 'text-orange-500', label: 'Anthropic' },
+  thaura: { icon: Zap, color: 'text-purple-500', label: 'Thaura' },
 };
 
 export default function Settings() {
@@ -111,7 +112,7 @@ export default function Settings() {
   const chatModels = availableModels?.chatModels || [];
   const imageModels = availableModels?.imageModels || [];
   const researchModels = availableModels?.researchModels || [];
-  const providers = availableModels?.providers || { openai: false, google: false, anthropic: false };
+  const providers = availableModels?.providers || { openai: false, google: false, anthropic: false, thaura: false };
 
   return (
     <MainLayout>
@@ -324,7 +325,7 @@ export default function Settings() {
                   </p>
                   
                   {/* Group by provider */}
-                  {['openai', 'google', 'anthropic'].map(provider => {
+                  {['openai', 'google', 'anthropic', 'thaura'].map(provider => {
                     const providerModels = chatModels.filter(m => m.provider === provider);
                     if (providerModels.length === 0) return null;
                     const config = providerConfig[provider];
