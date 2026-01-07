@@ -10,7 +10,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Zap, Sparkles, Brain, Search, Image, Crown, ChevronDown, HelpCircle, Bot, Cpu, Flame, Loader2 } from 'lucide-react';
+import { Zap, Sparkles, Brain, Search, Image, Crown, ChevronDown, HelpCircle, Bot, Flame, Loader2 } from 'lucide-react';
 import { ChatMode } from './ModeSelector';
 import { ModelHelpPanel } from './ModelHelpPanel';
 import { Badge } from '@/components/ui/badge';
@@ -43,6 +43,7 @@ const providerConfig: Record<string, { icon: typeof Bot; color: string; label: s
   openai: { icon: Bot, color: 'text-green-500', label: 'OpenAI' },
   google: { icon: Sparkles, color: 'text-blue-500', label: 'Google' },
   anthropic: { icon: Flame, color: 'text-orange-500', label: 'Anthropic' },
+  thaura: { icon: Zap, color: 'text-purple-500', label: 'Thaura' },
 };
 
 // Legacy mode configuration (fallback)
@@ -157,7 +158,7 @@ export function ModelPicker({
               <DropdownMenuSeparator />
               
               {/* Group by provider */}
-              {['openai', 'google', 'anthropic'].map(provider => {
+              {['openai', 'google', 'anthropic', 'thaura'].map(provider => {
                 const providerModels = visibleModels.filter(m => m.provider === provider && m.available);
                 if (providerModels.length === 0) return null;
                 

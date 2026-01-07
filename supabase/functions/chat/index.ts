@@ -9,6 +9,19 @@ const corsHeaders = {
 
 const LOVABLE_AI_URL = 'https://ai.gateway.lovable.dev/v1/chat/completions';
 
+// Model display name registry for AI identity
+const MODEL_DISPLAY_NAMES: Record<string, { displayName: string; displayNameAr: string }> = {
+  'google/gemini-2.5-flash': { displayName: 'Gemini Flash', displayNameAr: 'جيميني فلاش' },
+  'google/gemini-2.5-pro': { displayName: 'Gemini Pro', displayNameAr: 'جيميني برو' },
+  'google/gemini-3-pro-preview': { displayName: 'Gemini 3 Pro', displayNameAr: 'جيميني 3 برو' },
+  'openai/gpt-5': { displayName: 'GPT-5', displayNameAr: 'جي بي تي 5' },
+  'openai/gpt-5-mini': { displayName: 'GPT-5 Mini', displayNameAr: 'جي بي تي 5 ميني' },
+  'openai/gpt-5-nano': { displayName: 'GPT-5 Nano', displayNameAr: 'جي بي تي 5 نانو' },
+  'anthropic/claude-3-5-haiku-latest': { displayName: 'Claude Haiku', displayNameAr: 'كلود هايكو' },
+  'anthropic/claude-sonnet-4-5': { displayName: 'Claude Sonnet', displayNameAr: 'كلود سونيت' },
+  'thaura/thaura': { displayName: 'Thaura', displayNameAr: 'ثورة' },
+};
+
 const REASONING_EFFORT: Record<string, string> = {
   fast: 'none',       // No reasoning - fastest responses
   standard: 'low',
@@ -353,8 +366,15 @@ serve(async (req) => {
       }
     }
 
-    // Build base system prompt
-    let systemContent = `You are a helpful, intelligent AI assistant. You provide clear, accurate, and thoughtful responses.
+    // Build base system prompt with model identity
+    const modelInfo = MODEL_DISPLAY_NAMES[selectedModel] || { displayName: 'AI Assistant', displayNameAr: 'مساعد ذكي' };
+    
+    let systemContent = `You are ${modelInfo.displayName} (${modelInfo.displayNameAr}), a helpful and intelligent AI assistant provided through AI Workspace.
+
+IDENTITY RULES (CRITICAL):
+- When asked "who are you?", "what model are you?", or similar identity questions, respond that you are "${modelInfo.displayName}" (${modelInfo.displayNameAr}).
+- NEVER claim to be GPT-4, ChatGPT, Claude, Gemini, or any other model unless that is your actual identity.
+- You are specifically ${modelInfo.displayName}, not a generic AI.
 
 Key behaviors:
 - Be concise but thorough
