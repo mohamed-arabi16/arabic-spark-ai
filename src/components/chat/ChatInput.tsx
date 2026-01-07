@@ -37,6 +37,7 @@ interface ChatInputProps {
   onRoutingModeChange?: (mode: 'auto' | 'manual') => void;
   routingReason?: string;
   isDefault?: boolean;
+  defaultChatModel?: string;
 }
 
 export function ChatInput({
@@ -57,6 +58,7 @@ export function ChatInput({
   onRoutingModeChange,
   routingReason,
   isDefault,
+  defaultChatModel,
 }: ChatInputProps) {
   const { t, i18n } = useTranslation();
   const isRTL = i18n.dir() === 'rtl';
@@ -126,6 +128,7 @@ export function ChatInput({
             onModelChange={onModelChange}
             visibleModels={visibleModels}
             isLoading={isModelLoading}
+            defaultChatModel={defaultChatModel}
           />
         </div>
 

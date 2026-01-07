@@ -112,16 +112,18 @@ export default function Chat() {
     }
   }, [proposedMemories, approveMemory]);
 
+  // Initialize dialect from project or localStorage
   useEffect(() => {
-    // Initialize dialect from project or localStorage
     const savedDialect = project?.dialect_preset || localStorage.getItem('app_dialect') || 'msa';
     setDialect(savedDialect);
+  }, [project]);
 
-    // Initialize model from user settings
-    if (modelSettings.default_chat_model && !hasManuallySelected) {
+  // Sync model from settings when not manually selected
+  useEffect(() => {
+    if (!isModelLoading && modelSettings.default_chat_model && !hasManuallySelected) {
       setCurrentModel(modelSettings.default_chat_model);
     }
-  }, [project, modelSettings.default_chat_model, hasManuallySelected]);
+  }, [isModelLoading, modelSettings.default_chat_model, hasManuallySelected]);
 
   const getAutoSelectedModel = () => {
     if (currentModel) {
@@ -264,15 +266,19 @@ export default function Chat() {
         throw new Error('No session available. Please sign in or start a trial.');
       }
 
-      if (!currentModel) {
-        console.warn('Using legacy chat mode selection; no model specified.', { mode: chatMode });
+      // Ensure we always have a model to send
+      const modelToSend = currentModel || modelSettings.default_chat_model || visibleModels[0]?.id;
+      
+      if (!modelToSend) {
+        toast.error(t('models.noModelSelected') || 'No model selected');
+        setIsLoading(false);
+        return;
       }
 
       const requestBody = {
         action: 'chat',
         messages: apiMessages,
-        mode: currentModel ? undefined : chatMode,
-        model: currentModel, // Direct model selection
+        model: modelToSend, // Always send a model
         project_id: projectId,
         conversation_id: convId,
         system_instructions: project?.system_instructions,
@@ -619,9 +625,10 @@ export default function Chat() {
               onModelChange={handleModelChange}
               visibleModels={visibleModels}
               routingMode={routingMode}
-              onRoutingModeChange={setRoutingMode}
+              onRoutingModeChange={handleRoutingModeChange}
               routingReason={routingReason}
               isDefault={isDefaultModel}
+              defaultChatModel={modelSettings.default_chat_model}
             />
           ) : messages.length === 0 ? (
             <div className="flex-1 flex items-center justify-center p-8">
@@ -680,9 +687,10 @@ export default function Chat() {
             visibleModels={visibleModels}
             isModelLoading={isModelLoading}
             routingMode={routingMode}
-            onRoutingModeChange={setRoutingMode}
+            onRoutingModeChange={handleRoutingModeChange}
             routingReason={routingReason}
             isDefault={isDefaultModel}
+            defaultChatModel={modelSettings.default_chat_model}
           />
         )}
       </div>
