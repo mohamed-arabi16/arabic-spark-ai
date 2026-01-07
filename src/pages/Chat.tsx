@@ -72,7 +72,9 @@ export default function Chat() {
   const [dialect, setDialect] = useState('msa');
   const [isError, setIsError] = useState(false);
   const [currentModel, setCurrentModel] = useState<string | undefined>(undefined);
+  const [isModelManuallySelected, setIsModelManuallySelected] = useState(false);
   const [routingMode, setRoutingMode] = useState<'auto' | 'manual'>('auto');
+  const [hasManuallySelected, setHasManuallySelected] = useState(false);
   
   // Model settings from user preferences
   const { settings: modelSettings, getVisibleChatModels, availableModels } = useModelSettings();
@@ -111,10 +113,25 @@ export default function Chat() {
     setDialect(savedDialect);
 
     // Initialize model from user settings
-    if (modelSettings.default_chat_model && !currentModel) {
+    if (modelSettings.default_chat_model && !hasManuallySelected) {
       setCurrentModel(modelSettings.default_chat_model);
     }
-  }, [project, modelSettings.default_chat_model, currentModel]);
+  }, [project, modelSettings.default_chat_model, hasManuallySelected]);
+
+  const handleModelChange = (modelId: string) => {
+    setCurrentModel(modelId);
+    setIsModelManuallySelected(true);
+  };
+
+  const getAutoSelectedModel = () => {
+    if (currentModel) {
+      return currentModel;
+    }
+    if (modelSettings.default_chat_model) {
+      return modelSettings.default_chat_model;
+    }
+    return visibleModels[0]?.id;
+  };
 
   // Load conversation from DB if conversationId is provided
   useEffect(() => {
@@ -149,6 +166,18 @@ export default function Chat() {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, [messages]);
+
+  const handleModelChange = (model: string) => {
+    setCurrentModel(model);
+    setHasManuallySelected(true);
+  };
+
+  const handleRoutingModeChange = (mode: 'auto' | 'manual') => {
+    setRoutingMode(mode);
+    if (mode === 'auto') {
+      setHasManuallySelected(false);
+    }
+  };
 
   const handleSend = async (content: string, chatMode: ChatMode, selectedDialect: string) => {
     setIsError(false);
@@ -586,10 +615,10 @@ export default function Chat() {
               dialect={dialect}
               setDialect={setDialect}
               currentModel={currentModel}
-              onModelChange={setCurrentModel}
+              onModelChange={handleModelChange}
               visibleModels={visibleModels}
               routingMode={routingMode}
-              onRoutingModeChange={setRoutingMode}
+              onRoutingModeChange={handleRoutingModeChange}
             />
           ) : messages.length === 0 ? (
             <div className="flex-1 flex items-center justify-center p-8">
@@ -644,10 +673,10 @@ export default function Chat() {
             dialect={dialect}
             setDialect={setDialect}
             currentModel={currentModel}
-            onModelChange={setCurrentModel}
+            onModelChange={handleModelChange}
             visibleModels={visibleModels}
             routingMode={routingMode}
-            onRoutingModeChange={setRoutingMode}
+            onRoutingModeChange={handleRoutingModeChange}
           />
         )}
       </div>
