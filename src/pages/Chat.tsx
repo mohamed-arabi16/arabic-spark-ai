@@ -235,20 +235,26 @@ export default function Chat() {
         throw new Error('No session available. Please sign in or start a trial.');
       }
 
+      if (!currentModel) {
+        console.warn('Using legacy chat mode selection; no model specified.', { mode: chatMode });
+      }
+
+      const requestBody = {
+        action: 'chat',
+        messages: apiMessages,
+        mode: currentModel ? undefined : chatMode,
+        model: currentModel, // Direct model selection
+        project_id: projectId,
+        conversation_id: convId,
+        system_instructions: project?.system_instructions,
+        memory_context: memoryContext,
+        dialect: selectedDialect,
+      };
+
       const resp = await fetchWithRetry(AI_GATEWAY_URL, {
         method: 'POST',
         headers,
-        body: JSON.stringify({
-          action: 'chat',
-          messages: apiMessages,
-          mode: chatMode,
-          model: currentModel, // Direct model selection
-          project_id: projectId,
-          conversation_id: convId,
-          system_instructions: project?.system_instructions,
-          memory_context: memoryContext,
-          dialect: selectedDialect,
-        }),
+        body: JSON.stringify(requestBody),
         signal: abortControllerRef.current.signal,
         timeout: 60000,
         retries: 2,
