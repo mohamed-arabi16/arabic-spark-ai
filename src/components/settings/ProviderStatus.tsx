@@ -22,7 +22,7 @@ import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 
 interface ProviderInfo {
-  id: 'openai' | 'google' | 'anthropic';
+  id: 'openai' | 'google' | 'anthropic' | 'thaura';
   name: string;
   nameAr: string;
   icon: typeof Bot;
@@ -39,6 +39,7 @@ interface ProviderStatusProps {
     openai: boolean;
     google: boolean;
     anthropic: boolean;
+    thaura: boolean;
   };
   onTestProvider?: (provider: string) => Promise<{ valid: boolean; error?: string }>;
   onProviderSettingsChange?: (provider: string, settings: { enabled?: boolean; spendingLimit?: number }) => void;
@@ -69,6 +70,14 @@ const providerConfig: ProviderInfo[] = [
     color: 'text-orange-500',
     isConfigured: false,
   },
+  { 
+    id: 'thaura', 
+    name: 'Thaura', 
+    nameAr: 'ثورة', 
+    icon: Zap, 
+    color: 'text-purple-500',
+    isConfigured: false,
+  },
 ];
 
 export function ProviderStatus({ 
@@ -84,6 +93,7 @@ export function ProviderStatus({
     openai: { enabled: true, spendingLimit: 50 },
     google: { enabled: true, spendingLimit: 50 },
     anthropic: { enabled: true, spendingLimit: 50 },
+    thaura: { enabled: true, spendingLimit: 50 },
   });
   const [lastChecked, setLastChecked] = useState<Record<string, Date>>({});
   const [lastErrors, setLastErrors] = useState<Record<string, string>>({});

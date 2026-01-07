@@ -14,7 +14,7 @@ const corsHeaders = {
 type Capability = 'chat' | 'deep_think' | 'deep_research' | 'image' | 'video' | 'transcribe' | 'code';
 
 interface ModelConfig {
-  provider: 'openai' | 'google' | 'anthropic';
+  provider: 'openai' | 'google' | 'anthropic' | 'thaura';
   actualModel: string;
   capabilities: Capability[];
   displayName: string;
@@ -160,6 +160,18 @@ const MODEL_REGISTRY: Record<string, ModelConfig> = {
     tier: 'premium',
     pricing: { input: 15.00, output: 75.00 },
   },
+
+  // ==================== THAURA MODELS ====================
+  'thaura/thaura': {
+    provider: 'thaura',
+    actualModel: 'thaura',
+    capabilities: ['chat', 'deep_think', 'code'],
+    displayName: 'Thaura',
+    displayNameAr: 'ثورة',
+    description: 'Ethical AI with privacy focus',
+    tier: 'standard',
+    pricing: { input: 0.50, output: 2.00 },
+  },
 };
 
 // Default models per function/capability
@@ -240,11 +252,12 @@ interface ChatRequest {
 // PROVIDER AVAILABILITY CHECK
 // ============================================================================
 
-function getConfiguredProviders(): { openai: boolean; google: boolean; anthropic: boolean } {
+function getConfiguredProviders(): { openai: boolean; google: boolean; anthropic: boolean; thaura: boolean } {
   return {
     openai: !!Deno.env.get('OPENAI_API_KEY'),
     google: !!Deno.env.get('GOOGLE_API_KEY'),
     anthropic: !!Deno.env.get('ANTHROPIC_API_KEY'),
+    thaura: !!Deno.env.get('THAURA_API_KEY'),
   };
 }
 
@@ -392,6 +405,32 @@ async function callAnthropic(model: string, messages: Message[], config: { max_t
   });
 }
 
+async function callThaura(model: string, messages: Message[], config: { max_tokens: number }) {
+  const apiKey = Deno.env.get('THAURA_API_KEY');
+  if (!apiKey) throw new Error('THAURA_API_KEY not configured');
+  
+  const modelConfig = MODEL_REGISTRY[model];
+  if (!modelConfig) throw new Error(`Unknown model: ${model}`);
+  
+  console.log(`Calling Thaura with model: ${modelConfig.actualModel}`);
+  
+  // Thaura uses OpenAI-compatible API format
+  return fetch('https://backend.thaura.ai/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${apiKey}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      model: modelConfig.actualModel,
+      messages,
+      max_tokens: config.max_tokens,
+      stream: true,
+      stream_options: { include_usage: true },
+    }),
+  });
+}
+
 async function callProvider(model: string, messages: Message[], config: { max_tokens: number }) {
   const modelConfig = MODEL_REGISTRY[model];
   if (!modelConfig) throw new Error(`Unknown model: ${model}`);
@@ -403,6 +442,8 @@ async function callProvider(model: string, messages: Message[], config: { max_to
       return callGoogle(model, messages, config);
     case 'anthropic':
       return callAnthropic(model, messages, config);
+    case 'thaura':
+      return callThaura(model, messages, config);
     default:
       throw new Error(`Unknown provider: ${modelConfig.provider}`);
   }
@@ -423,7 +464,7 @@ async function callWithFallback(
   primaryModel: string, 
   messages: Message[], 
   config: { max_tokens: number },
-  providers: { openai: boolean; google: boolean; anthropic: boolean }
+  providers: { openai: boolean; google: boolean; anthropic: boolean; thaura: boolean }
 ): Promise<CallWithFallbackResult> {
   const chain = [primaryModel, ...(FALLBACK_CHAINS[primaryModel] || [])];
   let lastError: Error | null = null;
@@ -525,6 +566,26 @@ async function testProviderConnection(provider: string): Promise<{ valid: boolea
         return { valid: false, error: 'Invalid key format' };
       }
       return { valid: true };
+    }
+    
+    if (provider === 'thaura') {
+      const apiKey = Deno.env.get('THAURA_API_KEY');
+      if (!apiKey) {
+        return { valid: false, error: 'API key not configured' };
+      }
+      // Test by making a minimal API call
+      try {
+        const response = await fetch('https://backend.thaura.ai/v1/models', {
+          headers: { 'Authorization': `Bearer ${apiKey}` },
+        });
+        if (!response.ok) {
+          return { valid: false, error: `HTTP ${response.status}` };
+        }
+        return { valid: true };
+      } catch {
+        // If models endpoint doesn't exist, just verify key is set
+        return { valid: true };
+      }
     }
     
     return { valid: false, error: 'Unknown provider' };

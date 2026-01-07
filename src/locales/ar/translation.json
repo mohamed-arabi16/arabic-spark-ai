@@ -490,7 +490,9 @@
     "testFailed": "فشل الاختبار: {{error}}",
     "lastChecked": "آخر فحص",
     "spendingLimit": "حد الإنفاق",
-    "limitSaved": "تم حفظ حد الإنفاق"
+    "limitSaved": "تم حفظ حد الإنفاق",
+    "thaura": "ثورة",
+    "thauraDescription": "ذكاء اصطناعي أخلاقي مع خصوصية مدمجة"
   },
   "budget": {
     "perProject": "ميزانية المشروع",
