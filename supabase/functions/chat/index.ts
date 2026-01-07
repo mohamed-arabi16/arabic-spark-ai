@@ -213,7 +213,28 @@ serve(async (req) => {
       }
     }
 
-    const selectedModel = model || 'google/gemini-2.5-flash';
+    // Determine model: use provided model, or fetch user default, or fallback
+    let selectedModel = model;
+    
+    if (!selectedModel) {
+      try {
+        const { data: userSettings } = await supabase
+          .from('user_model_settings')
+          .select('default_chat_model')
+          .eq('user_id', user.id)
+          .single();
+        
+        if (userSettings?.default_chat_model) {
+          selectedModel = userSettings.default_chat_model;
+          console.log('Using user default model from settings:', selectedModel);
+        }
+      } catch (e) {
+        console.warn('Could not fetch user model settings:', e);
+      }
+    }
+    
+    // Final fallback
+    selectedModel = selectedModel || 'google/gemini-2.5-flash';
 
     // Determine reasoning effort and max tokens
     const reasoningEffort = REASONING_EFFORT[mode] || 'none';

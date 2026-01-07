@@ -477,6 +477,10 @@
     "switchToManual": "Switch to Manual",
     "switchToAuto": "Switch to Auto"
   },
+  "models": {
+    "default": "Default",
+    "noModelSelected": "No model selected. Please configure models in Settings."
+  },
   "providers": {
     "title": "AI Providers",
     "description": "Manage your AI provider connections and limits",

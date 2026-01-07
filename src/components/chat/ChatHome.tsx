@@ -38,6 +38,7 @@ interface ChatHomeProps {
   onRoutingModeChange?: (mode: 'auto' | 'manual') => void;
   routingReason?: string;
   isDefault?: boolean;
+  defaultChatModel?: string;
 }
 
 const suggestedPrompts = [
@@ -64,6 +65,7 @@ export function ChatHome({
   onRoutingModeChange,
   routingReason,
   isDefault,
+  defaultChatModel,
 }: ChatHomeProps) {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
@@ -143,6 +145,7 @@ export function ChatHome({
             onModelChange={onModelChange}
             visibleModels={visibleModels}
             isLoading={isModelLoading}
+            defaultChatModel={defaultChatModel}
           />
         </motion.div>
 

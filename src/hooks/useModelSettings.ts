@@ -171,10 +171,24 @@ export function useModelSettings() {
     }
   }, [user, settings]);
 
-  // Update a single default model
+  // Update a single default model (auto-adds to visible if it's the chat model)
   const setDefaultModel = useCallback((functionType: keyof Pick<UserModelSettings, 'default_chat_model' | 'default_deep_think_model' | 'default_research_model' | 'default_image_model' | 'default_video_model'>, modelId: string) => {
-    saveSettings({ [functionType]: modelId });
-  }, [saveSettings]);
+    const updates: Partial<UserModelSettings> = { [functionType]: modelId };
+    
+    // If setting default_chat_model, ensure it's also in visible_chat_models
+    if (functionType === 'default_chat_model') {
+      const currentVisible = settings.visible_chat_models;
+      if (!currentVisible.includes(modelId)) {
+        // Add to visible models (replace last one if at 5 limit)
+        const newVisible = currentVisible.length >= 5
+          ? [...currentVisible.slice(0, 4), modelId]
+          : [...currentVisible, modelId];
+        updates.visible_chat_models = newVisible;
+      }
+    }
+    
+    saveSettings(updates);
+  }, [saveSettings, settings.visible_chat_models]);
 
   // Toggle model enabled status
   const toggleModelEnabled = useCallback((modelId: string) => {

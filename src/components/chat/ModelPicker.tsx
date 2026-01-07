@@ -34,6 +34,7 @@ interface ModelPickerProps {
   onModelChange?: (modelId: string) => void;
   visibleModels?: ModelInfo[];
   isLoading?: boolean;
+  defaultChatModel?: string;
   className?: string;
 }
 
@@ -72,6 +73,7 @@ export function ModelPicker({
   onModelChange,
   visibleModels = [],
   isLoading,
+  defaultChatModel,
   className 
 }: ModelPickerProps) {
   const { t, i18n } = useTranslation();
@@ -173,7 +175,14 @@ export function ModelPicker({
                         className="gap-2 cursor-pointer"
                       >
                         <div className="flex-1">
-                          <span className="text-sm">{isRTL ? model.nameAr : model.name}</span>
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-sm">{isRTL ? model.nameAr : model.name}</span>
+                            {model.id === defaultChatModel && (
+                              <Badge variant="outline" className="text-[9px] px-1 py-0 font-normal border-primary/50 text-primary">
+                                {t('models.default') || 'Default'}
+                              </Badge>
+                            )}
+                          </div>
                           <p className="text-[10px] text-muted-foreground">{model.description}</p>
                         </div>
                         {getTierBadge(model.tier)}
