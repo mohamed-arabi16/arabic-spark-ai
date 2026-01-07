@@ -116,6 +116,32 @@ export function useModelSettings() {
     fetchSettings();
   }, [fetchModels, fetchSettings]);
 
+  useEffect(() => {
+    if (!user) {
+      return undefined;
+    }
+
+    const channel = supabase
+      .channel(`user-model-settings-${user.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'user_model_settings',
+          filter: `user_id=eq.${user.id}`,
+        },
+        () => {
+          fetchSettings();
+        },
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user, fetchSettings]);
+
   // Save settings to database
   const saveSettings = useCallback(async (newSettings: Partial<UserModelSettings>) => {
     if (!user) return;
@@ -188,10 +214,17 @@ export function useModelSettings() {
   // Get visible chat models with full info
   const getVisibleChatModels = useCallback(() => {
     if (!availableModels) return [];
-    
-    return availableModels.chatModels.filter(
-      m => settings.visible_chat_models.includes(m.id) && m.available
+
+    const availableChatModels = availableModels.chatModels.filter((model) => model.available);
+    const configuredVisible = availableChatModels.filter((model) =>
+      settings.visible_chat_models.includes(model.id)
     );
+
+    if (configuredVisible.length > 0) {
+      return configuredVisible;
+    }
+
+    return availableChatModels.slice(0, Math.min(5, availableChatModels.length));
   }, [availableModels, settings.visible_chat_models]);
 
   return {

@@ -73,7 +73,9 @@ export default function Chat() {
   const [dialect, setDialect] = useState('msa');
   const [isError, setIsError] = useState(false);
   const [currentModel, setCurrentModel] = useState<string | undefined>(undefined);
+  const [isModelManuallySelected, setIsModelManuallySelected] = useState(false);
   const [routingMode, setRoutingMode] = useState<'auto' | 'manual'>('auto');
+  const [hasManuallySelected, setHasManuallySelected] = useState(false);
   
   // Model settings from user preferences
   const { settings: modelSettings, getVisibleChatModels, availableModels } = useModelSettings();
@@ -116,10 +118,25 @@ export default function Chat() {
     setDialect(savedDialect);
 
     // Initialize model from user settings
-    if (modelSettings.default_chat_model && !currentModel) {
+    if (modelSettings.default_chat_model && !hasManuallySelected) {
       setCurrentModel(modelSettings.default_chat_model);
     }
-  }, [project, modelSettings.default_chat_model, currentModel]);
+  }, [project, modelSettings.default_chat_model, hasManuallySelected]);
+
+  const handleModelChange = (modelId: string) => {
+    setCurrentModel(modelId);
+    setIsModelManuallySelected(true);
+  };
+
+  const getAutoSelectedModel = () => {
+    if (currentModel) {
+      return currentModel;
+    }
+    if (modelSettings.default_chat_model) {
+      return modelSettings.default_chat_model;
+    }
+    return visibleModels[0]?.id;
+  };
 
   // Load conversation from DB if conversationId is provided
   useEffect(() => {
@@ -154,6 +171,18 @@ export default function Chat() {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, [messages]);
+
+  const handleModelChange = (model: string) => {
+    setCurrentModel(model);
+    setHasManuallySelected(true);
+  };
+
+  const handleRoutingModeChange = (mode: 'auto' | 'manual') => {
+    setRoutingMode(mode);
+    if (mode === 'auto') {
+      setHasManuallySelected(false);
+    }
+  };
 
   const handleSend = async (content: string, chatMode: ChatMode, selectedDialect: string) => {
     setIsError(false);
@@ -240,20 +269,26 @@ export default function Chat() {
         throw new Error('No session available. Please sign in or start a trial.');
       }
 
+      if (!currentModel) {
+        console.warn('Using legacy chat mode selection; no model specified.', { mode: chatMode });
+      }
+
+      const requestBody = {
+        action: 'chat',
+        messages: apiMessages,
+        mode: currentModel ? undefined : chatMode,
+        model: currentModel, // Direct model selection
+        project_id: projectId,
+        conversation_id: convId,
+        system_instructions: project?.system_instructions,
+        memory_context: memoryContext,
+        dialect: selectedDialect,
+      };
+
       const resp = await fetchWithRetry(AI_GATEWAY_URL, {
         method: 'POST',
         headers,
-        body: JSON.stringify({
-          action: 'chat',
-          messages: apiMessages,
-          mode: chatMode,
-          model: currentModel, // Direct model selection
-          project_id: projectId,
-          conversation_id: convId,
-          system_instructions: project?.system_instructions,
-          memory_context: memoryContext,
-          dialect: selectedDialect,
-        }),
+        body: JSON.stringify(requestBody),
         signal: abortControllerRef.current.signal,
         timeout: 60000,
         retries: 2,
@@ -580,12 +615,13 @@ export default function Chat() {
                 }
               }}
               isLoading={isLoading}
+              isModelLoading={isModelLoading}
               mode={mode}
               setMode={setMode}
               dialect={dialect}
               setDialect={setDialect}
               currentModel={currentModel}
-              onModelChange={setCurrentModel}
+              onModelChange={handleModelChange}
               visibleModels={visibleModels}
               routingMode={routingMode}
               onRoutingModeChange={setRoutingMode}
@@ -645,8 +681,9 @@ export default function Chat() {
             dialect={dialect}
             setDialect={setDialect}
             currentModel={currentModel}
-            onModelChange={setCurrentModel}
+            onModelChange={handleModelChange}
             visibleModels={visibleModels}
+            isModelLoading={isModelLoading}
             routingMode={routingMode}
             onRoutingModeChange={setRoutingMode}
             routingReason={routingReason}
