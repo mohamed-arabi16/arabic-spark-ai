@@ -23,6 +23,8 @@ interface RoutingBadgeProps {
   routingMode: 'auto' | 'manual';
   onRoutingModeChange: (mode: 'auto' | 'manual') => void;
   currentModel?: string;
+  routingReason?: string;
+  isDefault?: boolean;
   taskType?: 'chat' | 'deep_think' | 'research' | 'image';
   className?: string;
 }
@@ -43,6 +45,8 @@ export function RoutingBadge({
   routingMode,
   onRoutingModeChange,
   currentModel,
+  routingReason,
+  isDefault,
   taskType = 'chat',
   className,
 }: RoutingBadgeProps) {
@@ -134,8 +138,16 @@ export function RoutingBadge({
             <div className="space-y-1">
               <p className="text-xs font-medium">{t('routing.whyThisModel')}</p>
               <p className="text-[10px] text-muted-foreground">{routingExplanation}</p>
+              {routingReason && (
+                <p className="text-[10px] text-muted-foreground">{routingReason}</p>
+              )}
               {modelExplanation && (
                 <p className="text-[10px] text-muted-foreground">{modelExplanation}</p>
+              )}
+              {isDefault && (
+                <Badge variant="secondary" className="w-fit text-[10px] font-medium">
+                  {t('routing.defaultModel')}
+                </Badge>
               )}
             </div>
           </TooltipContent>

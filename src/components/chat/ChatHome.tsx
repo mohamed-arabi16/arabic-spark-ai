@@ -30,6 +30,8 @@ interface ChatHomeProps {
   visibleModels?: ModelInfo[];
   routingMode?: 'auto' | 'manual';
   onRoutingModeChange?: (mode: 'auto' | 'manual') => void;
+  routingReason?: string;
+  isDefault?: boolean;
 }
 
 const suggestedPrompts = [
@@ -53,6 +55,8 @@ export function ChatHome({
   visibleModels,
   routingMode = 'auto',
   onRoutingModeChange,
+  routingReason,
+  isDefault,
 }: ChatHomeProps) {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
@@ -119,6 +123,8 @@ export function ChatHome({
             routingMode={routingMode}
             onRoutingModeChange={onRoutingModeChange}
             currentModel={currentModel}
+            routingReason={routingReason}
+            isDefault={isDefault}
             className="text-xs"
           />
         </motion.div>

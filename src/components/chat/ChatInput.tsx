@@ -34,6 +34,8 @@ interface ChatInputProps {
   visibleModels?: ModelInfo[];
   routingMode?: 'auto' | 'manual';
   onRoutingModeChange?: (mode: 'auto' | 'manual') => void;
+  routingReason?: string;
+  isDefault?: boolean;
 }
 
 export function ChatInput({
@@ -51,6 +53,8 @@ export function ChatInput({
   visibleModels = [],
   routingMode = 'auto',
   onRoutingModeChange,
+  routingReason,
+  isDefault,
 }: ChatInputProps) {
   const { t, i18n } = useTranslation();
   const isRTL = i18n.dir() === 'rtl';
@@ -105,6 +109,8 @@ export function ChatInput({
                 routingMode={routingMode}
                 onRoutingModeChange={onRoutingModeChange}
                 currentModel={currentModel}
+                routingReason={routingReason}
+                isDefault={isDefault}
                 taskType="chat"
               />
             )}

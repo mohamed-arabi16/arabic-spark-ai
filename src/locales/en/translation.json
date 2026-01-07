@@ -473,6 +473,7 @@
     "whyThisModel": "Why this model?",
     "autoDesc": "Model selected based on task and settings",
     "manualDesc": "You choose the model",
+    "defaultModel": "Default model",
     "switchToManual": "Switch to Manual",
     "switchToAuto": "Switch to Auto"
   },
