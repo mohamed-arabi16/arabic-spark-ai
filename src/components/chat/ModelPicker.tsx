@@ -10,7 +10,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Zap, Sparkles, Brain, Search, Image, Crown, ChevronDown, HelpCircle, Bot, Cpu, Flame } from 'lucide-react';
+import { Zap, Sparkles, Brain, Search, Image, Crown, ChevronDown, HelpCircle, Bot, Cpu, Flame, Loader2 } from 'lucide-react';
 import { ChatMode } from './ModeSelector';
 import { ModelHelpPanel } from './ModelHelpPanel';
 import { Badge } from '@/components/ui/badge';
@@ -33,6 +33,7 @@ interface ModelPickerProps {
   currentModel?: string;
   onModelChange?: (modelId: string) => void;
   visibleModels?: ModelInfo[];
+  isLoading?: boolean;
   className?: string;
 }
 
@@ -70,6 +71,7 @@ export function ModelPicker({
   currentModel,
   onModelChange,
   visibleModels = [],
+  isLoading,
   className 
 }: ModelPickerProps) {
   const { t, i18n } = useTranslation();
@@ -84,7 +86,8 @@ export function ModelPicker({
   const currentProvider = currentModelInfo ? providerConfig[currentModelInfo.provider] : null;
 
   // Use model-based picker if models are available and onModelChange is provided
-  const useModelPicker = visibleModels.length > 0 && onModelChange;
+  const isModelLoading = Boolean(isLoading);
+  const useModelPicker = !isModelLoading && visibleModels.length > 0 && onModelChange;
 
   const getTierBadge = (tier: string) => {
     switch (tier) {
@@ -107,7 +110,23 @@ export function ModelPicker({
       <ModelHelpPanel open={isHelpOpen} onOpenChange={setIsHelpOpen} />
 
       <div className={cn("flex items-center", isRTL && "flex-row-reverse")}>
-        {useModelPicker ? (
+        {isModelLoading ? (
+          <Button
+            variant="outline"
+            size="sm"
+            disabled
+            className={cn(
+              "h-8 gap-2 bg-background/50 backdrop-blur-sm border-dashed animate-pulse",
+              isRTL ? "rounded-s-none border-s-0" : "rounded-e-none border-e-0",
+              isRTL && "flex-row-reverse"
+            )}
+          >
+            <Loader2 className="h-3 w-3 animate-spin" />
+            <span className="text-xs font-medium">
+              {t('common.loading') || 'Loading models'}
+            </span>
+          </Button>
+        ) : useModelPicker ? (
           // New model-based picker
           <DropdownMenu>
             <DropdownMenuTrigger asChild>

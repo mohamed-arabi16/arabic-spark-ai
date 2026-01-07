@@ -8,12 +8,17 @@ import { Sparkles, FolderPlus, History, Send, Mail, Lightbulb, FileText, Palette
 import { motion } from 'framer-motion';
 import { staggerContainer, staggerItem } from '@/lib/motion';
 import { RoutingBadge } from './RoutingBadge';
+import { ModelPicker } from './ModelPicker';
 import { ChatMode } from './ModeSelector';
 
 interface ModelInfo {
   id: string;
   name: string;
+  nameAr: string;
+  description: string;
+  tier: string;
   provider: string;
+  available: boolean;
 }
 
 interface ChatHomeProps {
@@ -21,6 +26,7 @@ interface ChatHomeProps {
   setMessage: (message: string) => void;
   onSend: () => void;
   isLoading?: boolean;
+  isModelLoading?: boolean;
   mode: ChatMode;
   setMode: (mode: ChatMode) => void;
   dialect: string;
@@ -44,6 +50,7 @@ export function ChatHome({
   setMessage,
   onSend,
   isLoading,
+  isModelLoading,
   mode,
   setMode,
   dialect,
@@ -120,6 +127,16 @@ export function ChatHome({
             onRoutingModeChange={onRoutingModeChange}
             currentModel={currentModel}
             className="text-xs"
+          />
+          <ModelPicker
+            mode={mode}
+            onModeChange={setMode}
+            dialect={dialect}
+            onDialectChange={setDialect}
+            currentModel={currentModel}
+            onModelChange={onModelChange}
+            visibleModels={visibleModels}
+            isLoading={isModelLoading}
           />
         </motion.div>
 

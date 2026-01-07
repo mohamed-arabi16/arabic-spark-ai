@@ -22,6 +22,7 @@ interface ModelInfo {
 interface ChatInputProps {
   onSend: (message: string, mode: ChatMode, dialect: string) => void;
   isLoading?: boolean;
+  isModelLoading?: boolean;
   onStop?: () => void;
   message: string;
   setMessage: (message: string) => void;
@@ -39,6 +40,7 @@ interface ChatInputProps {
 export function ChatInput({
   onSend,
   isLoading,
+  isModelLoading,
   onStop,
   message,
   setMessage,
@@ -117,6 +119,7 @@ export function ChatInput({
             currentModel={currentModel}
             onModelChange={onModelChange}
             visibleModels={visibleModels}
+            isLoading={isModelLoading}
           />
         </div>
 

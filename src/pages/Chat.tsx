@@ -79,6 +79,7 @@ export default function Chat() {
   // Model settings from user preferences
   const { settings: modelSettings, getVisibleChatModels, availableModels } = useModelSettings();
   const visibleModels = getVisibleChatModels();
+  const isModelLoading = availableModels === null;
 
   // Budget check
   const checkBudget = () => {
@@ -610,6 +611,7 @@ export default function Chat() {
                 }
               }}
               isLoading={isLoading}
+              isModelLoading={isModelLoading}
               mode={mode}
               setMode={setMode}
               dialect={dialect}
@@ -675,6 +677,7 @@ export default function Chat() {
             currentModel={currentModel}
             onModelChange={handleModelChange}
             visibleModels={visibleModels}
+            isModelLoading={isModelLoading}
             routingMode={routingMode}
             onRoutingModeChange={handleRoutingModeChange}
           />
