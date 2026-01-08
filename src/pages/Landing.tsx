@@ -124,7 +124,7 @@ export default function Landing() {
           duration: 0.6,
           delay: 0.1,
           ease: [0.16, 1, 0.3, 1]
-        }} className="text-4xl md:text-5xl lg:text-6xl mb-6 leading-tight tracking-tight my-[60px] px-0 py-[31px] font-extrabold">
+        }} className="text-4xl md:text-5xl lg:text-6xl mb-6 leading-tight tracking-tight my-[60px] px-0 py-[31px] font-extrabold whitespace-pre-line">
             {t('landing.headline')}
           </motion.h1>
           
