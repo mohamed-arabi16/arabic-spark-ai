@@ -19,6 +19,8 @@ export default function Landing() {
   const navigate = useNavigate();
   const isRTL = i18n.dir() === 'rtl';
   const reducedMotion = prefersReducedMotion();
+  const headline = t('landing.headline');
+  const headlineParts = headline.split('\n');
 
   // Parallax scroll effect for hero
   const {
@@ -128,8 +130,11 @@ export default function Landing() {
           duration: 0.6,
           delay: 0.1,
           ease: [0.16, 1, 0.3, 1]
-        }} className="text-4xl md:text-5xl lg:text-6xl mb-6 leading-relaxed tracking-tight my-[60px] px-0 py-[31px] font-extrabold whitespace-pre-line">
-            {t('landing.headline')}
+        }} className={`text-4xl md:text-5xl lg:text-6xl mb-6 my-[60px] px-0 py-[31px] font-extrabold ${isRTL ? 'leading-[1.85] tracking-normal' : 'leading-tight tracking-tight'}`}>
+            {headlineParts.length > 1 ? <>
+                <span className="block">{headlineParts[0]}</span>
+                <span className="block mt-4">{headlineParts.slice(1).join('\n')}</span>
+              </> : headline}
           </motion.h1>
           
           <motion.p initial={reducedMotion ? {} : {
