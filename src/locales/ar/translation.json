@@ -20,8 +20,8 @@
         "description": "نفهم الشامي، المصري، الخليجي، والمغاربي"
       },
       "models": {
-        "title": "تبديل الموديلات",
-        "description": "GPT-5، Claude، Gemini - بدّل بدون ما تخسر الذاكرة"
+        "title": "4 مزودين للذكاء",
+        "description": "OpenAI، Google، Anthropic، وثورة - بدّل بينهم بدون ما تخسر الذاكرة"
       },
       "memory": {
         "title": "ذاكرة ذكية",
@@ -30,6 +30,10 @@
       "projects": {
         "title": "مشاريع منفصلة",
         "description": "ذاكرة خاصة بالمشروع أو عامة - إنت بتختار"
+      },
+      "thaura": {
+        "title": "نموذج ثورة",
+        "description": "ذكاء اصطناعي أخلاقي مع خصوصية تامة وأداء عالي"
       },
       "pricing": {
         "title": "سعر أقل",

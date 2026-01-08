@@ -5,7 +5,7 @@ import { motion, useScroll, useTransform } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { useAuth } from '@/hooks/useAuth';
-import { Sparkles, Languages, RefreshCw, Brain, FolderKanban, DollarSign, ArrowRight } from 'lucide-react';
+import { Sparkles, Languages, RefreshCw, Brain, FolderKanban, DollarSign, ArrowRight, Zap } from 'lucide-react';
 import { prefersReducedMotion, staggerContainer, staggerItem } from '@/lib/motion';
 export default function Landing() {
   const {
@@ -58,6 +58,10 @@ export default function Landing() {
     icon: FolderKanban,
     titleKey: 'landing.features.projects.title',
     descKey: 'landing.features.projects.description'
+  }, {
+    icon: Zap,
+    titleKey: 'landing.features.thaura.title',
+    descKey: 'landing.features.thaura.description'
   }, {
     icon: DollarSign,
     titleKey: 'landing.features.pricing.title',
@@ -124,7 +128,7 @@ export default function Landing() {
           duration: 0.6,
           delay: 0.1,
           ease: [0.16, 1, 0.3, 1]
-        }} className="text-4xl md:text-5xl lg:text-6xl mb-6 leading-tight tracking-tight my-[60px] px-0 py-[31px] font-extrabold whitespace-pre-line">
+        }} className="text-4xl md:text-5xl lg:text-6xl mb-6 leading-relaxed tracking-tight my-[60px] px-0 py-[31px] font-extrabold whitespace-pre-line">
             {t('landing.headline')}
           </motion.h1>
           

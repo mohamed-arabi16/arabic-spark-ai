@@ -20,8 +20,8 @@
         "description": "We understand Levantine, Egyptian, Gulf, and Maghrebi Arabic"
       },
       "models": {
-        "title": "Switch AI Models",
-        "description": "GPT-5, Claude, Gemini - switch without losing your memory"
+        "title": "4 AI Providers",
+        "description": "OpenAI, Google, Anthropic, and Thaura - switch between them without losing memory"
       },
       "memory": {
         "title": "Smart Memory",
@@ -30,6 +30,10 @@
       "projects": {
         "title": "Separate Projects",
         "description": "Project-specific or global memory - you choose"
+      },
+      "thaura": {
+        "title": "Thaura Model",
+        "description": "Ethical AI with complete privacy and high performance"
       },
       "pricing": {
         "title": "Lower Price",
