@@ -435,6 +435,14 @@
     "copyMessage": "Copy message",
     "sendMessage": "Send message"
   },
+  "errors": {
+    "boundary": {
+      "title": "Something went wrong",
+      "description": "An unexpected error occurred. Please try again.",
+      "retry": "Try Again",
+      "home": "Go Home"
+    }
+  },
   "usage": {
     "title": "Usage Dashboard",
     "subtitle": "Monitor your consumption, costs, and limits",
