@@ -374,6 +374,7 @@ export type Database = {
           created_at: string
           credit_balance: number | null
           credit_limit: number | null
+          daily_budget: number | null
           default_formality: string | null
           default_numeral_mode: string | null
           display_name: string | null
@@ -383,6 +384,7 @@ export type Database = {
             | Database["public"]["Enums"]["dialect_preset"]
             | null
           preferred_mode: Database["public"]["Enums"]["chat_mode"] | null
+          session_warning_threshold: number | null
           subscription_tier: string | null
           theme: string | null
           updated_at: string
@@ -393,6 +395,7 @@ export type Database = {
           created_at?: string
           credit_balance?: number | null
           credit_limit?: number | null
+          daily_budget?: number | null
           default_formality?: string | null
           default_numeral_mode?: string | null
           display_name?: string | null
@@ -402,6 +405,7 @@ export type Database = {
             | Database["public"]["Enums"]["dialect_preset"]
             | null
           preferred_mode?: Database["public"]["Enums"]["chat_mode"] | null
+          session_warning_threshold?: number | null
           subscription_tier?: string | null
           theme?: string | null
           updated_at?: string
@@ -412,6 +416,7 @@ export type Database = {
           created_at?: string
           credit_balance?: number | null
           credit_limit?: number | null
+          daily_budget?: number | null
           default_formality?: string | null
           default_numeral_mode?: string | null
           display_name?: string | null
@@ -421,6 +426,7 @@ export type Database = {
             | Database["public"]["Enums"]["dialect_preset"]
             | null
           preferred_mode?: Database["public"]["Enums"]["chat_mode"] | null
+          session_warning_threshold?: number | null
           subscription_tier?: string | null
           theme?: string | null
           updated_at?: string
@@ -429,6 +435,7 @@ export type Database = {
       }
       projects: {
         Row: {
+          budget_limit: number | null
           code_switch_mode: string | null
           color: string | null
           created_at: string
@@ -447,6 +454,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          budget_limit?: number | null
           code_switch_mode?: string | null
           color?: string | null
           created_at?: string
@@ -465,6 +473,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          budget_limit?: number | null
           code_switch_mode?: string | null
           color?: string | null
           created_at?: string
@@ -621,6 +630,11 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_daily_spending: { Args: { p_user_id: string }; Returns: number }
+      get_project_spending: {
+        Args: { p_project_id: string; p_user_id: string }
+        Returns: number
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]

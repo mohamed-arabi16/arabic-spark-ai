@@ -204,6 +204,117 @@ serve(async (req) => {
       throw new Error('Messages array is required');
     }
 
+    // ═══════════════════════════════════════════════════════════════
+    // SERVER-SIDE BUDGET ENFORCEMENT
+    // ═══════════════════════════════════════════════════════════════
+    
+    // Fetch user profile with budget settings
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('daily_budget, session_warning_threshold, credit_balance, credit_limit')
+      .eq('id', user.id)
+      .single();
+
+    const dailyBudget = profile?.daily_budget ?? 5.00;
+    const creditLimit = profile?.credit_limit ?? 100.00;
+    const creditBalance = profile?.credit_balance ?? 0;
+
+    // Check daily spending
+    const today = new Date().toISOString().split('T')[0];
+    const { data: todayStats } = await supabase
+      .from('usage_stats')
+      .select('total_cost')
+      .eq('user_id', user.id)
+      .eq('date', today)
+      .single();
+
+    const dailySpending = todayStats?.total_cost ?? 0;
+
+    // HARD LIMIT: Daily budget exceeded
+    if (dailySpending >= dailyBudget) {
+      console.warn(`Budget exceeded for user ${user.id}: daily spending $${dailySpending} >= budget $${dailyBudget}`);
+      return new Response(
+        JSON.stringify({ 
+          error: 'Daily budget exceeded',
+          error_code: 'DAILY_BUDGET_EXCEEDED',
+          details: {
+            daily_spending: dailySpending,
+            daily_budget: dailyBudget,
+            message_ar: 'تم تجاوز الميزانية اليومية. يرجى المحاولة غداً أو زيادة الميزانية في الإعدادات.',
+            message_en: 'Daily budget exceeded. Please try again tomorrow or increase your budget in settings.'
+          }
+        }),
+        { status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // HARD LIMIT: Credit limit exceeded  
+    if (creditBalance >= creditLimit) {
+      console.warn(`Credit limit exceeded for user ${user.id}: balance $${creditBalance} >= limit $${creditLimit}`);
+      return new Response(
+        JSON.stringify({ 
+          error: 'Credit limit exceeded',
+          error_code: 'CREDIT_LIMIT_EXCEEDED',
+          details: {
+            credit_balance: creditBalance,
+            credit_limit: creditLimit,
+            message_ar: 'تم الوصول إلى الحد الائتماني. يرجى مراجعة الاستخدام.',
+            message_en: 'Credit limit reached. Please review your usage.'
+          }
+        }),
+        { status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Check project budget if project_id provided
+    let projectBudgetWarning = false;
+    if (project_id) {
+      const { data: project } = await supabase
+        .from('projects')
+        .select('budget_limit, name')
+        .eq('id', project_id)
+        .single();
+
+      if (project?.budget_limit) {
+        // Get project spending from conversations
+        const { data: projectConversations } = await supabase
+          .from('conversations')
+          .select('total_cost')
+          .eq('project_id', project_id)
+          .eq('user_id', user.id)
+          .gte('created_at', new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString());
+
+        const projectSpending = projectConversations?.reduce((sum, c) => sum + (c.total_cost || 0), 0) ?? 0;
+
+        if (projectSpending >= project.budget_limit) {
+          console.warn(`Project budget exceeded for ${project.name}: $${projectSpending} >= $${project.budget_limit}`);
+          return new Response(
+            JSON.stringify({ 
+              error: 'Project budget exceeded',
+              error_code: 'PROJECT_BUDGET_EXCEEDED',
+              details: {
+                project_name: project.name,
+                project_spending: projectSpending,
+                project_budget: project.budget_limit,
+                message_ar: `تم تجاوز ميزانية المشروع "${project.name}".`,
+                message_en: `Project "${project.name}" budget exceeded.`
+              }
+            }),
+            { status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+
+        // Soft warning if approaching limit (80%)
+        if (projectSpending >= project.budget_limit * 0.8) {
+          projectBudgetWarning = true;
+          console.log(`Project budget warning for ${project.name}: $${projectSpending} approaching $${project.budget_limit}`);
+        }
+      }
+    }
+
+    // Log budget check passed
+    console.log(`Budget check passed for user ${user.id}: daily $${dailySpending}/$${dailyBudget}, credit $${creditBalance}/$${creditLimit}`);
+
     // Merge project dialect options if available
     let projectDialectOptions = { ...dialect_options };
     if (project_id) {
