@@ -26,3 +26,6 @@ verify_jwt = false
 
 [functions.export-data]
 verify_jwt = false
+
+[functions.health]
+verify_jwt = false
