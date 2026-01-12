@@ -14,7 +14,24 @@ const RATE_LIMITS: Record<string, { requests: number; windowMs: number }> = {
   default: { requests: 100, windowMs: 60000 },    // Default: 100 per minute
 };
 
-// In-memory rate limit store (in production, use Redis/Deno KV)
+/**
+ * In-memory rate limit store
+ * 
+ * IMPORTANT: This in-memory implementation works for single-instance deployments.
+ * For production with multiple instances/scaling, implement one of:
+ * 1. Deno KV (recommended for Supabase Edge Functions): https://deno.land/manual/runtime/kv
+ * 2. Redis via Upstash: https://upstash.com/
+ * 3. Supabase database with atomic increments
+ * 
+ * Example with Deno KV:
+ * ```ts
+ * const kv = await Deno.openKv();
+ * const key = ["rate_limit", userId, endpoint];
+ * const record = await kv.get<{count: number, resetTime: number}>(key);
+ * // ... rest of logic
+ * await kv.set(key, newRecord, { expireIn: windowMs });
+ * ```
+ */
 const rateLimitStore = new Map<string, { count: number; resetTime: number }>();
 
 /**

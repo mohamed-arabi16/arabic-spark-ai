@@ -10,6 +10,8 @@ jobs:
   lint-and-type-check:
     name: Lint & Type Check
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@v4
 
@@ -31,6 +33,8 @@ jobs:
   test:
     name: Unit Tests
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@v4
 
@@ -49,6 +53,8 @@ jobs:
     name: Build
     runs-on: ubuntu-latest
     needs: [lint-and-type-check, test]
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@v4
 
@@ -98,6 +104,8 @@ jobs:
   dependency-check:
     name: Dependency Check
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@v4
 
