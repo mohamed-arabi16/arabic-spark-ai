@@ -1,6 +1,6 @@
 import { Card, CardContent } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
-import { Loader2, CheckCircle2, Circle, LucideIcon } from 'lucide-react';
+import { Loader2, CheckCircle2, Circle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface ProgressStep {
