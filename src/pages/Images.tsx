@@ -5,7 +5,8 @@ import { ImageGenerationPanel } from '@/components/images/ImageGenerationPanel';
 import { ImageGallery } from '@/components/images/ImageGallery';
 import { ImageGenerationProgress } from '@/components/images/ImageGenerationProgress';
 import { useImages } from '@/hooks/useImages';
-import { Loader2 } from 'lucide-react';
+import { PageHeader } from '@/components/common/PageHeader';
+import { LoadingIndicator } from '@/components/ui/LoadingIndicator';
 
 export default function Images() {
   const { t } = useTranslation();
@@ -24,12 +25,10 @@ export default function Images() {
   return (
     <MainLayout>
       <div className="flex-1 p-6 space-y-6 overflow-y-auto">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">{t('images.title')}</h1>
-          <p className="text-muted-foreground">
-            {t('images.subtitle')}
-          </p>
-        </div>
+        <PageHeader
+          title={t('images.title')}
+          subtitle={t('images.subtitle')}
+        />
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-1">
@@ -41,7 +40,7 @@ export default function Images() {
 
             {isLoading && images.length === 0 ? (
                <div className="flex items-center justify-center h-40">
-                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                 <LoadingIndicator className="text-primary" />
                </div>
             ) : (
               <ImageGallery images={images} onDelete={handleDelete} />

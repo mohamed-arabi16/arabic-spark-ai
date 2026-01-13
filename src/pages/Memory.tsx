@@ -11,7 +11,9 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { EmptyState } from '@/components/common/EmptyState';
+import { PageHeader } from '@/components/common/PageHeader';
 import { prefersReducedMotion, fadeInUp } from '@/lib/motion';
+import { getProjectName } from '@/lib/utils';
 
 export default function Memory() {
   const { t } = useTranslation();
@@ -63,11 +65,11 @@ export default function Memory() {
     setSelectedItems(new Set());
   };
 
-  const getProjectName = (projectId: string | null | undefined) => {
-    if (!projectId) return t('memory.global');
-    const project = projects.find(p => p.id === projectId);
-    return project?.name || t('memory.projectSpecific');
-  };
+  const projectNameResolver = (projectId: string | null | undefined) => 
+    getProjectName(projectId, projects, { 
+      global: t('memory.global'), 
+      notFound: t('memory.projectSpecific') 
+    });
 
   const filteredMemories = memories.filter(m => 
     !searchQuery || m.content.toLowerCase().includes(searchQuery.toLowerCase())
@@ -88,44 +90,38 @@ export default function Memory() {
             className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6"
             {...(reducedMotion ? {} : { variants: fadeInUp, initial: "hidden", animate: "visible" })}
           >
-            <div>
-              <h1 className="text-2xl md:text-3xl font-bold tracking-tight flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
-                  <Brain className="h-5 w-5 text-primary" />
-                </div>
-                {t('memory.title')}
-              </h1>
-              <p className="text-muted-foreground mt-2">
-                {t('memory.subtitle')}
-              </p>
-            </div>
-
-            <div className="flex items-center gap-3 w-full md:w-auto">
-              <Button
-                variant="glass"
-                onClick={() => exportData()}
-                disabled={isExporting}
-                className="gap-2"
-              >
-                {isExporting ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Download className="h-4 w-4" />
-                )}
-                {t('memory.exportAll')}
-              </Button>
-              <Select value={selectedProject} onValueChange={setSelectedProject}>
-                <SelectTrigger className="w-[200px]">
-                  <SelectValue placeholder={t('memory.allProjects')} />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">{t('memory.allProjects')}</SelectItem>
-                  {projects.map(p => (
-                    <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+            <PageHeader
+              title={t('memory.title')}
+              subtitle={t('memory.subtitle')}
+              icon={Brain}
+            >
+              <div className="flex items-center gap-3 w-full md:w-auto">
+                <Button
+                  variant="glass"
+                  onClick={() => exportData()}
+                  disabled={isExporting}
+                  className="gap-2"
+                >
+                  {isExporting ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Download className="h-4 w-4" />
+                  )}
+                  {t('memory.exportAll')}
+                </Button>
+                <Select value={selectedProject} onValueChange={setSelectedProject}>
+                  <SelectTrigger className="w-[200px]">
+                    <SelectValue placeholder={t('memory.allProjects')} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">{t('memory.allProjects')}</SelectItem>
+                    {projects.map(p => (
+                      <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </PageHeader>
           </MotionDiv>
 
           <div className="relative max-w-md">
@@ -182,7 +178,7 @@ export default function Memory() {
                   memories={filteredMemories}
                   onDelete={deleteMemory}
                   onUpdate={async (id, content) => { await updateMemory(id, { content }); }}
-                  getProjectName={getProjectName}
+                  getProjectName={projectNameResolver}
                 />
               )}
             </TabsContent>
@@ -202,7 +198,7 @@ export default function Memory() {
                   onSelectionChange={handleSelectionChange}
                   onApprove={approveMemory}
                   onReject={rejectMemory}
-                  getProjectName={getProjectName}
+                  getProjectName={projectNameResolver}
                 />
               )}
             </TabsContent>

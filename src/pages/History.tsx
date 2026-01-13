@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { format, isToday, isYesterday, isThisWeek, parseISO } from 'date-fns';
 import { MainLayout } from '@/components/layout/MainLayout';
-import { normalizeArabic } from '@/lib/utils';
+import { normalizeArabic, getProjectName } from '@/lib/utils';
 import { useConversations, ConversationWithSnippet } from '@/hooks/useConversations';
 import { useProjects } from '@/hooks/useProjects';
 import { useMemory } from '@/hooks/useMemory';
@@ -18,6 +18,7 @@ import { Badge } from '@/components/ui/badge';
 import { MemoryList } from '@/components/memory/MemoryList';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { EmptyState } from '@/components/common/EmptyState';
+import { PageHeader } from '@/components/common/PageHeader';
 import { SkeletonConversationList } from '@/components/ui/skeleton-list';
 import { LTR } from '@/lib/bidi';
 
@@ -94,10 +95,8 @@ export default function History() {
 
   const groupedConversations = groupConversationsByDate(filteredConversations);
 
-  const getProjectName = (projectId: string | null) => {
-    if (!projectId) return null;
-    return projects.find(p => p.id === projectId)?.name;
-  };
+  const projectNameResolver = (projectId: string | null) => 
+    projectId ? getProjectName(projectId, projects, { global: '', notFound: '' }) || null : null;
 
   const getModeBadge = (mode: string) => {
     const colors: Record<string, string> = {
@@ -121,8 +120,10 @@ export default function History() {
       <div className="flex-1 flex flex-col overflow-hidden">
         <div className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
           <div className="p-6">
-            <h1 className="text-2xl font-bold tracking-tight mb-2">{t('history.title')}</h1>
-            <p className="text-muted-foreground">{t('history.description')}</p>
+            <PageHeader
+              title={t('history.title')}
+              subtitle={t('history.description')}
+            />
           </div>
 
           <div className="px-6 pb-4 flex flex-col md:flex-row gap-4 items-center justify-between">
@@ -210,8 +211,8 @@ export default function History() {
                                       <>
                                         <span>•</span>
                                         <span className="flex items-center gap-1">
-                                           {getProjectName(conv.project_id) === 'General' ? <Rocket className="h-3 w-3" /> : null}
-                                           {getProjectName(conv.project_id)}
+                                           {projectNameResolver(conv.project_id) === 'General' ? <Rocket className="h-3 w-3" /> : null}
+                                           {projectNameResolver(conv.project_id)}
                                         </span>
                                       </>
                                     )}
@@ -260,11 +261,10 @@ export default function History() {
                   onDelete={deleteMemory}
                   onApprove={approveMemory}
                   onReject={rejectMemory}
-                  getProjectName={(id) => {
-                    if (!id) return t('memory.global');
-                    const p = projects.find(p => p.id === id);
-                    return p ? p.name : t('projects.title');
-                  }}
+                  getProjectName={(id) => getProjectName(id, projects, {
+                    global: t('memory.global'),
+                    notFound: t('projects.title')
+                  })}
                 />
              </ScrollArea>
           </TabsContent>

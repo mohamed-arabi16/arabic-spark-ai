@@ -13,6 +13,7 @@ import { Plus, Search, Loader2, FolderPlus } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { EmptyState } from '@/components/common/EmptyState';
+import { PageHeader } from '@/components/common/PageHeader';
 import { staggerContainer, staggerItem, prefersReducedMotion } from '@/lib/motion';
 
 export default function Projects() {
@@ -92,17 +93,14 @@ export default function Projects() {
     <MainLayout>
       <div className="flex-1 p-6 md:p-8 space-y-8 overflow-y-auto">
         {/* Page Header */}
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <div>
-            <h1 className="text-2xl md:text-3xl font-bold tracking-tight">{t('projects.title')}</h1>
-            <p className="text-muted-foreground mt-1">
-              {t('projects.subtitle')}
-            </p>
-          </div>
+        <PageHeader
+          title={t('projects.title')}
+          subtitle={t('projects.subtitle')}
+        >
           <Button onClick={handleCreate} className="gap-2">
             <Plus className="h-4 w-4" /> {t('projects.newProject')}
           </Button>
-        </div>
+        </PageHeader>
 
         <Tabs defaultValue="all" className="w-full">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
