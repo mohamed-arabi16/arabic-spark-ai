@@ -13,6 +13,7 @@ import { TopConversationsTable } from '@/components/usage/TopConversationsTable'
 import { SkeletonSummaryCards, SkeletonChart } from '@/components/ui/skeleton-list';
 import { MetricsSummary } from '@/components/usage/MetricsSummary';
 import { Separator } from '@/components/ui/separator';
+import { PageHeader } from '@/components/common/PageHeader';
 import { staggerContainer, staggerItem, prefersReducedMotion } from '@/lib/motion';
 
 export default function Usage() {
@@ -30,12 +31,10 @@ export default function Usage() {
     <MainLayout>
       <div className="flex-1 p-6 md:p-8 space-y-8 overflow-y-auto">
         {/* Page Header */}
-        <div>
-          <h1 className="text-2xl md:text-3xl font-bold tracking-tight">{t('usage.title')}</h1>
-          <p className="text-muted-foreground mt-1">
-            {t('usage.subtitle')}
-          </p>
-        </div>
+        <PageHeader
+          title={t('usage.title')}
+          subtitle={t('usage.subtitle')}
+        />
 
         {isLoading && !summary ? (
           <div className="space-y-8">
