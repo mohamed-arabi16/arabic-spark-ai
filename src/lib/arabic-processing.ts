@@ -75,7 +75,7 @@ const PROTECTED_PATTERNS = [
   /https?:\/\/\S+/g,           // URLs
   /\S+@\S+\.\S+/g,             // Emails
   /[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}/gi, // UUIDs
-  /[a-zA-Z][\w.-]*\/[\w.-]+/g, // Model names (openai/gpt-5.2)
+  /[a-zA-Z][\w.-]*\/[\w.-]+/g, // Model names (e.g., openai/gpt-4o)
   /\b[a-zA-Z]+-?\d+\.?\d*\b/g, // Versions (gpt-4.1, claude-3.5)
   /\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b/g, // IP addresses
   /sk_[a-zA-Z0-9]+/g,          // API keys

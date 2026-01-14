@@ -71,7 +71,7 @@ export function useImages() {
           size: size,
           image_url: `https://via.placeholder.com/${size.split('x')[0]}?text=${encodeURIComponent(prompt.substring(0, 20))}`,
           created_at: new Date().toISOString(),
-          model_used: 'dall-e-3',
+          model_used: 'openai/dall-e-3',
           cost: 0.04
       };
 

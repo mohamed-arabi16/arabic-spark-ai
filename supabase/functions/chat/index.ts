@@ -45,33 +45,40 @@ const MODEL_REGISTRY: Record<string, ModelConfig> = {
     maxTokens: 4096,
   },
   // Google Models
-  'google/gemini-2.5-flash': {
+  'google/gemini-flash-3': {
     provider: 'google',
-    actualModel: 'gemini-2.5-flash-preview-05-20',
-    displayName: 'Gemini Flash',
-    displayNameAr: 'جيميني فلاش',
+    actualModel: 'gemini-2.5-flash',
+    displayName: 'Gemini Flash 3',
+    displayNameAr: 'جيميني فلاش 3',
     maxTokens: 8192,
   },
-  'google/gemini-2.5-pro': {
+  'google/gemini-3-pro': {
     provider: 'google',
-    actualModel: 'gemini-2.5-pro-preview-05-06',
-    displayName: 'Gemini Pro',
-    displayNameAr: 'جيميني برو',
+    actualModel: 'gemini-2.5-pro',
+    displayName: 'Gemini 3 Pro',
+    displayNameAr: 'جيميني 3 برو',
     maxTokens: 8192,
   },
   // Anthropic Models
-  'anthropic/claude-3-5-sonnet': {
+  'anthropic/sonnet-4.5': {
     provider: 'anthropic',
-    actualModel: 'claude-3-5-sonnet-20241022',
-    displayName: 'Claude Sonnet',
-    displayNameAr: 'كلود سونيت',
+    actualModel: 'claude-sonnet-4-5',
+    displayName: 'Claude Sonnet 4.5',
+    displayNameAr: 'كلود سونيت 4.5',
     maxTokens: 4096,
   },
-  'anthropic/claude-3-5-haiku': {
+  'anthropic/haiku-4.5': {
     provider: 'anthropic',
     actualModel: 'claude-3-5-haiku-20241022',
-    displayName: 'Claude Haiku',
-    displayNameAr: 'كلود هايكو',
+    displayName: 'Claude Haiku 4.5',
+    displayNameAr: 'كلود هايكو 4.5',
+    maxTokens: 4096,
+  },
+  'anthropic/opus-4.5': {
+    provider: 'anthropic',
+    actualModel: 'claude-opus-4-5-20251101',
+    displayName: 'Claude Opus 4.5',
+    displayNameAr: 'كلود أوبوس 4.5',
     maxTokens: 4096,
   },
   // Thaura Model
@@ -106,12 +113,15 @@ const REASONING_EFFORT: Record<string, string> = {
 const COST_PER_1M: Record<string, { input: number; output: number } | { per_image: number }> = {
   'openai/gpt-4o': { input: 2.50, output: 10.00 },
   'openai/gpt-4o-mini': { input: 0.15, output: 0.60 },
-  'google/gemini-2.5-flash': { input: 0.15, output: 0.60 },
-  'google/gemini-2.5-pro': { input: 1.25, output: 5.00 },
-  'anthropic/claude-3-5-sonnet': { input: 3.00, output: 15.00 },
-  'anthropic/claude-3-5-haiku': { input: 0.25, output: 1.25 },
+  'google/gemini-flash-3': { input: 0.10, output: 0.40 },
+  'google/gemini-3-pro': { input: 2.50, output: 10.00 },
+  'anthropic/opus-4.5': { input: 15.00, output: 75.00 },
+  'anthropic/sonnet-4.5': { input: 3.00, output: 15.00 },
+  'anthropic/haiku-4.5': { input: 0.25, output: 1.25 },
   'thaura/thaura': { input: 0.50, output: 2.00 },
-  'gpt-image-1': { per_image: 0.04 },
+  'openai/dall-e-3': { per_image: 0.04 },
+  'openai/gpt-image-1': { per_image: 0.04 },
+  'google/nanobanana': { per_image: 0.03 },
 };
 
 // =============================================================================
@@ -779,14 +789,14 @@ serve(async (req) => {
     
     // Final fallback - use first available provider's model
     if (!selectedModel) {
-      selectedModel = 'google/gemini-2.5-flash';
+      selectedModel = 'google/gemini-flash-3';
     }
     
     // Validate model exists in registry, or use fallback
     let modelConfig = MODEL_REGISTRY[selectedModel];
     if (!modelConfig) {
-      console.warn(`Unknown model ${selectedModel}, falling back to gemini-flash`);
-      selectedModel = 'google/gemini-2.5-flash';
+      console.warn(`Unknown model ${selectedModel}, falling back to gemini-flash-3`);
+      selectedModel = 'google/gemini-flash-3';
       modelConfig = MODEL_REGISTRY[selectedModel];
     }
     

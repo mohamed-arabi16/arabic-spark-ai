@@ -3,17 +3,21 @@
  */
 
 export const modelExplanations: Record<string, { en: string; ar: string }> = {
-  'openai/gpt-5.2': {
+  'openai/gpt-4o': {
     en: 'Flagship model for general tasks. Best balance of speed and quality.',
     ar: 'النموذج الرئيسي للمهام العامة. أفضل توازن بين السرعة والجودة.'
   },
-  'openai/gpt-5-nano': {
+  'openai/gpt-4o-mini': {
     en: 'Fastest and most economical. Great for simple questions.',
     ar: 'الأسرع والأكثر اقتصاداً. مثالي للأسئلة البسيطة.'
   },
-  'openai/gpt-image-1.5': {
-    en: 'Advanced image generation with high quality output.',
-    ar: 'توليد صور متقدم بجودة عالية.'
+  'openai/dall-e-3': {
+    en: 'High quality, detailed image generation.',
+    ar: 'توليد صور عالي الجودة والتفاصيل.'
+  },
+  'openai/gpt-image-1': {
+    en: 'ChatGPT\'s latest image generation model.',
+    ar: 'أحدث نموذج لتوليد الصور من ChatGPT.'
   },
   'openai/o3-deep-research': {
     en: 'Specialized for deep research and complex analysis.',
@@ -27,9 +31,9 @@ export const modelExplanations: Record<string, { en: string; ar: string }> = {
     en: 'Optimized for deep analysis and complex reasoning.',
     ar: 'محسّن للتحليل العميق والاستنتاج المعقد.'
   },
-  'google/nanobanana-pro': {
-    en: 'High-quality image generation with creative control.',
-    ar: 'توليد صور عالي الجودة مع تحكم إبداعي.'
+  'google/nanobanana': {
+    en: 'Cost-effective, fast image generation.',
+    ar: 'توليد صور سريع واقتصادي.'
   },
   'anthropic/opus-4.5': {
     en: 'Most intelligent Claude model. Best for complex tasks.',

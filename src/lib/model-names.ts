@@ -3,14 +3,15 @@
  */
 
 export const modelFriendlyNames: Record<string, { en: string; ar: string; shortEn?: string; shortAr?: string }> = {
-  'openai/gpt-5.2': { en: 'GPT-5.2', ar: 'جي بي تي 5.2', shortEn: 'GPT-5.2', shortAr: 'GPT-5.2' },
-  'openai/gpt-5-nano': { en: 'GPT-5 Nano', ar: 'جي بي تي 5 نانو', shortEn: 'Nano', shortAr: 'نانو' },
-  'openai/gpt-image-1.5': { en: 'GPT Image 1.5', ar: 'جي بي تي صور 1.5' },
+  'openai/gpt-4o': { en: 'GPT-4o', ar: 'جي بي تي 4o', shortEn: 'GPT-4o', shortAr: 'GPT-4o' },
+  'openai/gpt-4o-mini': { en: 'GPT-4o Mini', ar: 'جي بي تي 4o ميني', shortEn: 'Mini', shortAr: 'ميني' },
+  'openai/dall-e-3': { en: 'DALL-E 3', ar: 'دال-إي 3' },
+  'openai/gpt-image-1': { en: 'GPT Image 1', ar: 'جي بي تي صور 1' },
   'openai/sora-2-pro': { en: 'Sora 2 Pro', ar: 'سورا 2 برو' },
   'openai/o3-deep-research': { en: 'o3 Deep Research', ar: 'o3 بحث عميق' },
   'google/gemini-flash-3': { en: 'Gemini Flash 3', ar: 'جيميني فلاش 3', shortEn: 'Flash', shortAr: 'فلاش' },
   'google/gemini-3-pro': { en: 'Gemini 3 Pro', ar: 'جيميني 3 برو', shortEn: 'Gemini Pro', shortAr: 'جيميني برو' },
-  'google/nanobanana-pro': { en: 'NanoBanana Pro', ar: 'نانو بنانا برو' },
+  'google/nanobanana': { en: 'Gemini NanoBanana', ar: 'جيميني نانو بنانا' },
   'google/veo-2.1': { en: 'Veo 2.1', ar: 'فيو 2.1' },
   'anthropic/opus-4.5': { en: 'Claude Opus 4.5', ar: 'كلود أوبوس 4.5', shortEn: 'Opus', shortAr: 'أوبوس' },
   'anthropic/sonnet-4.5': { en: 'Claude Sonnet 4.5', ar: 'كلود سونيت 4.5', shortEn: 'Sonnet', shortAr: 'سونيت' },
