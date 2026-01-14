@@ -1,3 +1,9 @@
+/**
+ * Summarize Conversation Edge Function
+ * 
+ * Auto-generates conversation summaries for context preservation.
+ * Uses direct AI provider calls - NO third-party gateway services.
+ */
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
@@ -6,7 +12,91 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
-const LOVABLE_AI_URL = 'https://ai.gateway.lovable.dev/v1/chat/completions';
+// =============================================================================
+// DIRECT PROVIDER API CALLS
+// =============================================================================
+
+/**
+ * Call Google Gemini API directly for summarization
+ */
+async function callGoogleGemini(prompt: string): Promise<string> {
+  const apiKey = Deno.env.get('GOOGLE_API_KEY');
+  if (!apiKey) throw new Error('GOOGLE_API_KEY not configured');
+  
+  const response = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: prompt }] }],
+        generationConfig: {
+          temperature: 0.3,
+          maxOutputTokens: 1024,
+        },
+      }),
+    }
+  );
+  
+  if (!response.ok) {
+    const error = await response.text();
+    throw new Error(`Gemini API error: ${response.status} - ${error}`);
+  }
+  
+  const data = await response.json();
+  return data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+}
+
+/**
+ * Call OpenAI API directly for summarization
+ */
+async function callOpenAI(prompt: string): Promise<string> {
+  const apiKey = Deno.env.get('OPENAI_API_KEY');
+  if (!apiKey) throw new Error('OPENAI_API_KEY not configured');
+  
+  const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${apiKey}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      model: 'gpt-4o-mini',
+      messages: [{ role: 'user', content: prompt }],
+      temperature: 0.3,
+    }),
+  });
+  
+  if (!response.ok) {
+    const error = await response.text();
+    throw new Error(`OpenAI API error: ${response.status} - ${error}`);
+  }
+  
+  const data = await response.json();
+  return data.choices?.[0]?.message?.content || '';
+}
+
+/**
+ * Call available AI provider for summarization
+ */
+async function summarizeWithAI(prompt: string): Promise<string> {
+  // Try Google first (most cost-effective), then OpenAI
+  if (Deno.env.get('GOOGLE_API_KEY')) {
+    console.log('Using Google Gemini for summarization');
+    return callGoogleGemini(prompt);
+  }
+  
+  if (Deno.env.get('OPENAI_API_KEY')) {
+    console.log('Using OpenAI for summarization');
+    return callOpenAI(prompt);
+  }
+  
+  throw new Error('No AI provider configured (GOOGLE_API_KEY or OPENAI_API_KEY required)');
+}
+
+// =============================================================================
+// MAIN HANDLER
+// =============================================================================
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -22,15 +112,15 @@ serve(async (req) => {
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? ''
     const supabaseKey = Deno.env.get('SUPABASE_ANON_KEY') ?? ''
-    const lovableApiKey = Deno.env.get('LOVABLE_API_KEY') ?? ''
     const authHeader = req.headers.get('Authorization')
 
     if (!authHeader) {
       throw new Error('Missing Authorization header')
     }
 
-    if (!lovableApiKey) {
-      throw new Error('AI API key not configured')
+    // Check that at least one AI provider is available
+    if (!Deno.env.get('GOOGLE_API_KEY') && !Deno.env.get('OPENAI_API_KEY')) {
+      throw new Error('No AI provider configured')
     }
 
     const supabase = createClient(supabaseUrl, supabaseKey, {
@@ -105,32 +195,13 @@ Guidelines:
 - Preserve any user preferences or requirements mentioned
 - Note any unresolved questions or pending items
 - If there's a previous summary, integrate the new information with it
+- For Arabic conversations, keep the summary in Arabic
 
 Respond with ONLY the summary text, no preamble or explanation.`;
 
     console.log('Generating conversation summary...');
 
-    const response = await fetch(LOVABLE_AI_URL, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${lovableApiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'google/gemini-2.5-flash',
-        messages: [{ role: 'user', content: summaryPrompt }],
-        temperature: 0.3,
-      }),
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('Lovable AI error:', response.status, errorText);
-      throw new Error(`Summary generation failed: ${response.status}`);
-    }
-
-    const aiResponse = await response.json();
-    const summary = aiResponse.choices?.[0]?.message?.content || '';
+    const summary = await summarizeWithAI(summaryPrompt);
 
     if (!summary) {
       throw new Error('No summary generated');

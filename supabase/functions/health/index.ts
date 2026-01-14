@@ -1,3 +1,9 @@
+/**
+ * Health Check Edge Function
+ * 
+ * Returns status of various system components for monitoring.
+ * Checks database connectivity and AI provider availability.
+ */
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
@@ -6,10 +12,6 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-/**
- * Health check endpoint for monitoring
- * Returns status of various system components
- */
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -45,7 +47,9 @@ serve(async (req) => {
 
   // Check if required environment variables are set
   const requiredEnvVars = ['SUPABASE_URL', 'SUPABASE_ANON_KEY'];
-  const optionalEnvVars = ['LOVABLE_API_KEY', 'OPENAI_API_KEY', 'GOOGLE_API_KEY', 'ANTHROPIC_API_KEY', 'PERPLEXITY_API_KEY'];
+  // Direct AI provider keys (no third-party gateways)
+  const aiProviderVars = ['OPENAI_API_KEY', 'GOOGLE_API_KEY', 'ANTHROPIC_API_KEY', 'THAURA_API_KEY'];
+  const optionalEnvVars = ['PERPLEXITY_API_KEY', 'ELEVENLABS_API_KEY'];
   
   const envStatus: Record<string, boolean> = {};
   let allRequiredPresent = true;
@@ -56,7 +60,7 @@ serve(async (req) => {
     if (!isPresent) allRequiredPresent = false;
   }
   
-  for (const envVar of optionalEnvVars) {
+  for (const envVar of [...aiProviderVars, ...optionalEnvVars]) {
     envStatus[envVar] = !!Deno.env.get(envVar);
   }
   
@@ -64,15 +68,16 @@ serve(async (req) => {
     status: allRequiredPresent ? 'healthy' : 'unhealthy',
   };
 
-  // Check AI provider availability
+  // Check AI provider availability (direct providers only, no third-party gateways)
   const aiProviders: Record<string, boolean> = {
-    lovable: !!Deno.env.get('LOVABLE_API_KEY'),
     openai: !!Deno.env.get('OPENAI_API_KEY'),
     google: !!Deno.env.get('GOOGLE_API_KEY'),
     anthropic: !!Deno.env.get('ANTHROPIC_API_KEY'),
+    thaura: !!Deno.env.get('THAURA_API_KEY'),
+    perplexity: !!Deno.env.get('PERPLEXITY_API_KEY'),
   };
   
-  const anyAiProvider = Object.values(aiProviders).some(v => v);
+  const anyAiProvider = aiProviders.openai || aiProviders.google || aiProviders.anthropic;
   checks.ai_providers = {
     status: anyAiProvider ? 'healthy' : 'unhealthy',
   };
@@ -92,7 +97,7 @@ serve(async (req) => {
   const response = {
     status: overallStatus,
     timestamp: new Date().toISOString(),
-    version: Deno.env.get('FUNCTION_VERSION') || '1.0.0',
+    version: Deno.env.get('FUNCTION_VERSION') || '2.0.0',
     checks,
     providers: aiProviders,
     environment: envStatus,
