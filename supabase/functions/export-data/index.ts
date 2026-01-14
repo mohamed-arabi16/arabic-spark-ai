@@ -1,3 +1,10 @@
+/**
+ * Export Data Edge Function
+ * 
+ * GDPR-compliant data export functionality.
+ * Exports user's memories, conversations, and messages in JSON format.
+ * Creates an audit log entry for compliance tracking.
+ */
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 

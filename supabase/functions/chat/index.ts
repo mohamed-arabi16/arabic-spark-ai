@@ -1,3 +1,12 @@
+/**
+ * Chat Edge Function
+ * 
+ * Main chat endpoint with streaming responses, dialect support,
+ * memory injection, and multi-provider AI support.
+ * 
+ * Supports: Google Gemini, OpenAI, Anthropic, and Thaura AI providers.
+ * Uses direct API calls - NO third-party gateway services.
+ */
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
@@ -7,20 +16,83 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-const LOVABLE_AI_URL = 'https://ai.gateway.lovable.dev/v1/chat/completions';
+// =============================================================================
+// MODEL REGISTRY - Direct provider configuration (no third-party gateways)
+// =============================================================================
 
-// Model display name registry for AI identity
-const MODEL_DISPLAY_NAMES: Record<string, { displayName: string; displayNameAr: string }> = {
-  'google/gemini-2.5-flash': { displayName: 'Gemini Flash', displayNameAr: 'جيميني فلاش' },
-  'google/gemini-2.5-pro': { displayName: 'Gemini Pro', displayNameAr: 'جيميني برو' },
-  'google/gemini-3-pro-preview': { displayName: 'Gemini 3 Pro', displayNameAr: 'جيميني 3 برو' },
-  'openai/gpt-5': { displayName: 'GPT-5', displayNameAr: 'جي بي تي 5' },
-  'openai/gpt-5-mini': { displayName: 'GPT-5 Mini', displayNameAr: 'جي بي تي 5 ميني' },
-  'openai/gpt-5-nano': { displayName: 'GPT-5 Nano', displayNameAr: 'جي بي تي 5 نانو' },
-  'anthropic/claude-3-5-haiku-latest': { displayName: 'Claude Haiku', displayNameAr: 'كلود هايكو' },
-  'anthropic/claude-sonnet-4-5': { displayName: 'Claude Sonnet', displayNameAr: 'كلود سونيت' },
-  'thaura/thaura': { displayName: 'Thaura', displayNameAr: 'ثورة' },
+interface ModelConfig {
+  provider: 'openai' | 'google' | 'anthropic' | 'thaura';
+  actualModel: string;
+  displayName: string;
+  displayNameAr: string;
+  maxTokens: number;
+}
+
+const MODEL_REGISTRY: Record<string, ModelConfig> = {
+  // OpenAI Models
+  'openai/gpt-4o': {
+    provider: 'openai',
+    actualModel: 'gpt-4o',
+    displayName: 'GPT-4o',
+    displayNameAr: 'جي بي تي 4o',
+    maxTokens: 4096,
+  },
+  'openai/gpt-4o-mini': {
+    provider: 'openai',
+    actualModel: 'gpt-4o-mini',
+    displayName: 'GPT-4o Mini',
+    displayNameAr: 'جي بي تي 4o ميني',
+    maxTokens: 4096,
+  },
+  // Google Models
+  'google/gemini-2.5-flash': {
+    provider: 'google',
+    actualModel: 'gemini-2.5-flash-preview-05-20',
+    displayName: 'Gemini Flash',
+    displayNameAr: 'جيميني فلاش',
+    maxTokens: 8192,
+  },
+  'google/gemini-2.5-pro': {
+    provider: 'google',
+    actualModel: 'gemini-2.5-pro-preview-05-06',
+    displayName: 'Gemini Pro',
+    displayNameAr: 'جيميني برو',
+    maxTokens: 8192,
+  },
+  // Anthropic Models
+  'anthropic/claude-3-5-sonnet': {
+    provider: 'anthropic',
+    actualModel: 'claude-3-5-sonnet-20241022',
+    displayName: 'Claude Sonnet',
+    displayNameAr: 'كلود سونيت',
+    maxTokens: 4096,
+  },
+  'anthropic/claude-3-5-haiku': {
+    provider: 'anthropic',
+    actualModel: 'claude-3-5-haiku-20241022',
+    displayName: 'Claude Haiku',
+    displayNameAr: 'كلود هايكو',
+    maxTokens: 4096,
+  },
+  // Thaura Model
+  'thaura/thaura': {
+    provider: 'thaura',
+    actualModel: 'thaura',
+    displayName: 'Thaura',
+    displayNameAr: 'ثورة',
+    maxTokens: 4096,
+  },
 };
+
+// Model display name lookup for AI identity
+const MODEL_DISPLAY_NAMES: Record<string, { displayName: string; displayNameAr: string }> = {};
+for (const [id, config] of Object.entries(MODEL_REGISTRY)) {
+  MODEL_DISPLAY_NAMES[id] = { displayName: config.displayName, displayNameAr: config.displayNameAr };
+}
+
+// =============================================================================
+// REASONING EFFORT & PRICING CONFIGURATION
+// =============================================================================
 
 const REASONING_EFFORT: Record<string, string> = {
   fast: 'none',       // No reasoning - fastest responses
@@ -30,102 +102,441 @@ const REASONING_EFFORT: Record<string, string> = {
   research: 'medium', // + web search
 };
 
-// Cost per 1M tokens
+// Cost per 1M tokens for pricing calculation
 const COST_PER_1M: Record<string, { input: number; output: number } | { per_image: number }> = {
-  'gpt-5.2': { input: 2.50, output: 10.00 },
-  'google/gemini-2.5-flash': { input: 0.10, output: 0.40 },
-  'google/gemini-2.5-pro': { input: 2.50, output: 10.00 },
-  'openai/gpt-5-mini': { input: 1.00, output: 4.00 },
-  'openai/gpt-5': { input: 5.00, output: 20.00 },
+  'openai/gpt-4o': { input: 2.50, output: 10.00 },
+  'openai/gpt-4o-mini': { input: 0.15, output: 0.60 },
+  'google/gemini-2.5-flash': { input: 0.15, output: 0.60 },
+  'google/gemini-2.5-pro': { input: 1.25, output: 5.00 },
+  'anthropic/claude-3-5-sonnet': { input: 3.00, output: 15.00 },
+  'anthropic/claude-3-5-haiku': { input: 0.25, output: 1.25 },
+  'thaura/thaura': { input: 0.50, output: 2.00 },
   'gpt-image-1': { per_image: 0.04 },
 };
 
-// Dialect detection markers for auto mode
-const DIALECT_MARKERS: Record<string, RegExp> = {
-  egyptian: /إيه|عايز|كده|ازيك|ازاي|ليه|مش|ده|دي|بتاع|طب|اوي|كمان/g,
-  gulf: /شلونك|وش|هالحين|أبي|ابي|يالله|زين|حده|اشوفك|ابغى|كذا|وايد/g,
-  levantine: /هلق|هلأ|شو|بدي|كيفك|هيك|منيح|بعدين|ليش|هاد|كتير/g,
-  maghrebi: /واش|راك|بغيت|لاباس|كيداير|زوين|بزاف|ماشي|كيفاش/g,
+// =============================================================================
+// DIALECT DETECTION - Enhanced markers for accurate detection
+// =============================================================================
+
+// Dialect markers with weighted scoring for better accuracy
+const DIALECT_MARKERS: Record<string, { patterns: RegExp; weight: number }[]> = {
+  egyptian: [
+    { patterns: /\bإيه\b|\bعايز\b|\bكده\b|\bازيك\b|\bازاي\b/g, weight: 2 },
+    { patterns: /\bليه\b|\bمش\b|\bده\b|\bدي\b|\bبتاع\b/g, weight: 1.5 },
+    { patterns: /\bطب\b|\bاوي\b|\bكمان\b|\bعشان\b|\bفين\b/g, weight: 1 },
+    { patterns: /\bماشي\b|\bتمام\b|\bيعني\b|\bحاجة\b/g, weight: 0.8 },
+  ],
+  gulf: [
+    { patterns: /\bشلونك\b|\bوش\b|\bهالحين\b|\bأبي\b|\bابي\b/g, weight: 2 },
+    { patterns: /\bيالله\b|\bزين\b|\bحده\b|\bاشوفك\b|\bابغى\b/g, weight: 1.5 },
+    { patterns: /\bكذا\b|\bوايد\b|\bخلاص\b|\bيبيله\b|\bعيل\b/g, weight: 1 },
+    { patterns: /\bهلا\b|\bتوني\b|\bيمديك\b|\bيصير\b/g, weight: 0.8 },
+  ],
+  levantine: [
+    { patterns: /\bهلق\b|\bهلأ\b|\bشو\b|\bبدي\b|\bكيفك\b/g, weight: 2 },
+    { patterns: /\bهيك\b|\bمنيح\b|\bبعدين\b|\bليش\b|\bهاد\b/g, weight: 1.5 },
+    { patterns: /\bكتير\b|\bهلا\b|\bيعني\b|\bاشي\b|\bعن جد\b/g, weight: 1 },
+    { patterns: /\bمبلا\b|\bمشان\b|\bقديش\b|\bوين\b/g, weight: 0.8 },
+  ],
+  maghrebi: [
+    { patterns: /\bواش\b|\bراك\b|\bبغيت\b|\bلاباس\b|\bكيداير\b/g, weight: 2 },
+    { patterns: /\bزوين\b|\bبزاف\b|\bماشي\b|\bكيفاش\b|\bفين\b/g, weight: 1.5 },
+    { patterns: /\bغير\b|\bهاذ\b|\bياك\b|\bبركا\b|\bخويا\b/g, weight: 1 },
+    { patterns: /\bديالي\b|\bدابا\b|\bيلاه\b|\bمعلبالك\b/g, weight: 0.8 },
+  ],
 };
 
-// Detect dialect from text with confidence
-function detectDialectFromText(text: string): { dialect: string; confidence: string; markers: string[] } {
-  const foundMarkers: Record<string, string[]> = {};
+/**
+ * Detect dialect from text using weighted marker scoring
+ * 
+ * Uses a weighted scoring system where more distinctive dialect markers
+ * have higher weights. Returns confidence based on total score.
+ * 
+ * @param text - Input text to analyze
+ * @returns Detected dialect, confidence level, and matched markers
+ */
+function detectDialectFromText(text: string): { dialect: string; confidence: string; markers: string[]; score: number } {
+  const scores: Record<string, { score: number; markers: string[] }> = {};
   
-  for (const [dialect, pattern] of Object.entries(DIALECT_MARKERS)) {
-    const matches = text.match(pattern);
-    if (matches) {
-      foundMarkers[dialect] = [...new Set(matches)];
+  for (const [dialect, markerGroups] of Object.entries(DIALECT_MARKERS)) {
+    let totalScore = 0;
+    const foundMarkers: string[] = [];
+    
+    for (const { patterns, weight } of markerGroups) {
+      const matches = text.match(patterns);
+      if (matches) {
+        const uniqueMatches = [...new Set(matches)];
+        totalScore += uniqueMatches.length * weight;
+        foundMarkers.push(...uniqueMatches);
+      }
     }
+    
+    scores[dialect] = { score: totalScore, markers: [...new Set(foundMarkers)] };
   }
   
+  // Find dialect with highest score
   let topDialect = 'msa';
-  let maxMarkers = 0;
+  let maxScore = 0;
   let markers: string[] = [];
   
-  for (const [dialect, found] of Object.entries(foundMarkers)) {
-    if (found.length > maxMarkers) {
-      maxMarkers = found.length;
+  for (const [dialect, { score, markers: found }] of Object.entries(scores)) {
+    if (score > maxScore) {
+      maxScore = score;
       topDialect = dialect;
       markers = found;
     }
   }
   
+  // Determine confidence based on weighted score thresholds
   let confidence = 'none';
-  if (maxMarkers >= 3) confidence = 'high';
-  else if (maxMarkers === 2) confidence = 'medium';
-  else if (maxMarkers === 1) confidence = 'low';
+  if (maxScore >= 5) confidence = 'high';
+  else if (maxScore >= 3) confidence = 'medium';
+  else if (maxScore >= 1) confidence = 'low';
   
-  return { dialect: topDialect, confidence, markers };
+  return { dialect: topDialect, confidence, markers, score: maxScore };
 }
 
-// Build dialect instructions with structured rules (no example expressions)
+/**
+ * Build dialect-specific system prompt instructions
+ * 
+ * Creates detailed linguistic guidelines for AI responses in the specified
+ * Arabic dialect, including grammar, vocabulary, and cultural nuances.
+ * 
+ * @param dialect - Target dialect code (msa, egyptian, gulf, levantine, maghrebi)
+ * @param options - Additional style options (formality, code-switching, numerals)
+ * @returns Formatted instruction string for system prompt
+ */
 function buildDialectInstructions(dialect: string, options: { formality?: string; codeSwitch?: string; numeralMode?: string } = {}): string {
   const dialectRules: Record<string, string> = {
     msa: `VARIETY: Modern Standard Arabic (الفصحى)
-GRAMMAR: Classical Arabic grammar, case endings optional
-VOCABULARY: Formal register, avoid colloquialisms`,
+GRAMMAR: Classical Arabic grammar with optional case endings (إعراب)
+VOCABULARY: Formal register, use فصيح vocabulary, avoid colloquialisms
+STYLE: Clear, articulate, suitable for formal and academic contexts
+NEGATION: Use لا، لم، لن for negation according to tense`,
     
-    egyptian: `VARIETY: Egyptian Arabic
-GRAMMAR: Egyptian verb conjugations, negation with مش
-VOCABULARY: Egyptian vocabulary`,
+    egyptian: `VARIETY: Egyptian Arabic (مصري)
+GRAMMAR: Egyptian verb conjugations, use "ب-" prefix for present continuous
+NEGATION: Use "مش" before verbs/adjectives, "ما...ش" around verbs for emphasis
+VOCABULARY: Egyptian vocabulary (e.g., عايز not أريد, ازاي not كيف, كده not هكذا)
+QUESTIONS: Use "إيه" for "what", "ليه" for "why", "فين" for "where"
+STYLE: Warm, relatable, natural Egyptian conversational flow`,
     
-    gulf: `VARIETY: Gulf Arabic (UAE/Saudi/Qatar)
-GRAMMAR: Gulf verb forms
-VOCABULARY: Gulf vocabulary`,
+    gulf: `VARIETY: Gulf Arabic (خليجي - UAE/Saudi/Qatar/Kuwait)
+GRAMMAR: Gulf verb forms, use future marker "ب-" or "راح"
+VOCABULARY: Gulf vocabulary (e.g., شلون/شلونك, وش for "what", أبي/ابغى for "want")
+PRONOUNS: Use "-ج" suffix for feminine second person (e.g., شلونج)
+NEGATION: Use "ما" before verbs
+STYLE: Polite, hospitable, use تفضل and mashallah naturally`,
     
-    levantine: `VARIETY: Levantine Arabic (Syrian/Lebanese/Palestinian)
-GRAMMAR: Levantine conjugations
-VOCABULARY: Levantine vocabulary`,
+    levantine: `VARIETY: Levantine Arabic (شامي - Syrian/Lebanese/Palestinian/Jordanian)
+GRAMMAR: Levantine conjugations, use "ب-" for present, "رح" for future
+VOCABULARY: Levantine vocabulary (e.g., شو for "what", هلق/هلأ for "now", كتير for "very")
+PRONOUNS: Use "-ك" for masculine, "-كي" for feminine second person
+NEGATION: Use "ما" before verbs, "مش" before nouns/adjectives
+STYLE: Friendly, expressive, natural Levantine conversational tone`,
     
-    maghrebi: `VARIETY: Maghrebi Arabic (Moroccan/Algerian/Tunisian)
-GRAMMAR: Maghrebi verb forms
-VOCABULARY: Maghrebi vocabulary`,
+    maghrebi: `VARIETY: Maghrebi Arabic (مغاربي - Moroccan/Algerian/Tunisian)
+GRAMMAR: Maghrebi verb forms, distinctive consonant clusters
+VOCABULARY: Maghrebi vocabulary (e.g., واش for "what", بزاف for "very", ديال for possession)
+FRENCH INFLUENCE: Natural French loanwords acceptable in context
+NEGATION: Use "ما...ش" pattern (e.g., ما عرفتش)
+STYLE: Direct, warm, use local expressions naturally`,
   };
 
   let instructions = dialectRules[dialect] || dialectRules.msa;
 
-  // Formality rule
-  instructions += `\nTONE: ${
-    options.formality === 'formal' 
-      ? 'Formal, respectful. Complete sentences, proper grammar.' 
-      : 'Casual, conversational. Natural flow, friendly.'
-  }`;
+  // Add formality rules with more nuance
+  if (options.formality === 'formal') {
+    instructions += `\nTONE: Formal and respectful. Use complete sentences, proper grammar.
+- Use honorifics (حضرتك، سعادتكم) when appropriate
+- Avoid slang or very casual expressions
+- Maintain professional distance while being warm`;
+  } else {
+    instructions += `\nTONE: Casual and conversational. Natural flow, friendly.
+- Use contractions and natural speech patterns
+- Include appropriate filler words for authenticity
+- Be warm and approachable`;
+  }
 
-  // Code-switch rule
-  instructions += `\nCODE-SWITCHING: ${
-    options.codeSwitch === 'arabic_only' 
-      ? 'Arabic only. Translate technical terms if possible.' 
-      : 'Natural code-switching allowed for technical terms.'
-  }`;
+  // Code-switching rules with practical guidance
+  if (options.codeSwitch === 'arabic_only') {
+    instructions += `\nCODE-SWITCHING: Arabic only. Translate all technical terms if possible.
+- Use Arabic equivalents for common English terms
+- If no Arabic equivalent exists, transliterate with Arabic explanation`;
+  } else {
+    instructions += `\nCODE-SWITCHING: Natural mixing allowed for technical terms.
+- Keep technical terms, brand names, and code in English/original
+- Maintain natural bilingual flow for educated Arabic speakers`;
+  }
 
-  // Numeral rule
+  // Numeral mode rules
   if (options.numeralMode === 'arabic') {
-    instructions += `\nNUMERALS: Use Eastern Arabic numerals (٠١٢٣٤٥٦٧٨٩)`;
+    instructions += `\nNUMERALS: Use Eastern Arabic numerals (٠١٢٣٤٥٦٧٨٩) in prose.
+- Exception: Keep Western numerals in code, URLs, and technical content`;
   }
 
   return instructions;
 }
+
+// =============================================================================
+// DIRECT PROVIDER API CALLS - No third-party gateways
+// =============================================================================
+
+/**
+ * Call OpenAI API directly
+ */
+async function callOpenAI(messages: Message[], modelId: string, maxTokens: number): Promise<Response> {
+  const apiKey = Deno.env.get('OPENAI_API_KEY');
+  if (!apiKey) throw new Error('OPENAI_API_KEY not configured');
+  
+  const modelConfig = MODEL_REGISTRY[modelId];
+  if (!modelConfig) throw new Error(`Unknown model: ${modelId}`);
+  
+  console.log(`Calling OpenAI directly with model: ${modelConfig.actualModel}`);
+  
+  return fetch('https://api.openai.com/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${apiKey}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      model: modelConfig.actualModel,
+      messages: messages.map(m => ({ role: m.role, content: m.content })),
+      max_completion_tokens: maxTokens,
+      stream: true,
+      stream_options: { include_usage: true },
+    }),
+  });
+}
+
+/**
+ * Call Google Gemini API directly
+ */
+async function callGoogle(messages: Message[], modelId: string, maxTokens: number): Promise<Response> {
+  const apiKey = Deno.env.get('GOOGLE_API_KEY');
+  if (!apiKey) throw new Error('GOOGLE_API_KEY not configured');
+  
+  const modelConfig = MODEL_REGISTRY[modelId];
+  if (!modelConfig) throw new Error(`Unknown model: ${modelId}`);
+  
+  console.log(`Calling Google Gemini directly with model: ${modelConfig.actualModel}`);
+  
+  // Convert messages to Gemini format
+  const systemMsg = messages.find(m => m.role === 'system');
+  const conversationMsgs = messages.filter(m => m.role !== 'system');
+  
+  const geminiContents = conversationMsgs.map(m => ({
+    role: m.role === 'assistant' ? 'model' : 'user',
+    parts: [{ text: m.content }],
+  }));
+  
+  return fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/${modelConfig.actualModel}:streamGenerateContent?key=${apiKey}&alt=sse`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: geminiContents,
+        systemInstruction: systemMsg ? { parts: [{ text: systemMsg.content }] } : undefined,
+        generationConfig: {
+          maxOutputTokens: maxTokens,
+        },
+      }),
+    }
+  );
+}
+
+/**
+ * Call Anthropic Claude API directly
+ */
+async function callAnthropic(messages: Message[], modelId: string, maxTokens: number): Promise<Response> {
+  const apiKey = Deno.env.get('ANTHROPIC_API_KEY');
+  if (!apiKey) throw new Error('ANTHROPIC_API_KEY not configured');
+  
+  const modelConfig = MODEL_REGISTRY[modelId];
+  if (!modelConfig) throw new Error(`Unknown model: ${modelId}`);
+  
+  console.log(`Calling Anthropic directly with model: ${modelConfig.actualModel}`);
+  
+  // Extract system message
+  const systemMessage = messages.find(m => m.role === 'system')?.content || '';
+  const conversationMessages = messages
+    .filter(m => m.role !== 'system')
+    .map(m => ({ role: m.role, content: m.content }));
+  
+  return fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'x-api-key': apiKey,
+      'anthropic-version': '2023-06-01',
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      model: modelConfig.actualModel,
+      max_tokens: maxTokens,
+      system: systemMessage,
+      messages: conversationMessages,
+      stream: true,
+    }),
+  });
+}
+
+/**
+ * Call Thaura AI API directly (OpenAI-compatible)
+ */
+async function callThaura(messages: Message[], modelId: string, maxTokens: number): Promise<Response> {
+  const apiKey = Deno.env.get('THAURA_API_KEY');
+  if (!apiKey) throw new Error('THAURA_API_KEY not configured');
+  
+  const modelConfig = MODEL_REGISTRY[modelId];
+  if (!modelConfig) throw new Error(`Unknown model: ${modelId}`);
+  
+  console.log(`Calling Thaura directly with model: ${modelConfig.actualModel}`);
+  
+  return fetch('https://backend.thaura.ai/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${apiKey}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      model: modelConfig.actualModel,
+      messages: messages.map(m => ({ role: m.role, content: m.content })),
+      max_tokens: maxTokens,
+      stream: true,
+      stream_options: { include_usage: true },
+    }),
+  });
+}
+
+/**
+ * Get configured providers status
+ */
+function getConfiguredProviders(): { openai: boolean; google: boolean; anthropic: boolean; thaura: boolean } {
+  return {
+    openai: !!Deno.env.get('OPENAI_API_KEY'),
+    google: !!Deno.env.get('GOOGLE_API_KEY'),
+    anthropic: !!Deno.env.get('ANTHROPIC_API_KEY'),
+    thaura: !!Deno.env.get('THAURA_API_KEY'),
+  };
+}
+
+/**
+ * Call the appropriate provider based on model configuration
+ */
+async function callProvider(messages: Message[], modelId: string, maxTokens: number): Promise<Response> {
+  const modelConfig = MODEL_REGISTRY[modelId];
+  if (!modelConfig) throw new Error(`Unknown model: ${modelId}`);
+  
+  switch (modelConfig.provider) {
+    case 'openai':
+      return callOpenAI(messages, modelId, maxTokens);
+    case 'google':
+      return callGoogle(messages, modelId, maxTokens);
+    case 'anthropic':
+      return callAnthropic(messages, modelId, maxTokens);
+    case 'thaura':
+      return callThaura(messages, modelId, maxTokens);
+    default:
+      throw new Error(`Unknown provider: ${modelConfig.provider}`);
+  }
+}
+
+/**
+ * Transform Google Gemini SSE stream to OpenAI-compatible format
+ */
+function transformGoogleStream(response: Response): ReadableStream {
+  const reader = response.body!.getReader();
+  const decoder = new TextDecoder();
+  const encoder = new TextEncoder();
+  
+  return new ReadableStream({
+    async start(controller) {
+      try {
+        let buffer = '';
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split('\n');
+          buffer = lines.pop() || '';
+          
+          for (const line of lines) {
+            if (line.startsWith('data: ')) {
+              try {
+                const json = JSON.parse(line.slice(6));
+                const text = json.candidates?.[0]?.content?.parts?.[0]?.text || '';
+                if (text) {
+                  const openaiFormat = {
+                    choices: [{ delta: { content: text } }],
+                  };
+                  controller.enqueue(encoder.encode(`data: ${JSON.stringify(openaiFormat)}\n\n`));
+                }
+              } catch {
+                // Ignore parse errors
+              }
+            }
+          }
+        }
+        controller.enqueue(encoder.encode('data: [DONE]\n\n'));
+        controller.close();
+      } catch (err) {
+        controller.error(err);
+      }
+    },
+  });
+}
+
+/**
+ * Transform Anthropic SSE stream to OpenAI-compatible format
+ */
+function transformAnthropicStream(response: Response): ReadableStream {
+  const reader = response.body!.getReader();
+  const decoder = new TextDecoder();
+  const encoder = new TextEncoder();
+  
+  return new ReadableStream({
+    async start(controller) {
+      try {
+        let buffer = '';
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split('\n');
+          buffer = lines.pop() || '';
+          
+          for (const line of lines) {
+            if (line.startsWith('data: ')) {
+              try {
+                const json = JSON.parse(line.slice(6));
+                if (json.type === 'content_block_delta' && json.delta?.text) {
+                  const openaiFormat = {
+                    choices: [{ delta: { content: json.delta.text } }],
+                  };
+                  controller.enqueue(encoder.encode(`data: ${JSON.stringify(openaiFormat)}\n\n`));
+                }
+              } catch {
+                // Ignore parse errors
+              }
+            }
+          }
+        }
+        controller.enqueue(encoder.encode('data: [DONE]\n\n'));
+        controller.close();
+      } catch (err) {
+        controller.error(err);
+      }
+    },
+  });
+}
+
+// =============================================================================
+// TYPE DEFINITIONS
+// =============================================================================
 
 interface Message {
   role: 'user' | 'assistant' | 'system';
@@ -182,10 +593,19 @@ serve(async (req) => {
       );
     }
 
-    const lovableApiKey = Deno.env.get('LOVABLE_API_KEY');
-    if (!lovableApiKey) {
-      console.error('LOVABLE_API_KEY is not configured');
-      throw new Error('Lovable API key not configured');
+    // Check that at least one AI provider is configured
+    const providers = getConfiguredProviders();
+    if (!providers.openai && !providers.google && !providers.anthropic && !providers.thaura) {
+      console.error('No AI providers configured');
+      return new Response(
+        JSON.stringify({ 
+          error: 'No AI providers configured',
+          error_code: 'NO_PROVIDERS',
+          message_ar: 'لم يتم تكوين أي مزود ذكاء اصطناعي. يرجى التحقق من إعدادات API.',
+          message_en: 'No AI providers configured. Please check your API settings.'
+        }),
+        { status: 503, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
     const { 
@@ -357,12 +777,35 @@ serve(async (req) => {
       }
     }
     
-    // Final fallback
-    selectedModel = selectedModel || 'google/gemini-2.5-flash';
-
-    // Determine reasoning effort and max tokens
+    // Final fallback - use first available provider's model
+    if (!selectedModel) {
+      selectedModel = 'google/gemini-2.5-flash';
+    }
+    
+    // Validate model exists in registry, or use fallback
+    let modelConfig = MODEL_REGISTRY[selectedModel];
+    if (!modelConfig) {
+      console.warn(`Unknown model ${selectedModel}, falling back to gemini-flash`);
+      selectedModel = 'google/gemini-2.5-flash';
+      modelConfig = MODEL_REGISTRY[selectedModel];
+    }
+    
+    // Check if the provider for this model is available
+    if (!providers[modelConfig.provider]) {
+      // Find first available model
+      const availableModel = Object.entries(MODEL_REGISTRY).find(([_, cfg]) => providers[cfg.provider]);
+      if (availableModel) {
+        console.log(`Provider ${modelConfig.provider} not available, falling back to ${availableModel[0]}`);
+        selectedModel = availableModel[0];
+        modelConfig = MODEL_REGISTRY[selectedModel];
+      } else {
+        throw new Error('No AI providers available');
+      }
+    }
+    
+    // Get max tokens from model config or use mode-based calculation
     const reasoningEffort = REASONING_EFFORT[mode] || 'none';
-    let maxCompletionTokens = 2048;
+    let maxCompletionTokens = modelConfig.maxTokens || 4096;
 
     if (reasoningEffort === 'medium') {
       maxCompletionTokens = 4096;
@@ -370,22 +813,22 @@ serve(async (req) => {
       maxCompletionTokens = 16384;
     }
 
-    // Handle "auto" dialect detection
+    // Handle "auto" dialect detection with improved accuracy
     let effectiveDialect = dialect;
-    let dialectDetectionResult = { dialect: 'msa', confidence: 'none', markers: [] as string[] };
+    let dialectDetectionResult = { dialect: 'msa', confidence: 'none', markers: [] as string[], score: 0 };
     
     if (dialect === 'auto') {
       // Combine all user messages for detection
       const userText = messages.filter(m => m.role === 'user').map(m => m.content).join(' ');
       dialectDetectionResult = detectDialectFromText(userText);
       
-      // Only apply detected dialect if confidence is high
-      if (dialectDetectionResult.confidence === 'high') {
+      // Apply detected dialect if confidence is high OR medium (improved sensitivity)
+      if (dialectDetectionResult.confidence === 'high' || dialectDetectionResult.confidence === 'medium') {
         effectiveDialect = dialectDetectionResult.dialect;
-        console.log(`Auto dialect detection: ${dialectDetectionResult.dialect} (confidence: ${dialectDetectionResult.confidence}, markers: ${dialectDetectionResult.markers.join(', ')})`);
+        console.log(`Auto dialect detection: ${dialectDetectionResult.dialect} (confidence: ${dialectDetectionResult.confidence}, score: ${dialectDetectionResult.score}, markers: ${dialectDetectionResult.markers.join(', ')})`);
       } else {
-        effectiveDialect = 'msa'; // Fall back to MSA
-        console.log(`Auto dialect: low confidence, falling back to MSA`);
+        effectiveDialect = 'msa'; // Fall back to MSA for low/no confidence
+        console.log(`Auto dialect: ${dialectDetectionResult.confidence} confidence (score: ${dialectDetectionResult.score}), falling back to MSA`);
       }
     }
     
@@ -514,50 +957,68 @@ Key behaviors:
 
     const allMessages = [systemMessage, ...messages];
 
-    // Construct request body with stream_options to get usage data
-    const requestBody: any = {
-      model: selectedModel,
-      messages: allMessages,
-      reasoning_effort: reasoningEffort,
-      max_completion_tokens: maxCompletionTokens,
-      stream: true,
-      stream_options: { include_usage: true }, // Request usage data in stream
-    };
-
-    // Make request to Lovable Gateway
-    const response = await fetch(LOVABLE_AI_URL, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${lovableApiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(requestBody),
-    });
+    // ==========================================================================
+    // DIRECT PROVIDER API CALL - No third-party gateways
+    // ==========================================================================
+    
+    console.log(`Calling provider ${modelConfig.provider} with model ${selectedModel}`);
+    
+    let response: Response;
+    try {
+      response = await callProvider(allMessages, selectedModel, maxCompletionTokens);
+    } catch (providerError) {
+      console.error('Provider call failed:', providerError);
+      return new Response(
+        JSON.stringify({ 
+          error: 'AI provider error',
+          message_ar: 'حدث خطأ في مزود الذكاء الاصطناعي. يرجى المحاولة مرة أخرى.',
+          message_en: providerError instanceof Error ? providerError.message : 'Unknown error'
+        }),
+        { status: 503, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('Lovable API error:', response.status, errorText);
+      console.error(`${modelConfig.provider} API error:`, response.status, errorText);
       
       // Handle specific error codes
       if (response.status === 429) {
         return new Response(
-          JSON.stringify({ error: 'Rate limit exceeded. Please try again in a moment.' }),
+          JSON.stringify({ 
+            error: 'Rate limit exceeded. Please try again in a moment.',
+            message_ar: 'تم تجاوز حد الطلبات. يرجى المحاولة لاحقاً.'
+          }),
           { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
       
-      if (response.status === 401) {
+      if (response.status === 401 || response.status === 403) {
         return new Response(
-          JSON.stringify({ error: 'Invalid API key. Please check your Lovable API key.' }),
+          JSON.stringify({ 
+            error: 'Invalid API key configuration.',
+            message_ar: 'خطأ في تكوين مفتاح API.'
+          }),
           { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
 
-      throw new Error(`Lovable API error: ${response.status}`);
+      throw new Error(`${modelConfig.provider} API error: ${response.status}`);
+    }
+    
+    // Transform stream based on provider (to OpenAI-compatible format)
+    let streamBody: ReadableStream;
+    if (modelConfig.provider === 'google') {
+      streamBody = transformGoogleStream(response);
+    } else if (modelConfig.provider === 'anthropic') {
+      streamBody = transformAnthropicStream(response);
+    } else {
+      // OpenAI and Thaura already use compatible format
+      streamBody = response.body!;
     }
 
     // Parse the stream to extract usage and pass through to client
-    const originalReader = response.body!.getReader();
+    const originalReader = streamBody.getReader();
     const decoder = new TextDecoder();
     
     let usageData: { prompt_tokens?: number; completion_tokens?: number; total_tokens?: number } | null = null;
@@ -600,15 +1061,15 @@ Key behaviors:
               const outputTokens = usageData.completion_tokens || 0;
               const totalTokens = usageData.total_tokens || (inputTokens + outputTokens);
               
-              // Calculate cost
-              const pricingConfig = COST_PER_1M[selectedModel] || COST_PER_1M['gpt-5.2'];
+              // Calculate cost using model-specific pricing or default
+              const pricingConfig = COST_PER_1M[selectedModel] || { input: 1.0, output: 4.0 };
               const modelPricing = pricingConfig as { input: number; output: number };
 
               const inputCost = (inputTokens / 1_000_000) * modelPricing.input;
               const outputCost = (outputTokens / 1_000_000) * modelPricing.output;
               const totalCost = inputCost + outputCost;
               
-              console.log(`Usage - Input: ${inputTokens}, Output: ${outputTokens}, Cost: $${totalCost.toFixed(6)}`);
+              console.log(`Usage - Model: ${selectedModel}, Input: ${inputTokens}, Output: ${outputTokens}, Cost: $${totalCost.toFixed(6)}`);
 
               // Record individual usage event with processing metadata
               try {

@@ -57,15 +57,20 @@ Arabic-speaking professionals who need AI assistance that feels native and cultu
          │
          └─ Edge Functions (Deno)
                  │
-                 ├─ AI Gateway (Lovable Cloud)
+                 ├─ AI Providers (Direct API Calls)
                  │    ├─ Google Gemini (Primary)
-                 │    ├─ OpenAI (Fallback)
+                 │    ├─ OpenAI GPT-4o
                  │    ├─ Anthropic Claude
                  │    └─ Thaura AI
                  │
                  ├─ Perplexity API (Research)
-                 └─ OpenAI DALL-E 3 (Images)
+                 │
+                 └─ Image Generation
+                      ├─ OpenAI DALL-E 3 / GPT Image 1
+                      └─ Google Gemini NanoBanana
 ```
+
+**Note:** All AI provider calls are made directly to provider APIs. No third-party gateway services are used.
 
 ### Frontend Architecture
 
@@ -113,9 +118,9 @@ Arabic-speaking professionals who need AI assistance that feels native and cultu
 | **Database** | PostgreSQL (Supabase) |
 | **Authentication** | Supabase Auth |
 | **Edge Functions** | Deno Deploy |
-| **AI Gateway** | Lovable AI Gateway |
+| **AI Providers** | OpenAI, Google Gemini, Anthropic Claude, Thaura (Direct API) |
 | **Research API** | Perplexity |
-| **Image Generation** | OpenAI DALL-E 3 |
+| **Image Generation** | OpenAI DALL-E 3/GPT Image 1, Google Gemini NanoBanana |
 
 ### Development Tools
 
@@ -158,10 +163,13 @@ Arabic-speaking professionals who need AI assistance that feels native and cultu
 
 ### 4. Image Generation
 
-- **DALL-E 3 Integration**: High-quality image generation
+- **Multi-Model Support**: Choose from multiple image generation models:
+  - OpenAI DALL-E 3 (High quality, detailed)
+  - OpenAI GPT Image 1 (ChatGPT's latest)
+  - Google Gemini NanoBanana (Cost-effective, fast)
 - **Gallery View**: Organized view of generated images
 - **Download Support**: Save images locally
-- **Usage Tracking**: Cost tracking for image generation
+- **Usage Tracking**: Cost tracking per model for image generation
 
 ### 5. Research Mode
 
@@ -342,46 +350,57 @@ CREATE POLICY "Users can access own data" ON table_name
 ### Edge Functions Overview
 
 All Edge Functions are written in TypeScript for Deno and deployed via Supabase.
+**Important**: All AI provider calls are made directly to provider APIs. No third-party gateway services are used.
 
 #### `chat` - AI Chat with Streaming
 - **Auth**: Required (JWT)
 - **Purpose**: Main chat endpoint with streaming responses
 - **Features**:
+  - Direct API calls to OpenAI, Google, Anthropic, Thaura
+  - Enhanced dialect detection with weighted scoring
   - Memory injection (approved memories only)
-  - Multi-provider fallback
-  - Automatic model routing
-  - Usage tracking
-  - Streaming support
+  - Multi-provider fallback chain
+  - Automatic model routing based on mode
+  - Usage tracking with cost calculation
+  - Streaming support with provider stream transformation
 
 #### `ai-gateway` - Multi-Provider AI Gateway
 - **Auth**: Required (JWT or session)
-- **Purpose**: Unified interface to multiple AI providers
+- **Purpose**: Unified interface to multiple AI providers (direct API calls)
 - **Providers**:
   - Google Gemini (primary)
-  - OpenAI (fallback)
+  - OpenAI GPT-4o
   - Anthropic Claude
   - Thaura AI
 - **Features**:
-  - Provider fallback chain
-  - Cost calculation
-  - Error handling
+  - Provider fallback chain for resilience
+  - Stream transformation for consistent client interface
+  - Anonymous session support with trial limits
+  - Cost calculation per model
+  - Error handling with bilingual messages
 
 #### `extract-memory` - Memory Extraction
 - **Auth**: Required (JWT)
-- **Purpose**: Extract potential memories from conversations
+- **Purpose**: Extract potential memories from conversations using direct AI calls
 - **Features**:
-  - Analyzes conversation context
+  - Semantic similarity for deduplication (Jaccard similarity)
+  - Temporal relevance scoring (permanent/long_term/short_term)
+  - Enhanced sensitive data filtering (credit cards, SSN, API keys, JWT tokens)
   - Creates memory suggestions (status: 'proposed')
-  - Filters sensitive data
   - Respects user consent
 
 #### `generate-image` - Image Generation
 - **Auth**: Required (JWT)
-- **Purpose**: Generate images via DALL-E 3
+- **Purpose**: Generate images via multiple providers
+- **Supported Models**:
+  - OpenAI DALL-E 3
+  - OpenAI GPT Image 1
+  - Google Gemini NanoBanana
 - **Features**:
-  - Prompt enhancement
-  - Cost tracking
-  - Image storage in Supabase
+  - Model selection by user
+  - Prompt enhancement with style/negative prompts
+  - Cost tracking per model
+  - Image storage in Supabase Storage
 
 #### `research` - Web Research
 - **Auth**: Required (JWT)
@@ -390,21 +409,24 @@ All Edge Functions are written in TypeScript for Deno and deployed via Supabase.
   - Citation support
   - Multi-language queries
   - Source attribution
+  - Streaming responses
 
 #### `summarize-conversation` - Conversation Summarization
 - **Auth**: Required (JWT)
-- **Purpose**: Auto-generate conversation summaries
+- **Purpose**: Auto-generate conversation summaries using direct AI calls
 - **Features**:
-  - Extracts key points
-  - Creates conversation memory
-  - Max 300 characters
+  - Extracts key points and decisions
+  - Incremental summarization
+  - Supports Arabic conversations
+  - Uses Google Gemini or OpenAI directly
 
 #### `export-data` - GDPR Data Export
 - **Auth**: Required (JWT)
 - **Purpose**: Export user data
 - **Features**:
-  - Complete data export
+  - Complete data export (memories, conversations, messages)
   - GDPR compliant
+  - Audit logging
   - JSON format
 
 #### `usage-stats` - Usage Analytics
@@ -616,12 +638,27 @@ const MEMORY_LIMITS = {
 ### Sensitive Data Filtering
 
 The `extract-memory` function blocks:
-- Credit card numbers
-- Phone numbers
+- Credit card numbers (4x4 digit patterns)
+- Phone numbers (US and international formats)
 - Email addresses (in certain patterns)
-- Passwords
-- API keys
-- Authentication tokens
+- Passwords and secrets
+- API keys (generic, Stripe, AWS patterns)
+- Authentication tokens (JWT format)
+- SSN numbers
+
+### Semantic Deduplication
+
+Before saving new memories, the system checks for duplicates using:
+- **Jaccard Similarity**: Word-based similarity calculation
+- **Content Threshold**: 40% similarity = duplicate
+- **Key Matching**: 60% similarity in memory keys = duplicate
+
+### Temporal Relevance
+
+Extracted memories are scored for temporal relevance:
+- **Permanent**: Core identity facts (name, profession)
+- **Long-term**: Stable preferences lasting months/years
+- **Short-term**: Project-specific facts that may expire
 
 ### Audit Logging
 
@@ -649,10 +686,24 @@ All operations logged to `memory_audit_log`:
 
 ### Auto Mode (Recommended)
 
-- Detects dialect from user messages
-- Only applies if confidence is `high` (3+ dialect markers)
-- Falls back to user preference otherwise
+- Detects dialect from user messages using weighted marker scoring
+- Applies detected dialect if confidence is `high` (score >= 5) or `medium` (score >= 3)
+- Falls back to MSA for low confidence or no markers detected
 - Most natural user experience
+
+### Dialect Detection Algorithm
+
+The system uses weighted markers for accurate dialect detection:
+- **Weight 2.0**: Highly distinctive markers (e.g., Egyptian: إيه، عايز، كده)
+- **Weight 1.5**: Common dialect markers
+- **Weight 1.0**: Less distinctive markers
+- **Weight 0.8**: Shared markers with lower distinctiveness
+
+Confidence thresholds:
+- **High**: Score >= 5 (very confident)
+- **Medium**: Score >= 3 (reasonably confident)
+- **Low**: Score >= 1 (uncertain)
+- **None**: Score < 1 (no markers found)
 
 ### Dialect Settings
 
@@ -673,17 +724,21 @@ interface DialectSettings {
 
 ### Policy Injection
 
-Dialect settings are injected as policy blocks into system prompts:
+Dialect settings are injected as detailed policy blocks into system prompts:
 
 ```
-VARIETY: Egyptian Arabic
-GRAMMAR: Egyptian verb conjugations, negation with مش
-TONE: Casual, conversational
-NUMERALS: Eastern Arabic numerals (٠-٩)
-CODE_SWITCHING: Allow natural mixing with English technical terms
+VARIETY: Egyptian Arabic (مصري)
+GRAMMAR: Egyptian verb conjugations, use "ب-" prefix for present continuous
+NEGATION: Use "مش" before verbs/adjectives, "ما...ش" around verbs for emphasis
+VOCABULARY: Egyptian vocabulary (e.g., عايز not أريد, ازاي not كيف)
+QUESTIONS: Use "إيه" for "what", "ليه" for "why", "فين" for "where"
+STYLE: Warm, relatable, natural Egyptian conversational flow
+TONE: Casual and conversational
+NUMERALS: Eastern Arabic numerals (٠-٩) in prose, Western in code
+CODE_SWITCHING: Natural mixing allowed for technical terms
 ```
 
-**Note**: Use structured rules, NOT example phrases.
+**Note**: The system uses structured linguistic rules rather than example phrases for consistent output.
 
 ---
 
@@ -991,13 +1046,18 @@ supabase secrets set GOOGLE_API_KEY=your_key
 #### Required Secrets
 
 ```bash
-OPENAI_API_KEY          # OpenAI API access
-GOOGLE_API_KEY          # Google Gemini access
-ANTHROPIC_API_KEY       # Anthropic Claude access
-THAURA_API_KEY          # Thaura AI access
+# AI Providers (at least one required for chat/memory extraction)
+OPENAI_API_KEY          # OpenAI API access (GPT-4o, DALL-E 3, GPT Image 1)
+GOOGLE_API_KEY          # Google Gemini access (recommended - cost-effective)
+ANTHROPIC_API_KEY       # Anthropic Claude access (optional)
+THAURA_API_KEY          # Thaura AI access (optional)
+
+# Additional Services
 PERPLEXITY_API_KEY      # Research API
 ELEVENLABS_API_KEY      # Voice transcription (optional)
 ```
+
+**Note**: At least one of OPENAI_API_KEY or GOOGLE_API_KEY is required for the application to function.
 
 ### Deployment Checklist
 
@@ -1394,6 +1454,14 @@ Template for environment variables
 
 ---
 
-**Document Version**: 1.0  
+**Document Version**: 2.0  
 **Last Updated**: 2026-01-14  
 **Maintained By**: Arabic Spark AI Team
+
+### Changelog (v2.0)
+- Removed Lovable AI Gateway dependency - all AI calls now go directly to provider APIs
+- Enhanced dialect detection with weighted scoring algorithm
+- Added multi-model image generation (DALL-E 3, GPT Image 1, Gemini NanoBanana)
+- Improved memory extraction with semantic deduplication and temporal relevance
+- Added more sensitive data patterns for filtering
+- Updated model registry with current model names (GPT-4o, Gemini 2.5, Claude 3.5)

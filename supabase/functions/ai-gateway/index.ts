@@ -1,3 +1,15 @@
+/**
+ * AI Gateway Edge Function
+ * 
+ * Unified interface for multiple AI providers with:
+ * - Multi-provider support (OpenAI, Google, Anthropic, Thaura)
+ * - Automatic fallback chains for resilience
+ * - Model routing based on capabilities
+ * - Anonymous session support with trial limits
+ * - Stream transformation for consistent client interface
+ * 
+ * Uses DIRECT provider API calls - NO third-party gateway services.
+ */
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
@@ -8,7 +20,7 @@ const corsHeaders = {
 };
 
 // ============================================================================
-// MULTI-PROVIDER MODEL REGISTRY
+// MULTI-PROVIDER MODEL REGISTRY (Direct API calls only)
 // ============================================================================
 
 type Capability = 'chat' | 'deep_think' | 'deep_research' | 'image' | 'video' | 'transcribe' | 'code';
@@ -26,27 +38,27 @@ interface ModelConfig {
 
 const MODEL_REGISTRY: Record<string, ModelConfig> = {
   // ==================== OPENAI MODELS ====================
-  'openai/gpt-5.2': {
+  'openai/gpt-4o': {
     provider: 'openai',
-    actualModel: 'gpt-5-2025-08-07',
+    actualModel: 'gpt-4o',
     capabilities: ['chat', 'deep_think', 'code'],
-    displayName: 'GPT-5.2',
-    displayNameAr: 'جي بي تي 5.2',
+    displayName: 'GPT-4o',
+    displayNameAr: 'جي بي تي 4o',
     description: 'Latest flagship model',
     tier: 'premium',
-    pricing: { input: 5.00, output: 20.00 },
+    pricing: { input: 2.50, output: 10.00 },
   },
-  'openai/gpt-5-nano': {
+  'openai/gpt-4o-mini': {
     provider: 'openai',
-    actualModel: 'gpt-5-nano-2025-08-07',
+    actualModel: 'gpt-4o-mini',
     capabilities: ['chat'],
-    displayName: 'GPT-5 Nano',
-    displayNameAr: 'جي بي تي 5 نانو',
-    description: 'Fastest, most economical',
+    displayName: 'GPT-4o Mini',
+    displayNameAr: 'جي بي تي 4o ميني',
+    description: 'Fast and economical',
     tier: 'free',
-    pricing: { input: 0.25, output: 1.00 },
+    pricing: { input: 0.15, output: 0.60 },
   },
-  'openai/gpt-image-1.5': {
+  'openai/gpt-image-1': {
     provider: 'openai',
     actualModel: 'gpt-image-1',
     capabilities: ['image'],
@@ -176,37 +188,36 @@ const MODEL_REGISTRY: Record<string, ModelConfig> = {
 
 // Default models per function/capability
 const FUNCTION_DEFAULTS: Record<Capability, string> = {
-  chat: 'openai/gpt-5.2',
+  chat: 'openai/gpt-4o',
   deep_think: 'google/gemini-3-pro',
   deep_research: 'google/gemini-3-pro',
   image: 'google/nanobanana-pro',
   video: 'google/veo-2.1',
   transcribe: 'openai/whisper',
-  code: 'openai/gpt-5.2',
+  code: 'openai/gpt-4o',
 };
 
 // Fallback chains per model - when primary fails, try these in order
 const FALLBACK_CHAINS: Record<string, string[]> = {
   // OpenAI fallbacks
-  'openai/gpt-5.2': ['google/gemini-3-pro', 'anthropic/sonnet-4.5'],
-  'openai/gpt-5-nano': ['google/gemini-flash-3', 'anthropic/haiku-4.5'],
-  'openai/gpt-image-1.5': ['google/nanobanana-pro'],
-  'openai/o3-deep-research': ['google/gemini-3-pro', 'anthropic/deep-research'],
+  'openai/gpt-4o': ['google/gemini-3-pro', 'anthropic/sonnet-4.5'],
+  'openai/gpt-4o-mini': ['google/gemini-flash-3', 'anthropic/haiku-4.5'],
+  'openai/gpt-image-1': ['google/nanobanana-pro'],
   // Google fallbacks
-  'google/gemini-3-pro': ['openai/gpt-5.2', 'anthropic/sonnet-4.5'],
-  'google/gemini-flash-3': ['openai/gpt-5-nano', 'anthropic/haiku-4.5'],
-  'google/nanobanana-pro': ['openai/gpt-image-1.5'],
+  'google/gemini-3-pro': ['openai/gpt-4o', 'anthropic/sonnet-4.5'],
+  'google/gemini-flash-3': ['openai/gpt-4o-mini', 'anthropic/haiku-4.5'],
+  'google/nanobanana-pro': ['openai/gpt-image-1'],
   // Anthropic fallbacks
-  'anthropic/opus-4.5': ['openai/gpt-5.2', 'google/gemini-3-pro'],
-  'anthropic/sonnet-4.5': ['google/gemini-3-pro', 'openai/gpt-5.2'],
-  'anthropic/haiku-4.5': ['google/gemini-flash-3', 'openai/gpt-5-nano'],
-  'anthropic/deep-research': ['google/gemini-3-pro', 'openai/o3-deep-research'],
+  'anthropic/opus-4.5': ['openai/gpt-4o', 'google/gemini-3-pro'],
+  'anthropic/sonnet-4.5': ['google/gemini-3-pro', 'openai/gpt-4o'],
+  'anthropic/haiku-4.5': ['google/gemini-flash-3', 'openai/gpt-4o-mini'],
+  'anthropic/deep-research': ['google/gemini-3-pro'],
 };
 
 // Mode to model mapping (backward compatibility with existing mode system)
 const MODE_MODEL_MAP: Record<string, { model: string; max_tokens: number }> = {
-  fast: { model: 'openai/gpt-5-nano', max_tokens: 2048 },
-  standard: { model: 'openai/gpt-5.2', max_tokens: 4096 },
+  fast: { model: 'openai/gpt-4o-mini', max_tokens: 2048 },
+  standard: { model: 'openai/gpt-4o', max_tokens: 4096 },
   deep: { model: 'google/gemini-3-pro', max_tokens: 8192 },
   pro: { model: 'anthropic/opus-4.5', max_tokens: 16384 },
   research: { model: 'google/gemini-3-pro', max_tokens: 8192 },

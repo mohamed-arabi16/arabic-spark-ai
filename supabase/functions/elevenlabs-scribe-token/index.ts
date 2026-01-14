@@ -1,3 +1,9 @@
+/**
+ * ElevenLabs Scribe Token Edge Function
+ * 
+ * Generates a single-use token for ElevenLabs Scribe real-time transcription.
+ * Used for voice-to-text functionality in the application.
+ */
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 const corsHeaders = {
