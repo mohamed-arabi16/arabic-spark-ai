@@ -25,7 +25,7 @@
 
 ### Identity
 
-**Arabic Spark AI** (also known as **Bayt Al-Lisan** - "House of Language") is an Arabic-first AI productivity platform that provides intelligent chat, memory management, image generation, and research capabilities. Unlike other AI platforms that simply translate interfaces, this platform is designed from the ground up for native Arabic speakers.
+**Arabic Spark AI** (also known as **Bayt Al-Lisan** - "House of Language") is an Arabic-first AI productivity platform that provides intelligent chat, memory management, image generation, and research capabilities. Unlike other AI platforms that simply translate interfaces, this platform is designed from the ground-up for native Arabic speakers.
 
 ### Core Differentiators
 
@@ -527,7 +527,7 @@ detectDialectWithConfidence(text: string): {
 }
 ```
 
-#### Normalization (Conservative)
+#### Normalization (Conservative Approach)
 
 ```typescript
 // Safe normalization
@@ -1395,5 +1395,5 @@ Template for environment variables
 ---
 
 **Document Version**: 1.0  
-**Last Updated**: January 2026  
+**Last Updated**: 2026-01-14  
 **Maintained By**: Arabic Spark AI Team
