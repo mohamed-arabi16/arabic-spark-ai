@@ -164,9 +164,9 @@ Arabic-speaking professionals who need AI assistance that feels native and cultu
 ### 4. Image Generation
 
 - **Multi-Model Support**: Choose from multiple image generation models:
-  - OpenAI DALL-E 3 (High quality, detailed)
-  - OpenAI GPT Image 1 (ChatGPT's latest)
-  - Google Gemini NanoBanana (Cost-effective, fast)
+  - `openai/dall-e-3` - OpenAI DALL-E 3 (High quality, detailed)
+  - `openai/gpt-image-1` - OpenAI GPT Image 1 (ChatGPT's latest)
+  - `google/nanobanana` - Google Gemini NanoBanana (Cost-effective, fast)
 - **Gallery View**: Organized view of generated images
 - **Download Support**: Save images locally
 - **Usage Tracking**: Cost tracking per model for image generation
@@ -392,10 +392,10 @@ All Edge Functions are written in TypeScript for Deno and deployed via Supabase.
 #### `generate-image` - Image Generation
 - **Auth**: Required (JWT)
 - **Purpose**: Generate images via multiple providers
-- **Supported Models**:
-  - OpenAI DALL-E 3
-  - OpenAI GPT Image 1
-  - Google Gemini NanoBanana
+- **Supported Models** (model IDs used in API):
+  - `openai/dall-e-3` - OpenAI DALL-E 3 (High quality, detailed)
+  - `openai/gpt-image-1` - OpenAI GPT Image 1 (ChatGPT's latest)
+  - `google/nanobanana` - Google Gemini NanoBanana (Cost-effective, fast)
 - **Features**:
   - Model selection by user
   - Prompt enhancement with style/negative prompts
@@ -1454,9 +1454,18 @@ Template for environment variables
 
 ---
 
-**Document Version**: 2.0  
+**Document Version**: 2.1  
 **Last Updated**: 2026-01-14  
 **Maintained By**: Arabic Spark AI Team
+
+### Changelog (v2.1)
+- Fixed model ID alignment between frontend and backend edge functions
+- Image generation models now use consistent IDs across all components:
+  - `openai/dall-e-3` (DALL-E 3)
+  - `openai/gpt-image-1` (GPT Image 1)
+  - `google/nanobanana` (Gemini NanoBanana)
+- Updated chat function MODEL_REGISTRY to match ai-gateway model IDs
+- Updated frontend model defaults to use correct model IDs
 
 ### Changelog (v2.0)
 - Removed Lovable AI Gateway dependency - all AI calls now go directly to provider APIs
