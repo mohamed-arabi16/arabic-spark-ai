@@ -41,19 +41,19 @@ interface UserModelSettings {
 }
 
 const DEFAULT_SETTINGS: UserModelSettings = {
-  default_chat_model: 'openai/gpt-4o',
+  default_chat_model: 'openai/gpt-5.2',
   default_deep_think_model: 'google/gemini-3-pro',
-  default_research_model: 'google/gemini-3-pro',
-  default_image_model: 'openai/dall-e-3',
+  default_research_model: 'google/gemini-deep-research',
+  default_image_model: 'google/nanobanana-pro',
   default_video_model: 'google/veo-2.1',
   enabled_models: [
-    'openai/gpt-4o', 'openai/gpt-4o-mini', 'openai/dall-e-3', 'openai/gpt-image-1',
-    'google/gemini-flash-3', 'google/gemini-3-pro', 'google/nanobanana',
-    'anthropic/sonnet-4.5', 'anthropic/haiku-4.5',
+    'openai/gpt-5.2', 'openai/gpt-5-nano', 'openai/gpt-image-1.5', 'openai/o3-deep-research',
+    'google/gemini-flash-3', 'google/gemini-3-pro', 'google/nanobanana-pro', 'google/gemini-deep-research',
+    'anthropic/sonnet-4.5', 'anthropic/haiku-4.5', 'anthropic/opus-4.5', 'anthropic/deep-research',
     'thaura/thaura'
   ],
   visible_chat_models: [
-    'openai/gpt-4o', 'google/gemini-3-pro', 'anthropic/sonnet-4.5'
+    'openai/gpt-5.2', 'google/gemini-3-pro', 'anthropic/sonnet-4.5'
   ],
 };
 

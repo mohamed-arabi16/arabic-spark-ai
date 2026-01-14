@@ -172,12 +172,18 @@ export default function Chat() {
   const handleModelChange = (model: string) => {
     setCurrentModel(model);
     setHasManuallySelected(true);
+    // When manually selecting a model, switch to manual routing mode
+    setRoutingMode('manual');
   };
 
   const handleRoutingModeChange = (mode: 'auto' | 'manual') => {
     setRoutingMode(mode);
     if (mode === 'auto') {
       setHasManuallySelected(false);
+      // When switching to auto, use the default chat model from settings
+      if (modelSettings.default_chat_model) {
+        setCurrentModel(modelSettings.default_chat_model);
+      }
     }
   };
 

@@ -38,42 +38,32 @@ interface ModelConfig {
 
 const MODEL_REGISTRY: Record<string, ModelConfig> = {
   // ==================== OPENAI MODELS ====================
-  'openai/gpt-4o': {
+  'openai/gpt-5.2': {
     provider: 'openai',
-    actualModel: 'gpt-4o',
+    actualModel: 'gpt-5.2',
     capabilities: ['chat', 'deep_think', 'code'],
-    displayName: 'GPT-4o',
-    displayNameAr: 'جي بي تي 4o',
-    description: 'Latest flagship model',
+    displayName: 'GPT-5.2',
+    displayNameAr: 'جي بي تي 5.2',
+    description: 'Latest flagship model for daily chat',
     tier: 'premium',
     pricing: { input: 2.50, output: 10.00 },
   },
-  'openai/gpt-4o-mini': {
+  'openai/gpt-5-nano': {
     provider: 'openai',
-    actualModel: 'gpt-4o-mini',
+    actualModel: 'gpt-5-nano',
     capabilities: ['chat'],
-    displayName: 'GPT-4o Mini',
-    displayNameAr: 'جي بي تي 4o ميني',
+    displayName: 'GPT-5 Nano',
+    displayNameAr: 'جي بي تي 5 نانو',
     description: 'Fast and economical',
     tier: 'free',
     pricing: { input: 0.15, output: 0.60 },
   },
-  'openai/dall-e-3': {
+  'openai/gpt-image-1.5': {
     provider: 'openai',
-    actualModel: 'dall-e-3',
+    actualModel: 'gpt-image-1.5',
     capabilities: ['image'],
-    displayName: 'DALL-E 3',
-    displayNameAr: 'دال-إي 3',
-    description: 'High quality, detailed images',
-    tier: 'premium',
-    pricing: { per_image: 0.04 },
-  },
-  'openai/gpt-image-1': {
-    provider: 'openai',
-    actualModel: 'gpt-image-1',
-    capabilities: ['image'],
-    displayName: 'GPT Image 1',
-    displayNameAr: 'جي بي تي صور 1',
+    displayName: 'GPT Image 1.5',
+    displayNameAr: 'جي بي تي صور 1.5',
     description: 'ChatGPT\'s latest image model',
     tier: 'premium',
     pricing: { per_image: 0.04 },
@@ -90,11 +80,11 @@ const MODEL_REGISTRY: Record<string, ModelConfig> = {
   },
   'openai/o3-deep-research': {
     provider: 'openai',
-    actualModel: 'o3-2025-04-16',
+    actualModel: 'o3-deep-research',
     capabilities: ['deep_research'],
     displayName: 'o3 Deep Research',
     displayNameAr: 'o3 بحث عميق',
-    description: 'Advanced research model',
+    description: 'Advanced deep research model',
     tier: 'premium',
     pricing: { input: 10.00, output: 40.00 },
   },
@@ -113,20 +103,20 @@ const MODEL_REGISTRY: Record<string, ModelConfig> = {
   'google/gemini-3-pro': {
     provider: 'google',
     actualModel: 'gemini-2.5-pro',
-    capabilities: ['chat', 'deep_think', 'deep_research', 'code'],
+    capabilities: ['chat', 'deep_think', 'code'],
     displayName: 'Gemini 3 Pro',
     displayNameAr: 'جيميني 3 برو',
-    description: 'Best for deep analysis',
+    description: 'Best for deep analysis and thinking',
     tier: 'premium',
     pricing: { input: 2.50, output: 10.00 },
   },
-  'google/nanobanana': {
+  'google/nanobanana-pro': {
     provider: 'google',
     actualModel: 'gemini-2.0-flash-preview-image-generation',
     capabilities: ['image'],
-    displayName: 'Gemini NanoBanana',
-    displayNameAr: 'جيميني نانو بنانا',
-    description: 'Cost-effective, fast image generation',
+    displayName: 'NanoBanana Pro',
+    displayNameAr: 'نانو بنانا برو',
+    description: 'Default image generation model',
     tier: 'standard',
     pricing: { per_image: 0.03 },
   },
@@ -139,6 +129,16 @@ const MODEL_REGISTRY: Record<string, ModelConfig> = {
     description: 'Video generation',
     tier: 'premium',
     pricing: { per_minute: 0.08 },
+  },
+  'google/gemini-deep-research': {
+    provider: 'google',
+    actualModel: 'gemini-2.5-pro-deep-research',
+    capabilities: ['deep_research'],
+    displayName: 'Gemini Deep Research',
+    displayNameAr: 'جيميني بحث عميق',
+    description: 'Best for deep research tasks',
+    tier: 'premium',
+    pricing: { input: 5.00, output: 20.00 },
   },
 
   // ==================== ANTHROPIC MODELS ====================
@@ -174,7 +174,7 @@ const MODEL_REGISTRY: Record<string, ModelConfig> = {
   },
   'anthropic/deep-research': {
     provider: 'anthropic',
-    actualModel: 'claude-opus-4-5-20251101',
+    actualModel: 'claude-opus-4-5-deep-research',
     capabilities: ['deep_research'],
     displayName: 'Claude Deep Research',
     displayNameAr: 'كلود بحث عميق',
@@ -198,40 +198,41 @@ const MODEL_REGISTRY: Record<string, ModelConfig> = {
 
 // Default models per function/capability
 const FUNCTION_DEFAULTS: Record<Capability, string> = {
-  chat: 'openai/gpt-4o',
+  chat: 'openai/gpt-5.2',
   deep_think: 'google/gemini-3-pro',
-  deep_research: 'google/gemini-3-pro',
-  image: 'openai/dall-e-3',
+  deep_research: 'google/gemini-deep-research',
+  image: 'google/nanobanana-pro',
   video: 'google/veo-2.1',
   transcribe: 'openai/whisper',
-  code: 'openai/gpt-4o',
+  code: 'openai/gpt-5.2',
 };
 
 // Fallback chains per model - when primary fails, try these in order
 const FALLBACK_CHAINS: Record<string, string[]> = {
   // OpenAI fallbacks
-  'openai/gpt-4o': ['google/gemini-3-pro', 'anthropic/sonnet-4.5'],
-  'openai/gpt-4o-mini': ['google/gemini-flash-3', 'anthropic/haiku-4.5'],
-  'openai/dall-e-3': ['openai/gpt-image-1', 'google/nanobanana'],
-  'openai/gpt-image-1': ['openai/dall-e-3', 'google/nanobanana'],
+  'openai/gpt-5.2': ['google/gemini-3-pro', 'anthropic/sonnet-4.5'],
+  'openai/gpt-5-nano': ['google/gemini-flash-3', 'anthropic/haiku-4.5'],
+  'openai/gpt-image-1.5': ['google/nanobanana-pro'],
+  'openai/o3-deep-research': ['google/gemini-deep-research', 'anthropic/deep-research'],
   // Google fallbacks
-  'google/gemini-3-pro': ['openai/gpt-4o', 'anthropic/sonnet-4.5'],
-  'google/gemini-flash-3': ['openai/gpt-4o-mini', 'anthropic/haiku-4.5'],
-  'google/nanobanana': ['openai/dall-e-3', 'openai/gpt-image-1'],
+  'google/gemini-3-pro': ['openai/gpt-5.2', 'anthropic/sonnet-4.5'],
+  'google/gemini-flash-3': ['openai/gpt-5-nano', 'anthropic/haiku-4.5'],
+  'google/nanobanana-pro': ['openai/gpt-image-1.5'],
+  'google/gemini-deep-research': ['openai/o3-deep-research', 'anthropic/deep-research'],
   // Anthropic fallbacks
-  'anthropic/opus-4.5': ['openai/gpt-4o', 'google/gemini-3-pro'],
-  'anthropic/sonnet-4.5': ['google/gemini-3-pro', 'openai/gpt-4o'],
-  'anthropic/haiku-4.5': ['google/gemini-flash-3', 'openai/gpt-4o-mini'],
-  'anthropic/deep-research': ['google/gemini-3-pro'],
+  'anthropic/opus-4.5': ['openai/gpt-5.2', 'google/gemini-3-pro'],
+  'anthropic/sonnet-4.5': ['google/gemini-3-pro', 'openai/gpt-5.2'],
+  'anthropic/haiku-4.5': ['google/gemini-flash-3', 'openai/gpt-5-nano'],
+  'anthropic/deep-research': ['google/gemini-deep-research', 'openai/o3-deep-research'],
 };
 
 // Mode to model mapping (backward compatibility with existing mode system)
 const MODE_MODEL_MAP: Record<string, { model: string; max_tokens: number }> = {
-  fast: { model: 'openai/gpt-4o-mini', max_tokens: 2048 },
-  standard: { model: 'openai/gpt-4o', max_tokens: 4096 },
+  fast: { model: 'openai/gpt-5-nano', max_tokens: 2048 },
+  standard: { model: 'openai/gpt-5.2', max_tokens: 4096 },
   deep: { model: 'google/gemini-3-pro', max_tokens: 8192 },
   pro: { model: 'anthropic/opus-4.5', max_tokens: 16384 },
-  research: { model: 'google/gemini-3-pro', max_tokens: 8192 },
+  research: { model: 'google/gemini-deep-research', max_tokens: 8192 },
 };
 
 // Dialect-specific system prompt instructions

@@ -3,19 +3,15 @@
  */
 
 export const modelExplanations: Record<string, { en: string; ar: string }> = {
-  'openai/gpt-4o': {
-    en: 'Flagship model for general tasks. Best balance of speed and quality.',
-    ar: 'النموذج الرئيسي للمهام العامة. أفضل توازن بين السرعة والجودة.'
+  'openai/gpt-5.2': {
+    en: 'Latest flagship model for general tasks. Best for daily chat.',
+    ar: 'النموذج الرئيسي الأحدث للمهام العامة. الأفضل للدردشة اليومية.'
   },
-  'openai/gpt-4o-mini': {
+  'openai/gpt-5-nano': {
     en: 'Fastest and most economical. Great for simple questions.',
     ar: 'الأسرع والأكثر اقتصاداً. مثالي للأسئلة البسيطة.'
   },
-  'openai/dall-e-3': {
-    en: 'High quality, detailed image generation.',
-    ar: 'توليد صور عالي الجودة والتفاصيل.'
-  },
-  'openai/gpt-image-1': {
+  'openai/gpt-image-1.5': {
     en: 'ChatGPT\'s latest image generation model.',
     ar: 'أحدث نموذج لتوليد الصور من ChatGPT.'
   },
@@ -31,9 +27,13 @@ export const modelExplanations: Record<string, { en: string; ar: string }> = {
     en: 'Optimized for deep analysis and complex reasoning.',
     ar: 'محسّن للتحليل العميق والاستنتاج المعقد.'
   },
-  'google/nanobanana': {
-    en: 'Cost-effective, fast image generation.',
-    ar: 'توليد صور سريع واقتصادي.'
+  'google/nanobanana-pro': {
+    en: 'Default image generation model. Cost-effective and fast.',
+    ar: 'نموذج توليد الصور الافتراضي. اقتصادي وسريع.'
+  },
+  'google/gemini-deep-research': {
+    en: 'Best for in-depth research tasks with citations.',
+    ar: 'الأفضل لمهام البحث المعمق مع الاستشهادات.'
   },
   'anthropic/opus-4.5': {
     en: 'Most intelligent Claude model. Best for complex tasks.',
@@ -46,6 +46,10 @@ export const modelExplanations: Record<string, { en: string; ar: string }> = {
   'anthropic/haiku-4.5': {
     en: 'Fast responses for quick conversations.',
     ar: 'ردود سريعة للمحادثات السريعة.'
+  },
+  'anthropic/deep-research': {
+    en: 'Claude\'s deep research model for thorough analysis.',
+    ar: 'نموذج كلود للبحث العميق والتحليل الشامل.'
   },
 };
 

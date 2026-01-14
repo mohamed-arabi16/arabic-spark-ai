@@ -128,14 +128,16 @@ export function ChatHome({
           )}
           variants={staggerItem}
         >
-          <RoutingBadge
-            routingMode={routingMode}
-            onRoutingModeChange={onRoutingModeChange}
-            currentModel={currentModel}
-            routingReason={routingReason}
-            isDefault={isDefault}
-            className="text-xs"
-          />
+          {onRoutingModeChange && (
+            <RoutingBadge
+              routingMode={routingMode}
+              onRoutingModeChange={onRoutingModeChange}
+              currentModel={currentModel}
+              routingReason={routingReason}
+              isDefault={isDefault}
+              className="text-xs"
+            />
+          )}
           <ModelPicker
             mode={mode}
             onModeChange={setMode}
