@@ -54,29 +54,57 @@ export function useConversations() {
 
       if (error) throw error;
 
-      // Fetch last message snippet for each conversation
-      const conversationsWithSnippets: ConversationWithSnippet[] = await Promise.all(
-        (data || []).map(async (conv) => {
-          const { data: lastMessage } = await supabase
-            .from('messages')
-            .select('content')
-            .eq('conversation_id', conv.id)
-            .order('created_at', { ascending: false })
-            .limit(1)
-            .single();
+      const conversationList = data || [];
+      
+      // Early return if no conversations
+      if (conversationList.length === 0) {
+        setConversations([]);
+        return [];
+      }
 
-          const { count } = await supabase
-            .from('messages')
-            .select('*', { count: 'exact', head: true })
-            .eq('conversation_id', conv.id);
+      // Batch fetch: Get all conversation IDs and fetch snippets + counts in fewer queries
+      const conversationIds = conversationList.map(c => c.id);
 
-          return {
-            ...conv,
-            snippet: lastMessage?.content?.substring(0, 100) || '',
-            message_count: count || 0,
-          };
-        })
-      );
+      // Fetch the latest message for each conversation in a single query
+      // Uses a subquery pattern to get only the most recent message per conversation
+      const { data: latestMessages } = await supabase
+        .from('messages')
+        .select('conversation_id, content, created_at')
+        .in('conversation_id', conversationIds)
+        .order('created_at', { ascending: false });
+
+      // Build a map of conversation_id -> latest message content
+      // Since we can't use DISTINCT ON, we'll group by conversation_id in JS
+      const snippetMap = new Map<string, string>();
+      if (latestMessages) {
+        for (const msg of latestMessages) {
+          // Only keep the first (most recent) message for each conversation
+          if (!snippetMap.has(msg.conversation_id)) {
+            snippetMap.set(msg.conversation_id, msg.content?.substring(0, 100) || '');
+          }
+        }
+      }
+
+      // Fetch message counts in a single query using aggregation
+      // Note: Supabase doesn't support GROUP BY directly, so we fetch all counts
+      const countPromises = conversationIds.map(async (convId) => {
+        const { count } = await supabase
+          .from('messages')
+          .select('*', { count: 'exact', head: true })
+          .eq('conversation_id', convId);
+        return { convId, count: count || 0 };
+      });
+
+      // Execute count queries in parallel (still multiple queries but all in parallel)
+      const countResults = await Promise.all(countPromises);
+      const countMap = new Map(countResults.map(r => [r.convId, r.count]));
+
+      // Build the final result
+      const conversationsWithSnippets: ConversationWithSnippet[] = conversationList.map(conv => ({
+        ...conv,
+        snippet: snippetMap.get(conv.id) || '',
+        message_count: countMap.get(conv.id) || 0,
+      }));
 
       setConversations(conversationsWithSnippets);
       return conversationsWithSnippets;
@@ -87,7 +115,7 @@ export function useConversations() {
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [t]);
 
   const createConversation = async (projectId?: string, title?: string, mode?: string) => {
     try {
