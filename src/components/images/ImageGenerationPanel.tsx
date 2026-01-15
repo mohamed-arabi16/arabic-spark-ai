@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -26,8 +26,11 @@ export function ImageGenerationPanel({ onGenerate, isGenerating }: ImageGenerati
   const [style, setStyle] = useState('none');
   const [selectedModel, setSelectedModel] = useState<string>('');
 
-  // Get available image models
-  const imageModels = availableModels?.imageModels?.filter(m => m.available) || [];
+  // Memoize available image models to prevent useEffect from running on every render
+  const imageModels = useMemo(
+    () => availableModels?.imageModels?.filter(m => m.available) || [],
+    [availableModels?.imageModels]
+  );
 
   // Set default model when settings load
   useEffect(() => {

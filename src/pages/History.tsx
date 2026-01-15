@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
@@ -59,44 +59,56 @@ export default function History() {
     fetchMemories();
   }, [fetchMemories]);
 
-  const filteredConversations = conversations.filter(conv => {
+  // Memoize filtered conversations to avoid recalculation on every render
+  const filteredConversations = useMemo(() => {
     const normQuery = normalizeArabic(searchQuery);
-    const normTitle = normalizeArabic(conv.title || '');
-    const normSnippet = normalizeArabic(conv.snippet || '');
+    return conversations.filter(conv => {
+      const normTitle = normalizeArabic(conv.title || '');
+      const normSnippet = normalizeArabic(conv.snippet || '');
 
-    const matchesSearch = normTitle.includes(normQuery) || normSnippet.includes(normQuery);
-    const matchesType = filterType === 'all' || conv.mode === filterType;
-    return matchesSearch && matchesType;
-  });
+      const matchesSearch = normTitle.includes(normQuery) || normSnippet.includes(normQuery);
+      const matchesType = filterType === 'all' || conv.mode === filterType;
+      return matchesSearch && matchesType;
+    });
+  }, [conversations, searchQuery, filterType]);
 
-  const groupConversationsByDate = (convs: ConversationWithSnippet[]) => {
+  // Memoize date group labels to avoid creating new objects on every render
+  const dateGroupLabels = useMemo(() => ({
+    today: t('history.today'),
+    yesterday: t('history.yesterday'),
+    thisWeek: t('history.thisWeek'),
+    older: t('history.older'),
+  }), [t]);
+
+  // Memoize grouped conversations to avoid recalculation on every render
+  const groupedConversations = useMemo(() => {
     const groups: Record<string, ConversationWithSnippet[]> = {
-      [t('history.today')]: [],
-      [t('history.yesterday')]: [],
-      [t('history.thisWeek')]: [],
-      [t('history.older')]: [],
+      [dateGroupLabels.today]: [],
+      [dateGroupLabels.yesterday]: [],
+      [dateGroupLabels.thisWeek]: [],
+      [dateGroupLabels.older]: [],
     };
 
-    convs.forEach(conv => {
+    filteredConversations.forEach(conv => {
       const date = parseISO(conv.created_at);
       if (isToday(date)) {
-        groups[t('history.today')].push(conv);
+        groups[dateGroupLabels.today].push(conv);
       } else if (isYesterday(date)) {
-        groups[t('history.yesterday')].push(conv);
+        groups[dateGroupLabels.yesterday].push(conv);
       } else if (isThisWeek(date)) {
-        groups[t('history.thisWeek')].push(conv);
+        groups[dateGroupLabels.thisWeek].push(conv);
       } else {
-        groups[t('history.older')].push(conv);
+        groups[dateGroupLabels.older].push(conv);
       }
     });
 
     return groups;
-  };
+  }, [filteredConversations, dateGroupLabels]);
 
-  const groupedConversations = groupConversationsByDate(filteredConversations);
-
-  const projectNameResolver = (projectId: string | null) => 
-    projectId ? getProjectName(projectId, projects, { global: '', notFound: '' }) || null : null;
+  // Memoize project name resolver to avoid creating new function on every render
+  const projectNameResolver = useCallback((projectId: string | null) => 
+    projectId ? getProjectName(projectId, projects, { global: '', notFound: '' }) || null : null,
+  [projects]);
 
   const getModeBadge = (mode: string) => {
     const colors: Record<string, string> = {

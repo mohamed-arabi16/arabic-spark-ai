@@ -28,7 +28,7 @@ export function useImages() {
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [t]);
 
   const generateImage = async (prompt: string, size: string, negativePrompt?: string, style?: string, model?: string) => {
     setIsGenerating(true);
