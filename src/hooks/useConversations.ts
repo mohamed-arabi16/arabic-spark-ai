@@ -85,8 +85,12 @@ export function useConversations() {
         }
       }
 
-      // Fetch message counts in a single query using aggregation
-      // Note: Supabase doesn't support GROUP BY directly, so we fetch all counts
+      // Fetch message counts using parallel queries
+      // Note: A single query with GROUP BY would be ideal, but Supabase JS client
+      // doesn't support aggregate queries directly. Options to further optimize:
+      // 1. Create an RPC function in Supabase that uses GROUP BY
+      // 2. Denormalize by storing message_count on the conversations table
+      // For now, parallel execution is much faster than the original sequential approach
       const countPromises = conversationIds.map(async (convId) => {
         const { count } = await supabase
           .from('messages')
@@ -95,7 +99,7 @@ export function useConversations() {
         return { convId, count: count || 0 };
       });
 
-      // Execute count queries in parallel (still multiple queries but all in parallel)
+      // Execute count queries in parallel (O(n) queries but concurrent, not sequential)
       const countResults = await Promise.all(countPromises);
       const countMap = new Map(countResults.map(r => [r.convId, r.count]));
 
